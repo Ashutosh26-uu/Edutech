@@ -30,7 +30,7 @@ export function VideoLinkForm({ dark = false, initial = "" }: { dark?: boolean; 
           onChange={(e) => setUrl(e.target.value)}
           aria-label="YouTube link"
         />
-        <button className={`btn py-3 ${dark ? "bg-white text-brand-700 hover:bg-brand-50" : "bg-brand-600 text-white hover:bg-brand-700"}`}>Break it down</button>
+        <button className={`btn py-3 ${dark ? "bg-surface text-brand-700 hover:bg-brand-50" : "bg-brand-600 text-white hover:brightness-110"}`}>Break it down</button>
       </div>
       {error && <p className={`mt-2 text-sm ${dark ? "text-amber-200" : "text-red-600"}`}>{error}</p>}
     </form>

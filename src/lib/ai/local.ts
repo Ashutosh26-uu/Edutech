@@ -31,6 +31,27 @@ function rankTopics(query: string): { topic: Topic; score: number }[] {
     .sort((a, b) => b.score - a.score);
 }
 
+/**
+ * Draws each question's topic at random in proportion to its weight, so weak topics come up
+ * more often, and topics end up interleaved rather than blocked.
+ */
+function adaptivePractice(topicIds: string[], count: number, weights: Record<string, number>): MCQ[] {
+  const pools = new Map(topicIds.map((id) => [id, shuffle(QUESTION_BANK.filter((q) => q.topicId === id))]));
+  const live = () => topicIds.filter((id) => (pools.get(id)?.length ?? 0) > 0 || hasGenerator(id));
+  const out: MCQ[] = [];
+  for (let i = 0; i < count; i++) {
+    const ids = live();
+    if (!ids.length) break;
+    const total = ids.reduce((s, id) => s + (weights[id] ?? 0.5), 0);
+    let r = Math.random() * total;
+    const id = ids.find((x) => (r -= weights[x] ?? 0.5) <= 0) ?? ids.at(-1)!;
+    const fromBank = pools.get(id)!.pop();
+    const q = fromBank ? shuffleOptions(fromBank) : generateQuestions(id, 1)[0];
+    if (q && !out.some((o) => o.question === q.question)) out.push(q);
+  }
+  return out;
+}
+
 export const localProvider: AIProvider = {
   name: "local",
 
@@ -38,7 +59,8 @@ export const localProvider: AIProvider = {
     return { ...analyzeVideo(videoId, transcript), provider: "local" };
   },
 
-  async practiceQuestions({ topicIds, count }) {
+  async practiceQuestions({ topicIds, count, weights }) {
+    if (weights) return adaptivePractice(topicIds, count, weights);
     const bank = shuffle(QUESTION_BANK.filter((q) => q.topicId && topicIds.includes(q.topicId))).map(shuffleOptions);
     const generatable = topicIds.filter(hasGenerator);
     // Mix bank questions with generated ones; generated Quant questions fill any shortfall.

@@ -42,6 +42,7 @@ export interface VideoBreakdown {
   chapters: Chapter[];
   notes: VideoNotes;
   quiz: MCQ[];
+  transcript: TranscriptLine[];
   provider: string;
 }
 

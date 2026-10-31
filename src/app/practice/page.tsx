@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Quiz, type AnswerResult } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
-import { recordAnswers, recordMock } from "@/lib/storage";
+import { topicWeights } from "@/lib/adaptive";
+import { load, recordAnswers, recordMock } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 
 export default function PracticePage() {
@@ -24,7 +25,8 @@ function PracticeView() {
   const params = useSearchParams();
   const exam = EXAM_BY_ID.get(params.get("exam") ?? "");
   const isMock = params.get("mock") === "1";
-  const topicIds = isMock && exam ? examTopicIds(exam) : (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
+  const isSmart = params.get("smart") === "1";
+  const topicIds = (isMock || isSmart) && exam ? examTopicIds(exam) : (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
 
   const [questions, setQuestions] = useState<MCQ[] | null>(null);
   const [error, setError] = useState("");
@@ -37,12 +39,16 @@ function PracticeView() {
     const res = await fetch("/api/practice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topicIds: key.split(","), count: isMock ? MOCK_SIZE : PRACTICE_SIZE }),
+      body: JSON.stringify({
+        topicIds: key.split(","),
+        count: isMock ? MOCK_SIZE : PRACTICE_SIZE,
+        weights: isSmart ? topicWeights(key.split(","), load().topics) : undefined,
+      }),
     });
     const json = await res.json();
     if (!res.ok) setError(json.error);
     else setQuestions(json.questions);
-  }, [key, isMock]);
+  }, [key, isMock, isSmart]);
 
   useEffect(() => {
     if (key) loadQuestions();
@@ -73,7 +79,7 @@ function PracticeView() {
     );
   }
 
-  const title = isMock ? `${exam?.name} mock test` : topicIds.length === 1 ? TOPIC_BY_ID.get(topicIds[0])!.name : `Practice: ${topicIds.length} topics`;
+  const title = isMock ? `${exam?.name} mock test` : isSmart ? `${exam?.name} smart practice` : topicIds.length === 1 ? TOPIC_BY_ID.get(topicIds[0])!.name : `Practice: ${topicIds.length} topics`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -87,7 +93,9 @@ function PracticeView() {
         <p className="text-sm text-slate-600">
           {isMock
             ? `${MOCK_SIZE} questions · ${MOCK_SIZE} minutes · answers revealed after you submit${exam?.negativeMarking ? ` · −${+exam.negativeMarking.toFixed(2)} per wrong answer` : ""}`
-            : "Instant feedback with an explanation after every answer."}
+            : isSmart
+              ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall."
+              : "Instant feedback with an explanation after every answer."}
         </p>
       </div>
       <div className="card">

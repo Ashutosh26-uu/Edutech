@@ -8,11 +8,22 @@ Turn long YouTube lectures into short chapters, crisp notes and quizzes, and pre
 
 | Module | What it does |
 |---|---|
+| **Today** (`/today`) | Exam countdown, a daily plan that ticks itself off as you study (flashcards due, smart practice, one lecture, mock tests: every 2 days in the last month), focus topics, daily XP goal, streak, levels and an activity heatmap. |
 | **Video breakdown** (`/video`) | Paste a YouTube link. The app reads the video's captions, detects where the topic changes and splits the lecture into timestamped chapters, each with a title, a summary and a **High / Medium / Low** importance tag. Clicking a chapter plays the video from that point in YouTube's official embedded player; nothing is downloaded or re-hosted. |
-| **Notes and quiz** | A one-line summary, keywords, key points and important facts (each linked to its timestamp), plus an auto-generated fill-in-the-blank quiz. |
-| **Exam prep** (`/exams`) | Pick an exam to see its syllabus by subject and topic, practise any topic with instant explanations, or take a timed **mock test** with the exam's negative marking and a topic-wise score breakdown. |
-| **Learn** (`/learn`) | Search any topic for notes, practice questions and the exams it appears in, or paste a question to get its answer and related concepts. |
-| **My progress** (`/progress`) | Accuracy per topic, weak topics to focus on, mock-test history and recently studied videos. |
+| **Smart play and live transcript** | ⚡ Smart play skips everything except High-importance chapters. Speed control from 1× to 2×. A searchable transcript follows the video and jumps on click. |
+| **Notes and quiz** | One-line summary, keywords, key points and facts (each linked to its timestamp), your own timestamped notes, read-aloud, export to **Markdown** or **PDF**, and an auto-generated quiz you can save as flashcards. |
+| **Flashcards** (`/review`) | Spaced repetition with the **FSRS** scheduler (the algorithm modern Anki offers). Add topic decks, video quiz cards or your own cards, then review with Space and keys 1–4. |
+| **Exam prep** (`/exams`) | Pick an exam to see its syllabus, practise any topic with instant explanations, use **🧠 Smart practice** (adaptive and interleaved), or take a timed **mock test** with the exam's negative marking. |
+| **Learn** (`/learn`) | Search any topic, by typing or by **voice (English or Hindi)**, for notes, practice questions and the exams it appears in, or ask a question to get its answer. |
+| **My progress** (`/progress`) | Accuracy per topic, weak topics, mock-test history and recently studied videos. |
+| **Everywhere** | **Ctrl + K** command palette (or press `/`), dark mode, and an installable app (PWA) with offline support for pages you've visited. |
+
+### The learning science behind it
+
+- **Spaced repetition (FSRS):** each card tracks stability and difficulty and is scheduled for when recall is predicted to drop to 90%. On the open spaced-repetition benchmark, FSRS predicts recall better than SM-2 for the large majority of users.
+- **Retrieval practice with feedback:** every practice question and flashcard shows the answer and an explanation right away. Retrieval without feedback helps far less.
+- **Interleaving:** Smart practice mixes topics instead of practising them in blocks, which meta-analyses link to better final-test performance (around g ≈ 0.4).
+- **Targeting weak areas:** topic weights use a Beta(1,1) prior on accuracy, so a single answer doesn't swing the plan, plus a boost for topics you haven't practised in a while.
 
 Videos without captions can still be analysed: paste the transcript from YouTube's **Show transcript** panel.
 

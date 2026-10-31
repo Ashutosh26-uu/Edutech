@@ -7,6 +7,7 @@ interface YTPlayer {
   seekTo(seconds: number, allowSeekAhead: boolean): void;
   playVideo(): void;
   getCurrentTime(): number;
+  setPlaybackRate(rate: number): void;
   destroy(): void;
 }
 declare global {
@@ -35,10 +36,11 @@ function loadApi(): Promise<void> {
 export interface PlayerHandle {
   seek(seconds: number): void;
   currentTime(): number;
+  setRate(rate: number): void;
 }
 
 /** The official YouTube embed. Clips are played by seeking, never by copying the video. */
-export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; onTime?: (t: number) => void }>(function YouTubePlayer({ videoId, onTime }, ref) {
+export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; start?: number; onTime?: (t: number) => void }>(function YouTubePlayer({ videoId, start, onTime }, ref) {
   const host = useRef<HTMLDivElement>(null);
   const player = useRef<YTPlayer | null>(null);
   const ready = useRef(false);
@@ -50,6 +52,7 @@ export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; onTime?
       player.current.playVideo();
     },
     currentTime: () => (ready.current ? player.current?.getCurrentTime() ?? 0 : 0),
+    setRate: (rate) => ready.current && player.current?.setPlaybackRate(rate),
   }));
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; onTime?
         videoId,
         width: "100%",
         height: "100%",
-        playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1, ...(start ? { start: Math.floor(start) } : {}) },
         events: { onReady: () => (ready.current = true) },
       });
     });
@@ -72,6 +75,7 @@ export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; onTime?
       player.current?.destroy();
       player.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId]);
 
   useEffect(() => {
@@ -80,5 +84,5 @@ export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; onTime?
     return () => clearInterval(t);
   }, [onTime]);
 
-  return <div ref={host} className="aspect-video w-full overflow-hidden rounded-2xl bg-slate-900 [&>iframe]:h-full [&>iframe]:w-full" />;
+  return <div ref={host} className="aspect-video w-full overflow-hidden rounded-2xl bg-black [&>iframe]:h-full [&>iframe]:w-full" />;
 });

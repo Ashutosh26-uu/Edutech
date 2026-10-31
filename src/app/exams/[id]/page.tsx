@@ -26,9 +26,14 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             {exam.fullName} · Negative marking: {exam.negativeMarking ? `−${+exam.negativeMarking.toFixed(2)} per wrong answer` : "none"}
           </p>
         </div>
-        <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
-          Take a full mock test
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
+            🧠 Smart practice
+          </Link>
+          <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
+            Take a full mock test
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
