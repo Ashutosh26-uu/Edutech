@@ -244,5 +244,6 @@ export function analyzeVideo(videoId: string, t: VideoTranscript): Omit<VideoBre
   const quizCands = best.filter((s) => s.text.split(" ").length >= 8).slice(0, 40);
   const quiz = buildQuiz(quizCands, globalKeywords, forms, weights, videoId);
 
-  return { videoId, title: t.title, author: t.author, lengthSeconds: duration, language: t.language, chapters, notes, quiz };
+  const transcript = t.lines.map((l) => ({ start: l.start, dur: l.dur, text: l.text.replace(/\[[^\]]*\]/g, "").trim() })).filter((l) => l.text);
+  return { videoId, title: t.title, author: t.author, lengthSeconds: duration, language: t.language, chapters, notes, quiz, transcript };
 }

@@ -9,7 +9,8 @@ import type { VideoTranscript } from "../youtube";
 export interface AIProvider {
   readonly name: string;
   breakdownVideo(videoId: string, transcript: VideoTranscript): Promise<VideoBreakdown>;
-  practiceQuestions(opts: { topicIds: string[]; count: number }): Promise<MCQ[]>;
+  /** With `weights`, topics are sampled in proportion to weight (adaptive, interleaved practice). */
+  practiceQuestions(opts: { topicIds: string[]; count: number; weights?: Record<string, number> }): Promise<MCQ[]>;
   explainTopic(query: string): Promise<{ result: TopicResult | null; suggestions: Topic[] }>;
   solveQuestion(question: string): Promise<SolveResult>;
 }

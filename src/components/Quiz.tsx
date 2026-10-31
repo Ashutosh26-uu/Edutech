@@ -202,7 +202,7 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
       <div className="space-y-3">
         <h4 className="font-semibold">Review answers</h4>
         {results.map((r, i) => (
-          <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-white" : "border-red-200 bg-red-50/40"}`}>
+          <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <p className="font-medium text-slate-900">
               {i + 1}. {r.question.question}
             </p>

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
+import { MicButton, SpeakButton } from "@/components/Speak";
 import { TOPICS } from "@/data/topics";
+import { cardsForTopic } from "@/lib/cards";
+import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
 
 export default function LearnPage() {
@@ -27,7 +30,7 @@ function LearnView() {
       </div>
       <div className="inline-flex rounded-xl bg-slate-100 p-1 text-sm">
         {(["topic", "question"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 font-semibold ${tab === t ? "bg-white text-brand-700 shadow-sm" : "text-slate-600"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 font-semibold ${tab === t ? "bg-surface text-brand-700 shadow-sm" : "text-slate-600"}`}>
             {t === "topic" ? "Study a topic" : "Solve a question"}
           </button>
         ))}
@@ -63,6 +66,7 @@ function TopicSearch({ initial }: { initial: string }) {
     <div className="space-y-5">
       <form onSubmit={(e) => (e.preventDefault(), search(query))} className="flex max-w-2xl gap-2">
         <input className="input" placeholder="e.g. Fundamental Rights, Profit and Loss, Piaget…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <MicButton onText={go} />
         <button className="btn-primary" disabled={loading}>
           Search
         </button>
@@ -73,7 +77,7 @@ function TopicSearch({ initial }: { initial: string }) {
           <p className="mb-2 text-sm text-slate-500">Popular topics</p>
           <div className="flex flex-wrap gap-2">
             {TOPICS.slice(0, 14).map((t) => (
-              <button key={t.id} onClick={() => go(t.name)} className="chip bg-white px-3 py-1.5 text-sm text-slate-700 ring-1 ring-slate-200 hover:ring-brand-300">
+              <button key={t.id} onClick={() => go(t.name)} className="chip bg-surface px-3 py-1.5 text-sm text-slate-700 ring-1 ring-slate-200 hover:ring-brand-300">
                 {t.name}
               </button>
             ))}
@@ -103,11 +107,23 @@ function TopicSearch({ initial }: { initial: string }) {
 function TopicView({ result, related, onPick }: { result: TopicResult; related: Topic[]; onPick: (q: string) => void }) {
   const { topic, exams, questions } = result;
   const [practising, setPractising] = useState(false);
+  const [added, setAdded] = useState<number | null>(null);
+  const deck = cardsForTopic(topic.id);
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <div className="space-y-5">
         <div className="card">
-          <span className="chip bg-brand-50 text-brand-700">{topic.subject}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="chip bg-brand-50 text-brand-700">{topic.subject}</span>
+            <div className="flex items-center gap-1">
+              <SpeakButton text={[topic.name, topic.summary, ...topic.keyPoints].join(". ")} />
+              {deck.length > 0 && (
+                <button className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50" onClick={() => setAdded(addCards(deck))}>
+                  {added === null ? `🃏 Add ${deck.length} flashcards` : added ? `✓ Added ${added}` : "✓ Already in deck"}
+                </button>
+              )}
+            </div>
+          </div>
           <h2 className="mt-2 text-xl font-bold text-slate-900">{topic.name}</h2>
           <p className="mt-2 text-slate-700">{topic.summary}</p>
           <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-slate-500">Key points</h3>
@@ -188,9 +204,12 @@ function QuestionSolver() {
     <div className="max-w-3xl space-y-5">
       <form onSubmit={solve} className="space-y-2">
         <textarea className="input h-28" placeholder="Type or paste a question, e.g. “Which Article abolishes untouchability?”" value={question} onChange={(e) => setQuestion(e.target.value)} />
-        <button className="btn-primary" disabled={loading || !question.trim()}>
-          {loading ? "Solving…" : "Get answer"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-primary" disabled={loading || !question.trim()}>
+            {loading ? "Solving…" : "Get answer"}
+          </button>
+          <MicButton onText={(t) => setQuestion(t)} />
+        </div>
       </form>
 
       {data && (
