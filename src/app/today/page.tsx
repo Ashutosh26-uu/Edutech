@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Flame } from "lucide-react";
 import Link from "next/link";
 import { Heatmap } from "@/components/Heatmap";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -71,7 +72,7 @@ export default function TodayPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Today</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Today</h1>
           <p className="mt-1 text-sm text-slate-600">{new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <ExamPicker examId={store.examId} examDate={store.examDate} />
@@ -81,7 +82,7 @@ export default function TodayPage() {
         <div className="card flex items-center gap-4">
           <Ring pct={goalPct} label={`${xpToday}`} sub="XP" />
           <div className="text-sm">
-            <div className="font-bold text-slate-900">Daily goal</div>
+            <div className="font-semibold text-slate-900">Daily goal</div>
             <div className="text-slate-600">
               {xpToday} / {store.dailyGoal} XP
             </div>
@@ -95,15 +96,15 @@ export default function TodayPage() {
           </div>
         </div>
         <div className="card flex items-center gap-4">
-          <div className="text-4xl">🔥</div>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange-50 text-orange-500 dark:bg-orange-500/10"><Flame className="h-6 w-6" strokeWidth={1.75} /></span>
           <div className="text-sm">
-            <div className="text-2xl font-bold text-slate-900">{streak(store)} day streak</div>
+            <div className="text-2xl font-semibold text-slate-900">{streak(store)} day streak</div>
             <div className="text-slate-600">Study a little every day to keep it going.</div>
           </div>
         </div>
         <div className="card text-sm">
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-slate-900">Level {lvl.level}</span>
+            <span className="text-2xl font-semibold text-slate-900">Level {lvl.level}</span>
             <span className="text-slate-500">{store.xp} XP total</span>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -117,7 +118,7 @@ export default function TodayPage() {
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <section className="card">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-slate-900">Today’s plan for {exam.name}</h2>
+              <h2 className="font-semibold text-slate-900">Today’s plan for {exam.name}</h2>
               <span className="chip bg-brand-50 text-brand-700">
                 {doneCount}/{tasks.length} done
               </span>
@@ -125,7 +126,7 @@ export default function TodayPage() {
             <ul className="mt-3 space-y-2">
               {tasks.map((task) => (
                 <li key={task.title} className={`flex items-center gap-3 rounded-xl border p-3 ${task.done ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200"}`}>
-                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${task.done ? "bg-emerald-500 text-white" : "border-2 border-slate-300"}`}>{task.done ? "✓" : ""}</span>
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${task.done ? "bg-emerald-500 text-white" : "border-2 border-slate-300"}`}>{task.done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}</span>
                   <div className="min-w-0 flex-1">
                     <div className={`font-semibold ${task.done ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.title}</div>
                     <div className="text-xs text-slate-600">{task.detail}</div>
@@ -140,7 +141,7 @@ export default function TodayPage() {
             </ul>
           </section>
           <section className="card">
-            <h2 className="font-bold text-slate-900">Focus topics</h2>
+            <h2 className="font-semibold text-slate-900">Focus topics</h2>
             <p className="text-xs text-slate-500">Picked from your accuracy and how long since you practised.</p>
             <ul className="mt-3 divide-y divide-slate-100">
               {focus.map((f) => (
@@ -162,7 +163,7 @@ export default function TodayPage() {
                     <b>{days} days</b> to {exam.name}. {days <= 30 ? "Revision mode is on: more mocks, fewer new topics." : "Plenty of time: build strong foundations topic by topic."}
                   </>
                 ) : days === 0 ? (
-                  <>Exam day. All the best! 🍀</>
+                  <>It’s exam day. Good luck.</>
                 ) : (
                   <>Your exam date has passed. Set a new one above.</>
                 )}
@@ -175,7 +176,7 @@ export default function TodayPage() {
       )}
 
       <section className="card">
-        <h2 className="mb-3 font-bold text-slate-900">Your study activity</h2>
+        <h2 className="mb-3 font-semibold text-slate-900">Your study activity</h2>
         <Heatmap activity={store.activity} />
       </section>
     </div>
@@ -212,7 +213,7 @@ function Ring({ pct, label, sub }: { pct: number; label: string; sub: string }) 
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center leading-none">
         <div>
-          <div className="text-sm font-bold text-slate-900">{label}</div>
+          <div className="text-sm font-semibold text-slate-900">{label}</div>
           <div className="text-[10px] text-slate-500">{sub}</div>
         </div>
       </div>

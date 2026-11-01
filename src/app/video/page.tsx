@@ -1,5 +1,6 @@
 "use client";
 
+import { Download, Layers, Printer, Zap } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
@@ -72,8 +73,8 @@ function VideoView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Video breakdown</h1>
-        <p className="mt-1 text-sm text-slate-600">Paste a YouTube lecture to get chapters, crisp notes, a live transcript and a quiz.</p>
+        <h1 className="text-2xl font-semibold text-slate-900">Video breakdown</h1>
+        <p className="mt-1 text-sm text-slate-600">Paste a YouTube lecture to get chapters, notes, a live transcript and a quiz.</p>
         <div className="mt-4 max-w-3xl">
           <VideoLinkForm key={videoId ?? ""} initial={videoId ? `https://www.youtube.com/watch?v=${videoId}` : ""} />
         </div>
@@ -166,12 +167,12 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
                 if (first && smartPlayTarget(now, data.chapters) !== null) player.current?.seek(first.start);
               }
             }}
-            className={`btn px-3 py-1.5 text-xs ${smartPlay ? "bg-brand-600 text-white" : "border border-slate-300 bg-surface text-slate-700"}`}
+            className={`btn px-3 py-1.5 text-xs ${smartPlay ? "bg-ink text-on-ink" : "border border-slate-200 bg-surface text-slate-700 hover:bg-slate-100"}`}
             title="Automatically skip everything except High-importance chapters"
           >
-            ⚡ Smart play {smartPlay ? "ON" : "OFF"}
+            <Zap className="h-3.5 w-3.5" /> Smart play {smartPlay ? "on" : "off"}
           </button>
-          <div className="flex overflow-hidden rounded-lg border border-slate-300 text-xs">
+          <div className="flex overflow-hidden rounded-lg border border-slate-200 text-xs">
             {SPEEDS.map((s) => (
               <button
                 key={s}
@@ -179,7 +180,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
                   setSpeed(s);
                   player.current?.setRate(s);
                 }}
-                className={`px-2 py-1.5 font-semibold ${speed === s ? "bg-brand-600 text-white" : "bg-surface text-slate-600 hover:bg-slate-50"}`}
+                className={`px-2 py-1.5 font-semibold ${speed === s ? "bg-ink text-on-ink" : "bg-surface text-slate-600 hover:bg-slate-50"}`}
               >
                 {s}×
               </button>
@@ -187,16 +188,16 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
           </div>
           <div className="ml-auto flex gap-1">
             <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => downloadText(`${data.title.replace(/[^\w\s-]/g, "").slice(0, 60) || "notes"}.md`, notesMarkdown(data, myNotes))}>
-              ⬇ Markdown
+              <Download className="h-3.5 w-3.5" /> Markdown
             </button>
             <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => printNotes(data, myNotes)}>
-              🖨 PDF
+              <Printer className="h-3.5 w-3.5" /> PDF
             </button>
           </div>
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{data.title}</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{data.title}</h2>
           <p className="text-sm text-slate-500">
             {data.author && <>{data.author} · </>}
             {formatTime(data.lengthSeconds)} · {data.chapters.length} chapters · captions: {data.language}
@@ -204,7 +205,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
         </div>
 
         <div className="rounded-xl bg-brand-50 p-4 text-sm text-brand-900">
-          ⚡ The <b>High</b> importance chapters take <b>{formatTime(highSecs)}</b> instead of {formatTime(data.lengthSeconds)}
+          The <b>High</b> importance chapters take <b>{formatTime(highSecs)}</b> instead of {formatTime(data.lengthSeconds)}
           {speed > 1 && <> (about <b>{formatTime(highSecs / speed)}</b> at {speed}×)</>}. Turn on <b>Smart play</b> to watch only those parts.
         </div>
 
@@ -229,7 +230,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
           <div className="space-y-5">
             <div className="card">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">One-line summary</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">One-line summary</h3>
                 <SpeakButton text={[data.notes.oneLine, ...data.notes.keyPoints.map((k) => k.text)].join(" ")} label="Listen to notes" />
               </div>
               <p className="mt-1 text-slate-800">{data.notes.oneLine}</p>
@@ -254,7 +255,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3 text-sm">
                 <span className="text-slate-600">Remember these for the long term with spaced repetition.</span>
                 <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => toast(`Added ${addCards(quizCards)} new flashcards. Review them in Flashcards.`)}>
-                  🃏 Save as flashcards
+                  <Layers className="h-3.5 w-3.5" /> Save as flashcards
                 </button>
               </div>
             )}
@@ -265,7 +266,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
 
       <aside className="space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-900">Chapters</h3>
+          <h3 className="font-semibold text-slate-900">Chapters</h3>
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={importantOnly} onChange={(e) => setImportantOnly(e.target.checked)} className="accent-brand-600" />
             Important only
@@ -278,7 +279,7 @@ function Breakdown({ data, startAt }: { data: VideoBreakdown; startAt: number })
             <button key={c.start} onClick={() => seek(c.start)} className={`block w-full overflow-hidden rounded-xl border text-left transition ${active ? "border-brand-400 bg-brand-50" : "border-slate-200 bg-surface hover:border-brand-200"}`}>
               <div className="p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-semibold text-brand-700">
+                  <span className="font-mono text-xs font-medium text-brand-700">
                     {formatTime(c.start)} – {formatTime(c.end)}
                   </span>
                   <span className={`chip ${IMPORTANCE_STYLE[c.importance]}`}>{c.importance}</span>
@@ -370,7 +371,7 @@ function MyNotes({ videoId, notes, getTime, onSeek }: { videoId: string; notes: 
         <ul className="divide-y divide-slate-100">
           {notes.map((n) => (
             <li key={n.id} className="flex items-start gap-3 py-2 text-sm">
-              <button onClick={() => onSeek(n.t)} className="shrink-0 rounded-md bg-brand-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-brand-700">
+              <button onClick={() => onSeek(n.t)} className="shrink-0 rounded-md bg-brand-100 px-1.5 py-0.5 font-mono text-xs font-medium text-brand-700">
                 {formatTime(n.t)}
               </button>
               <span className="flex-1 whitespace-pre-line text-slate-700">{n.text}</span>
@@ -390,7 +391,7 @@ function MyNotes({ videoId, notes, getTime, onSeek }: { videoId: string; notes: 
 function NoteList({ title, items, onSeek, tone = "brand" }: { title: string; items: { text: string; timestamp: number }[]; onSeek: (t: number) => void; tone?: "brand" | "amber" }) {
   return (
     <div className="card">
-      <h3 className="mb-3 font-bold text-slate-900">{title}</h3>
+      <h3 className="mb-3 font-semibold text-slate-900">{title}</h3>
       <ul className="space-y-2.5">
         {items.map((k, i) => (
           <li key={i} className="flex gap-3 text-sm">

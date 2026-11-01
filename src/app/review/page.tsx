@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, CheckCircle2, Play, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Stat } from "@/components/Quiz";
@@ -34,7 +35,7 @@ export default function ReviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Flashcard review</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Flashcard review</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
           Spaced repetition with the <b>FSRS</b> scheduler: each card comes back just before you are likely to forget it, so you review less and remember more.
         </p>
@@ -50,7 +51,7 @@ export default function ReviewPage() {
             <Stat label="Cards learned" value={`${learned.length} / ${cards.length}`} tone="green" />
             <Stat label="Predicted recall" value={avgRecall === null ? "–" : `${avgRecall}%`} tone="slate" />
           </div>
-          {session && !due.length && <div className="rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800">🎉 All caught up! Come back later for your next reviews.</div>}
+          {session && !due.length && <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"><CheckCircle2 className="h-4 w-4" /> You’re all caught up. New reviews will appear here when they’re due.</div>}
           <button className="btn-primary" disabled={!due.length} onClick={() => setSession(true)}>
             {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
           </button>
@@ -94,7 +95,7 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
   if (!card) {
     return (
       <div className="card space-y-3 text-center">
-        <div className="text-4xl">🎉</div>
+        <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" strokeWidth={1.75} />
         <p className="font-semibold text-slate-900">Session complete: {done} cards reviewed.</p>
         <button className="btn-primary" onClick={onExit}>
           Back to deck
@@ -112,7 +113,7 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
         <span>
           {remaining} left · {done} done
         </span>
-        <button className="font-semibold text-brand-700" onClick={onExit}>
+        <button className="font-medium text-brand-700" onClick={onExit}>
           End session
         </button>
       </div>
@@ -128,8 +129,8 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
             <div className="mt-2 flex gap-2">
               <SpeakButton text={`${card.front}. Answer: ${card.back}`} />
               {card.videoId && (
-                <Link className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50" href={`/video?v=${card.videoId}${card.timestamp !== undefined ? `&t=${Math.floor(card.timestamp)}` : ""}`}>
-                  ▶ Watch at {formatTime(card.timestamp ?? 0)}
+                <Link className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900" href={`/video?v=${card.videoId}${card.timestamp !== undefined ? `&t=${Math.floor(card.timestamp)}` : ""}`}>
+                  <Play className="h-3 w-3" /> Watch at {formatTime(card.timestamp ?? 0)}
                 </Link>
               )}
             </div>
@@ -162,7 +163,7 @@ function AddTopicDecks({ have }: { have: Set<string> }) {
   const [msg, setMsg] = useState("");
   return (
     <section className="card">
-      <h2 className="font-bold text-slate-900">Add topic decks</h2>
+      <h2 className="font-semibold text-slate-900">Add topic decks</h2>
       <p className="mt-1 text-sm text-slate-600">Turn a topic’s question bank into flashcards.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {TOPICS.map((t) => {
@@ -176,7 +177,7 @@ function AddTopicDecks({ have }: { have: Set<string> }) {
               onClick={() => setMsg(`Added ${addCards(cards)} cards from ${t.name}.`)}
               className={`chip px-3 py-1.5 text-sm ring-1 ${added ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-surface text-slate-700 ring-slate-200 hover:ring-brand-300"}`}
             >
-              {added ? "✓ " : "+ "}
+              {added ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               {t.name}
             </button>
           );
@@ -192,7 +193,7 @@ function CustomCardForm() {
   const [back, setBack] = useState("");
   return (
     <section className="card">
-      <h2 className="font-bold text-slate-900">Create your own card</h2>
+      <h2 className="font-semibold text-slate-900">Create your own card</h2>
       <form
         className="mt-3 space-y-2"
         onSubmit={(e) => {
@@ -218,7 +219,7 @@ function CardList({ cards }: { cards: Flashcard[] }) {
   const sorted = [...cards].sort((a, b) => a.due - b.due);
   return (
     <section className="card">
-      <button className="flex w-full items-center justify-between font-bold text-slate-900" onClick={() => setOpen(!open)}>
+      <button className="flex w-full items-center justify-between font-semibold text-slate-900" onClick={() => setOpen(!open)}>
         All cards ({cards.length}) <span className="text-sm text-brand-700">{open ? "Hide" : "Show"}</span>
       </button>
       {open && (

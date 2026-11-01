@@ -1,5 +1,6 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const THEME_KEY = "studyclip:theme";
@@ -26,8 +27,8 @@ export function ThemeToggle() {
     return () => window.removeEventListener("studyclip:theme", sync);
   }, []);
   return (
-    <button onClick={toggleTheme} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-base hover:bg-slate-100" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title={dark ? "Light mode" : "Dark mode"}>
-      {dark ? "☀️" : "🌙"}
+    <button onClick={toggleTheme} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title={dark ? "Light mode" : "Dark mode"}>
+      {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Layers } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -25,7 +26,7 @@ function LearnView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Learn</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Learn</h1>
         <p className="mt-1 text-sm text-slate-600">Study any topic or get help with a specific question.</p>
       </div>
       <div className="inline-flex rounded-xl bg-slate-100 p-1 text-sm">
@@ -118,19 +119,19 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
             <div className="flex items-center gap-1">
               <SpeakButton text={[topic.name, topic.summary, ...topic.keyPoints].join(". ")} />
               {deck.length > 0 && (
-                <button className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50" onClick={() => setAdded(addCards(deck))}>
-                  {added === null ? `🃏 Add ${deck.length} flashcards` : added ? `✓ Added ${added}` : "✓ Already in deck"}
+                <button className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900" onClick={() => setAdded(addCards(deck))}>
+                  {added === null ? <><Layers className="h-3.5 w-3.5" /> Add {deck.length} flashcards</> : <><Check className="h-3.5 w-3.5" /> {added ? `Added ${added}` : "Already in deck"}</>}
                 </button>
               )}
             </div>
           </div>
-          <h2 className="mt-2 text-xl font-bold text-slate-900">{topic.name}</h2>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900">{topic.name}</h2>
           <p className="mt-2 text-slate-700">{topic.summary}</p>
-          <h3 className="mt-5 text-sm font-bold uppercase tracking-wide text-slate-500">Key points</h3>
+          <h3 className="mt-5 text-sm font-semibold uppercase tracking-wide text-slate-500">Key points</h3>
           <ul className="mt-2 space-y-2">
             {topic.keyPoints.map((k) => (
               <li key={k} className="flex gap-2 text-sm text-slate-700">
-                <span className="text-brand-600">●</span>
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-400" />
                 {k}
               </li>
             ))}
@@ -138,7 +139,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
         </div>
         <div className="card">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-bold text-slate-900">Practice questions ({questions.length})</h3>
+            <h3 className="font-semibold text-slate-900">Practice questions ({questions.length})</h3>
             {!practising && (
               <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => setPractising(true)}>
                 Start
@@ -150,7 +151,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
       </div>
       <aside className="space-y-5">
         <div className="card">
-          <h3 className="font-bold text-slate-900">Asked in these exams</h3>
+          <h3 className="font-semibold text-slate-900">Asked in these exams</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {exams.map((e) => (
               <Link key={e.id} href={`/exams/${e.id}`} className="chip bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-brand-50">
@@ -160,7 +161,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
           </div>
         </div>
         <div className="card">
-          <h3 className="font-bold text-slate-900">Learn it from a video</h3>
+          <h3 className="font-semibold text-slate-900">Learn it from a video</h3>
           <p className="mt-1 text-sm text-slate-600">Find a lecture on this topic and break it into clips.</p>
           <a className="btn-ghost mt-3 w-full" target="_blank" rel="noreferrer" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(topic.name + " lecture")}`}>
             Search YouTube ↗
@@ -171,7 +172,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
         </div>
         {related.length > 0 && (
           <div className="card">
-            <h3 className="font-bold text-slate-900">Related topics</h3>
+            <h3 className="font-semibold text-slate-900">Related topics</h3>
             <div className="mt-3 flex flex-col items-start gap-1.5">
               {related.map((t) => (
                 <button key={t.id} onClick={() => onPick(t.name)} className="text-sm font-medium text-brand-700 hover:underline">
@@ -221,7 +222,7 @@ function QuestionSolver() {
           )}
           {data.relatedTopics.length > 0 && (
             <div className="card">
-              <h3 className="font-bold text-slate-900">Study the concept</h3>
+              <h3 className="font-semibold text-slate-900">Study the concept</h3>
               <div className="mt-2 flex flex-wrap gap-2">
                 {data.relatedTopics.map((t) => (
                   <Link key={t.id} href={`/learn?topic=${encodeURIComponent(t.name)}`} className="chip bg-brand-50 px-3 py-1.5 text-sm text-brand-700">
@@ -233,7 +234,7 @@ function QuestionSolver() {
           )}
           {data.similar.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-bold text-slate-900">Similar questions</h3>
+              <h3 className="font-semibold text-slate-900">Similar questions</h3>
               {data.similar.map((q) => (
                 <AnswerCard key={q.id} q={q} compact />
               ))}
@@ -263,7 +264,7 @@ function AnswerCard({ q, compact = false }: { q: MCQ; compact?: boolean }) {
           <p className="mt-1">{q.explanation}</p>
         </div>
       ) : (
-        <button className="mt-2 text-sm font-semibold text-brand-700" onClick={() => setOpen(true)}>
+        <button className="mt-2 text-sm font-medium text-brand-700" onClick={() => setOpen(true)}>
           Show answer
         </button>
       )}
