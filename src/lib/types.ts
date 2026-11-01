@@ -59,7 +59,10 @@ export type ExamCategory =
   | "Engineering & Medical"
   | "Law & Management"
   | "University & Research"
-  | "Other Central";
+  | "Other Central"
+  | "State Subordinate"
+  | "Design & Architecture"
+  | "Commerce & Professional";
 
 export interface Exam {
   id: string;

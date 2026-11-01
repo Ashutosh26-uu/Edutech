@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarCheck, Check, Layers, ListVideo, Mic, NotebookPen, Target } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, Clock, Layers, ListVideo, Mic, NotebookPen, Target } from "lucide-react";
 import Link from "next/link";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
@@ -50,6 +50,22 @@ export default function Home() {
           </div>
           <ProductPreview />
         </div>
+      </section>
+
+      {/* Last-minute offer */}
+      <section className="-mt-12 flex flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 bg-surface p-5 sm:flex-row sm:items-center">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-500/10">
+            <Clock className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="font-semibold">Exam tomorrow?</h2>
+            <p className="text-sm text-slate-600">Full-syllabus revision sheet and rapid flashcards for ₹19, or 3 timed tests for ₹19. No subscription.</p>
+          </div>
+        </div>
+        <Link href="/last-minute" className="btn-primary shrink-0">
+          Revise tonight <ArrowRight className="h-4 w-4" />
+        </Link>
       </section>
 
       {/* Exams */}

@@ -169,6 +169,84 @@ export const EXAMS: Exam[] = [
     { id: "ib-acio", name: "IB ACIO", fullName: "Assistant Central Intelligence Officer Grade II/Executive", conductedBy: "Intelligence Bureau, Ministry of Home Affairs", negativeMarking: 0.25, subjects: [s("Current Affairs & General Studies", GA), s("Numerical Aptitude", QUANT), s("Reasoning / Logical Aptitude", REASONING), s("English Language", ENGLISH)] },
     { id: "fci", name: "FCI", fullName: "Manager, Assistant Grade III and other posts", conductedBy: "Food Corporation of India", negativeMarking: null, subjects: [s("Reasoning", REASONING), quant, english, s("General Awareness", GA), computer] },
     { id: "epfo-ssa", name: "EPFO SSA", fullName: "Social Security Assistant", conductedBy: "Employees’ Provident Fund Organisation", negativeMarking: null, subjects: [reasoning, ga, quant, english, computer] },
+    { id: "drdo-ceptam", name: "DRDO CEPTAM", fullName: "Senior Technical Assistant-B and Technician-A", conductedBy: "DRDO Centre for Personnel Talent Management", negativeMarking: null, subjects: [reasoning, quant, ga, science, s("Technical Subject")] },
+    { id: "isro-scientist", name: "ISRO Scientist/Engineer", fullName: "Scientist/Engineer 'SC' recruitment", conductedBy: "ISRO Centralised Recruitment Board", negativeMarking: null, subjects: [s("Engineering Discipline")] },
+    { id: "aai-je", name: "AAI Junior Executive", fullName: "Junior Executive (ATC, Common Cadre and other streams)", conductedBy: "Airports Authority of India", negativeMarking: null, subjects: [english, ga, reasoning, quant, s("Stream-specific subject")] },
+    { id: "sci-jca", name: "Supreme Court JCA", fullName: "Junior Court Assistant", conductedBy: "Supreme Court of India", negativeMarking: null, subjects: [s("General English", ENGLISH), s("General Aptitude", [...REASONING, ...QUANT]), s("General Knowledge", GA), computer] },
+  ]),
+
+  ...group("Defence", {}, [
+    { id: "coast-guard-navik", name: "Coast Guard Navik", fullName: "Navik (General Duty / Domestic Branch) and Yantrik", conductedBy: "Indian Coast Guard", negativeMarking: null, subjects: [maths, science, english, s("Reasoning & General Awareness", [...REASONING, ...GA])] },
+    { id: "navy-inet", name: "Navy INET", fullName: "Indian Navy Entrance Test (Officers)", conductedBy: "Indian Navy", negativeMarking: null, subjects: [english, s("Reasoning & Numerical Ability", [...REASONING, ...QUANT]), s("General Science & Mathematical Aptitude", SCIENCE), s("General Knowledge", GA)] },
+    { id: "territorial-army", name: "Territorial Army Officer", fullName: "Territorial Army Officers (non-departmental)", conductedBy: "Territorial Army", negativeMarking: null, subjects: [s("Reasoning & Elementary Mathematics", [...REASONING, ...QUANT]), s("General Knowledge & English", [...GA, ...ENGLISH])] },
+  ]),
+
+  ...group("Police", { level: "State" }, [
+    { id: "tnusrb", name: "TNUSRB SI / Constable", fullName: "Sub-Inspector and Grade II Police Constable recruitment", conductedBy: "Tamil Nadu Uniformed Services Recruitment Board", negativeMarking: null, subjects: [s("General Knowledge", GA), s("Logical Analysis & Numerical Ability", [...REASONING, ...QUANT]), s("Tamil Language")] },
+    { id: "maharashtra-police", name: "Maharashtra Police Bharti", fullName: "Police Constable recruitment", conductedBy: "Maharashtra Police", negativeMarking: null, subjects: [s("Arithmetic", QUANT), s("General Knowledge & Current Affairs", GA), s("Intelligence Test", REASONING), s("Marathi Grammar")] },
+    { id: "wb-police", name: "WB Police Constable", fullName: "Constable and Lady Constable recruitment", conductedBy: "West Bengal Police Recruitment Board", negativeMarking: null, subjects: [s("General Awareness & GK", GA), s("Elementary Mathematics", QUANT), s("Reasoning", REASONING), english] },
+  ]),
+
+  ...group("State Subordinate", { level: "State" }, [
+    { id: "upsssc-pet", name: "UPSSSC PET", fullName: "Preliminary Eligibility Test for Group C posts", conductedBy: "Uttar Pradesh Subordinate Services Selection Commission", negativeMarking: null, featured: true, subjects: [s("Indian History, Polity & Geography", [...HISTORY, ...POLITY, ...GEO]), s("Indian Economy", ["eco-basics"]), s("General Science", SCIENCE), s("Elementary Arithmetic", QUANT), s("General Hindi"), s("General English", ENGLISH), s("Reasoning", REASONING), s("Data Interpretation", QUANT)] },
+    { id: "bssc-cgl", name: "BSSC CGL", fullName: "Inter Level / Graduate Level Combined Competitive Examination", conductedBy: "Bihar Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, s("Mathematics", QUANT), s("Mental Ability", REASONING)] },
+    { id: "hssc-cet", name: "HSSC CET", fullName: "Common Eligibility Test for Group C and D posts", conductedBy: "Haryana Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english, hindi] },
+    { id: "rsmssb-patwari", name: "Rajasthan Patwari", fullName: "Patwari Direct Recruitment", conductedBy: "Rajasthan Staff Selection Board", negativeMarking: null, subjects: [s("General Science, History, Polity & Geography", [...SCIENCE, ...HISTORY, ...POLITY, ...GEO]), stateGk, s("General English & Hindi", ENGLISH), s("Mental Ability & Reasoning", REASONING), s("Basic Computer", ["comp-awareness"])] },
+    { id: "mp-patwari", name: "MP Patwari", fullName: "Patwari Recruitment Examination", conductedBy: "Employee Selection Board, Madhya Pradesh", negativeMarking: null, subjects: [s("General Knowledge", GA), stateGk, s("Mathematics & Reasoning", [...QUANT, ...REASONING]), computer, hindi, english] },
+    { id: "ossc-cgl", name: "OSSC CGL", fullName: "Combined Graduate Level Recruitment Examination", conductedBy: "Odisha Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english, computer] },
+    { id: "gsssb", name: "GSSSB", fullName: "Class III recruitment examinations", conductedBy: "Gujarat Subordinate Service Selection Board", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english] },
+  ]),
+
+  ...group("Teaching", { level: "State" }, [
+    { id: "maha-tet", name: "MAHA TET", fullName: "Maharashtra Teacher Eligibility Test", conductedBy: "Maharashtra State Council of Examination", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Marathi)", ENGLISH)] },
+    { id: "bihar-stet", name: "Bihar STET", fullName: "Secondary Teacher Eligibility Test", conductedBy: "Bihar School Examination Board", negativeMarking: 0, subjects: [cdp, s("Subject Paper")] },
+    { id: "bpsc-tre", name: "BPSC TRE", fullName: "Teacher Recruitment Examination (school teachers)", conductedBy: "Bihar Public Service Commission", negativeMarking: null, subjects: [s("General Studies", GA), s("Language", ENGLISH), s("Subject Paper")] },
+    { id: "emrs", name: "EMRS Teachers", fullName: "Teaching and non-teaching staff, Eklavya Model Residential Schools", conductedBy: "National Education Society for Tribal Students", level: "National", negativeMarking: null, subjects: [cdp, s("General Awareness", GA), reasoning, english, hindi, computer] },
+  ]),
+
+  ...group("Engineering & Medical", {}, [
+    { id: "bitsat", name: "BITSAT", fullName: "BITS Admission Test", conductedBy: "Birla Institute of Technology and Science, Pilani", negativeMarking: 1 / 3, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Mathematics / Biology", ["sci-biology"]), s("English Proficiency & Logical Reasoning", [...ENGLISH, ...REASONING])] },
+    { id: "viteee", name: "VITEEE", fullName: "VIT Engineering Entrance Examination", conductedBy: "Vellore Institute of Technology", negativeMarking: 0, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Mathematics / Biology", ["sci-biology"]), s("Aptitude & English", [...REASONING, ...ENGLISH])] },
+    { id: "mht-cet", name: "MHT CET", fullName: "Maharashtra Common Entrance Test (PCM / PCB)", conductedBy: "State Common Entrance Test Cell, Maharashtra", level: "State", negativeMarking: 0, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Mathematics / Biology", ["sci-biology"])] },
+    { id: "wbjee", name: "WBJEE", fullName: "West Bengal Joint Entrance Examination", conductedBy: "West Bengal Joint Entrance Examinations Board", level: "State", negativeMarking: null, subjects: [s("Mathematics"), s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"])] },
+    { id: "kcet", name: "KCET", fullName: "Karnataka Common Entrance Test", conductedBy: "Karnataka Examinations Authority", level: "State", negativeMarking: 0, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Mathematics / Biology", ["sci-biology"])] },
+    { id: "ap-eapcet", name: "AP EAPCET", fullName: "Engineering, Agriculture and Pharmacy Common Entrance Test, Andhra Pradesh", conductedBy: "Andhra Pradesh State Council of Higher Education", level: "State", negativeMarking: 0, subjects: [s("Mathematics / Biology", ["sci-biology"]), s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"])] },
+    { id: "ts-eapcet", name: "TS EAPCET", fullName: "Engineering, Agriculture and Pharmacy Common Entrance Test, Telangana", conductedBy: "Telangana State Council of Higher Education", level: "State", negativeMarking: 0, subjects: [s("Mathematics / Biology", ["sci-biology"]), s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"])] },
+    { id: "comedk", name: "COMEDK UGET", fullName: "Undergraduate Entrance Test for Karnataka private engineering colleges", conductedBy: "Consortium of Medical, Engineering and Dental Colleges of Karnataka", negativeMarking: 0, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Mathematics")] },
+    { id: "iit-jam", name: "IIT JAM", fullName: "Joint Admission Test for Masters (M.Sc. and integrated programmes)", conductedBy: "Indian Institutes of Technology", negativeMarking: null, subjects: [s("Subject Paper (Physics, Chemistry, Mathematics, Biotechnology, Economics and others)", ["sci-physics", "sci-chemistry", "sci-biology"])] },
+    { id: "iiser-iat", name: "IISER IAT", fullName: "IISER Aptitude Test (BS-MS admissions)", conductedBy: "Indian Institutes of Science Education and Research", negativeMarking: null, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Biology", ["sci-biology"]), s("Mathematics")] },
+    { id: "nest", name: "NEST", fullName: "National Entrance Screening Test (NISER and UM-DAE CEBS)", conductedBy: "NISER Bhubaneswar and UM-DAE CEBS Mumbai", negativeMarking: null, subjects: [s("Physics", ["sci-physics"]), s("Chemistry", ["sci-chemistry"]), s("Biology", ["sci-biology"]), s("Mathematics")] },
+    { id: "gpat", name: "GPAT", fullName: "Graduate Pharmacy Aptitude Test", conductedBy: "National Board of Examinations in Medical Sciences", negativeMarking: 0.25, subjects: [s("Pharmaceutics, Pharmaceutical Chemistry, Pharmacology and allied subjects")] },
+    { id: "neet-mds", name: "NEET MDS", fullName: "NEET for Master of Dental Surgery", conductedBy: "National Board of Examinations in Medical Sciences", negativeMarking: 0.25, subjects: [s("Dental and medical subjects")] },
+    { id: "nchm-jee", name: "NCHM JEE", fullName: "Joint Entrance Examination for Hotel Management", conductedBy: "National Testing Agency", negativeMarking: 0.25, subjects: [s("Numerical Ability & Analytical Aptitude", QUANT), s("Reasoning & Logical Deduction", REASONING), s("General Knowledge & Current Affairs", GA), s("English Language", ENGLISH), s("Aptitude for Service Sector")] },
+  ]),
+
+  ...group("Design & Architecture", {}, [
+    { id: "nift", name: "NIFT Entrance", fullName: "NIFT admissions (B.Des, B.FTech, M.Des, MFM, MFTech)", conductedBy: "National Testing Agency for NIFT", negativeMarking: null, subjects: [s("General Ability Test", [...QUANT, ...ENGLISH, ...REASONING, ...GA]), s("Creative Ability Test")] },
+    { id: "nid-dat", name: "NID DAT", fullName: "Design Aptitude Test (B.Des and M.Des)", conductedBy: "National Institute of Design", negativeMarking: null, subjects: [s("Design Aptitude & Drawing"), s("General Awareness", GA)] },
+    { id: "uceed", name: "UCEED", fullName: "Undergraduate Common Entrance Examination for Design", conductedBy: "IIT Bombay", negativeMarking: null, subjects: [s("Visualisation, Observation & Design Sensitivity"), s("Analytical & Logical Reasoning", REASONING), s("Language", ENGLISH), s("Drawing")] },
+    { id: "ceed", name: "CEED", fullName: "Common Entrance Examination for Design (Master's)", conductedBy: "IIT Bombay", negativeMarking: null, subjects: [s("Visual Perception & Design Aptitude"), s("Analytical Reasoning", REASONING), s("Drawing")] },
+    { id: "nata", name: "NATA", fullName: "National Aptitude Test in Architecture", conductedBy: "Council of Architecture", negativeMarking: null, subjects: [s("Mathematics & General Aptitude", [...QUANT, ...REASONING]), s("Drawing & Composition")] },
+  ]),
+
+  ...group("Law & Management", {}, [
+    { id: "ipmat", name: "IPMAT", fullName: "Integrated Programme in Management Aptitude Test", conductedBy: "IIM Indore", negativeMarking: null, subjects: [s("Quantitative Ability", QUANT), s("Verbal Ability", ENGLISH)] },
+    { id: "snap", name: "SNAP", fullName: "Symbiosis National Aptitude Test", conductedBy: "Symbiosis International (Deemed University)", negativeMarking: null, subjects: [s("General English", ENGLISH), s("Analytical & Logical Reasoning", REASONING), s("Quantitative, Data Interpretation & Data Sufficiency", QUANT)] },
+    { id: "nmat", name: "NMAT", fullName: "NMAT by GMAC", conductedBy: "Graduate Management Admission Council", negativeMarking: 0, subjects: [s("Language Skills", ENGLISH), s("Quantitative Skills", QUANT), s("Logical Reasoning", REASONING)] },
+    { id: "mah-cet-mba", name: "MAH MBA CET", fullName: "Maharashtra MBA/MMS Common Entrance Test", conductedBy: "State Common Entrance Test Cell, Maharashtra", level: "State", negativeMarking: 0, subjects: [s("Logical & Abstract Reasoning", REASONING), s("Quantitative Aptitude", QUANT), s("Verbal Ability & Reading Comprehension", ENGLISH)] },
+  ]),
+
+  ...group("Commerce & Professional", {}, [
+    { id: "ca-foundation", name: "CA Foundation", fullName: "Chartered Accountancy Foundation Examination", conductedBy: "The Institute of Chartered Accountants of India", negativeMarking: null, subjects: [s("Accounting"), s("Business Laws"), s("Quantitative Aptitude", QUANT), s("Business Economics", ["eco-basics"])] },
+    { id: "ca-intermediate", name: "CA Intermediate", fullName: "Chartered Accountancy Intermediate Examination", conductedBy: "The Institute of Chartered Accountants of India", negativeMarking: null, subjects: [s("Accounting, Law, Taxation, Costing, Auditing and Financial Management")] },
+    { id: "cseet", name: "CSEET", fullName: "Company Secretary Executive Entrance Test", conductedBy: "The Institute of Company Secretaries of India", negativeMarking: null, subjects: [s("Business Communication", ENGLISH), s("Legal Aptitude & Logical Reasoning", [...POLITY, ...REASONING]), s("Economic & Business Environment", ["eco-basics", "bank-awareness"]), s("Current Affairs", GA)] },
+    { id: "cma-foundation", name: "CMA Foundation", fullName: "Cost and Management Accountancy Foundation", conductedBy: "The Institute of Cost Accountants of India", negativeMarking: null, subjects: [s("Fundamentals of Economics & Management", ["eco-basics"]), s("Accounting"), s("Business Laws & Ethics"), s("Business Mathematics & Statistics", QUANT)] },
+  ]),
+
+  ...group("University & Research", {}, [
+    { id: "icar-aieea-pg", name: "ICAR AIEEA PG", fullName: "All India Entrance Examination for Admission (PG) and AICE-JRF/SRF (PhD)", conductedBy: "National Testing Agency", negativeMarking: null, subjects: [s("Agricultural Sciences subject paper", ["sci-biology"])] },
+    { id: "nimcet", name: "NIMCET", fullName: "NIT MCA Common Entrance Test", conductedBy: "National Institutes of Technology", negativeMarking: null, subjects: [s("Mathematics"), s("Analytical Ability & Logical Reasoning", REASONING), s("Computer Awareness", ["comp-awareness"]), s("General English", ENGLISH)] },
+    { id: "tancet", name: "TANCET", fullName: "Tamil Nadu Common Entrance Test (MBA, MCA)", conductedBy: "Anna University", level: "State", negativeMarking: null, subjects: [s("Quantitative Ability", QUANT), s("Analytical Reasoning", REASONING), s("Verbal Ability", ENGLISH)] },
   ]),
 ];
 

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: { default: "StudyClip – Study smarter from YouTube lectures", template: "%s · StudyClip" },
   description: "Turn long YouTube lectures into chapters, notes and quizzes, and prepare for SSC, banking, railway, UPSC and teaching exams.",
   appleWebApp: { capable: true, title: "StudyClip" },
+  icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icon.svg` },
 };
 
 export const viewport: Viewport = { themeColor: "#18181b" };
@@ -28,6 +29,8 @@ const FOOTER = [
       ["Flashcards", "/review"],
       ["Daily plan", "/today"],
       ["Learn", "/learn"],
+      ["Exam tomorrow", "/last-minute"],
+      ["Pricing", "/pricing"],
     ],
   },
   { title: "Exams", links: [...FEATURED_EXAMS.slice(0, 6).map((e) => [e.name, `/exams/${e.id}`]), [`All ${EXAMS.length} exams`, "/exams"]] },
