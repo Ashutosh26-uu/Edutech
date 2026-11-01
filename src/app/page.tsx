@@ -1,77 +1,144 @@
+import { ArrowRight, CalendarCheck, Check, Layers, ListVideo, Mic, NotebookPen, Target } from "lucide-react";
 import Link from "next/link";
+import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
-import { EXAMS } from "@/data/exams";
+import { EXAMS, examTopicIds } from "@/data/exams";
 
 const FEATURES = [
-  { icon: "✂️", title: "Smart video breakdown", text: "Chapters with importance tags, a live searchable transcript, and Smart Play that skips to the parts that matter.", href: "/video" },
-  { icon: "📝", title: "Notes you can keep", text: "Key points, facts and your own timestamped notes. Export to Markdown or PDF, or listen with read-aloud.", href: "/video" },
-  { icon: "🃏", title: "Spaced-repetition flashcards", text: "The FSRS scheduler brings each card back just before you’d forget it.", href: "/review" },
-  { icon: "🧠", title: "Adaptive smart practice", text: "Questions from your weakest topics, interleaved for better long-term recall.", href: "/exams" },
-  { icon: "🎯", title: "Exam mode and mocks", text: "Syllabus, topic practice and timed mock tests with your exam’s negative marking.", href: "/exams" },
-  { icon: "📅", title: "Daily plan and streaks", text: "Exam countdown, today’s tasks, XP, levels and an activity heatmap.", href: "/today" },
-  { icon: "🔎", title: "Learn by voice", text: "Search topics or ask questions by speaking, in English or Hindi.", href: "/learn" },
-  { icon: "⌨️", title: "Ctrl + K anywhere", text: "Jump to any topic, exam, video or action instantly. Dark mode and installable app included.", href: "/today" },
+  { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
+  { icon: NotebookPen, title: "Notes, transcript and export", text: "Key points and facts linked to the exact second, a searchable transcript, your own notes, and export to Markdown or PDF." },
+  { icon: Layers, title: "Flashcards that schedule themselves", text: "The FSRS spaced-repetition algorithm brings each card back just before you would forget it." },
+  { icon: Target, title: "Practice that adapts", text: "Questions come more often from the topics you get wrong, mixed together, with an explanation after every answer." },
+  { icon: CalendarCheck, title: "A plan for every day", text: "Set your exam date and get a daily checklist, mock tests on a schedule, and a clear view of your weak topics." },
+  { icon: Mic, title: "Search by voice", text: "Ask for a topic or a question out loud, in English or Hindi, and listen to notes read back to you." },
+];
+
+const STEPS = [
+  { title: "Paste a lecture", text: "Any YouTube lecture with captions. You can also paste a transcript." },
+  { title: "Review the breakdown", text: "Read the chapters and notes, then watch only the important parts." },
+  { title: "Make it stick", text: "Take the quiz, save flashcards and keep practising your weak topics." },
 ];
 
 export default function Home() {
   return (
-    <div className="space-y-14">
-      <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-indigo-950 px-6 py-12 text-white sm:px-12">
-        <p className="chip mb-4 bg-white/15 text-white">For one-day exam aspirants</p>
-        <h1 className="max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">Turn 3-hour lectures into 30 minutes of focused study.</h1>
-        <p className="mt-4 max-w-xl text-indigo-100">
-          Paste any YouTube lecture. StudyClip breaks it into chapters, highlights what matters for your exam, writes crisp notes and quizzes you on it.
-        </p>
-        <div className="mt-8 max-w-2xl">
-          <VideoLinkForm dark />
+    <div className="-mt-10 space-y-24">
+      {/* Hero */}
+      <section className="relative -mx-4 overflow-hidden px-4 pb-4 pt-16 sm:pt-20">
+        <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+        <div className="relative grid items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
+          <div>
+            <Link href="/exams" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600 hover:border-slate-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              For SSC, banking, railway, UPSC and CTET aspirants
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+            <h1 className="mt-5 text-4xl font-semibold leading-[1.1] sm:text-5xl">Learn from long lectures without watching every minute.</h1>
+            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-slate-600">
+              Paste a YouTube link. StudyClip splits the lecture into chapters, marks what matters for your exam, and turns it into notes, quizzes and flashcards.
+            </p>
+            <div className="mt-8 max-w-lg">
+              <VideoLinkForm size="lg" />
+            </div>
+            <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+              {["Free to use", "Works with any captioned lecture", "No sign-up"].map((t) => (
+                <li key={t} className="flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ProductPreview />
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {FEATURES.map((f) => (
-          <Link key={f.title} href={f.href} className="card transition hover:-translate-y-0.5 hover:shadow-md">
-            <div className="text-2xl">{f.icon}</div>
-            <h3 className="mt-3 font-semibold text-slate-900">{f.title}</h3>
-            <p className="mt-1 text-sm text-slate-600">{f.text}</p>
-          </Link>
-        ))}
-      </section>
-
-      <section>
-        <div className="mb-4 flex items-end justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Prepare for your exam</h2>
-          <Link href="/exams" className="text-sm font-semibold text-brand-700">
-            All exams →
-          </Link>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* Exams */}
+      <section className="border-y border-slate-200 py-8">
+        <p className="text-center text-sm text-slate-500">Syllabus, practice questions and mock tests for</p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
           {EXAMS.map((e) => (
-            <Link key={e.id} href={`/exams/${e.id}`} className="card py-4 transition hover:border-brand-300">
-              <div className="font-semibold text-slate-900">{e.name}</div>
-              <div className="mt-0.5 text-xs text-slate-500">{e.conductedBy}</div>
+            <Link key={e.id} href={`/exams/${e.id}`} className="text-lg font-semibold tracking-tight text-slate-400 transition-colors hover:text-slate-900">
+              {e.name}
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-900">How it works</h2>
-        <ol className="mt-4 grid gap-4 text-sm sm:grid-cols-4">
-          {[
-            ["Paste a link", "Any YouTube lecture with captions, or paste its transcript."],
-            ["We read the transcript", "Timestamps and text are pulled from the video’s captions."],
-            ["Topics are detected", "Wherever the subject changes, a new chapter starts."],
-            ["You study smarter", "Watch only the important clips, read the notes, take the quiz."],
-          ].map(([t, d], i) => (
-            <li key={t} className="flex gap-3">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{i + 1}</span>
-              <div>
-                <div className="font-semibold text-slate-900">{t}</div>
-                <div className="text-slate-600">{d}</div>
-              </div>
+      {/* Features */}
+      <section>
+        <div className="max-w-2xl">
+          <p className="eyebrow">Features</p>
+          <h2 className="mt-2 text-3xl font-semibold">From a long lecture to exam-ready, in one place</h2>
+          <p className="mt-3 text-slate-600">Built on methods with strong evidence behind them: retrieval practice with feedback, spaced repetition and interleaved practice.</p>
+        </div>
+        <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="bg-surface p-6">
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-700">
+                <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </span>
+              <h3 className="mt-4 font-medium">{f.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{f.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="grid gap-10 lg:grid-cols-[1fr_2fr]">
+        <div>
+          <p className="eyebrow">How it works</p>
+          <h2 className="mt-2 text-3xl font-semibold">Three steps per lecture</h2>
+          <p className="mt-3 text-slate-600">Chapters come from the video’s own captions. Nothing is downloaded: videos play in YouTube’s official player.</p>
+        </div>
+        <ol className="grid gap-4 sm:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="card">
+              <span className="font-mono text-sm text-slate-400">0{i + 1}</span>
+              <h3 className="mt-3 font-medium">{s.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{s.text}</p>
             </li>
           ))}
         </ol>
+      </section>
+
+      {/* Exam cards */}
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">Exam preparation</p>
+            <h2 className="mt-2 text-3xl font-semibold">Choose your exam</h2>
+          </div>
+          <Link href="/exams" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+            View all exams <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {EXAMS.map((e) => (
+            <Link key={e.id} href={`/exams/${e.id}`} className="group card flex flex-col p-4 transition-colors hover:border-slate-300">
+              <span className="font-medium text-slate-900">{e.name}</span>
+              <span className="mt-1 line-clamp-2 text-xs text-slate-500">{e.fullName}</span>
+              <span className="mt-4 flex items-center justify-between text-xs text-slate-500">
+                {examTopicIds(e).length} topics
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className="rounded-2xl bg-ink px-6 py-14 text-center sm:px-12">
+        <h2 className="text-3xl font-semibold text-on-ink">Start with your next lecture</h2>
+        <p className="mx-auto mt-3 max-w-md text-on-ink/70">Paste any YouTube link and get chapters, notes and a quiz in under a minute.</p>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Link href="/video" className="btn bg-on-ink px-5 text-ink hover:opacity-90">
+            Break down a lecture <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link href="/today" className="btn border border-on-ink/20 px-5 text-on-ink hover:bg-on-ink/10">
+            Plan my preparation
+          </Link>
+        </div>
       </section>
     </div>
   );

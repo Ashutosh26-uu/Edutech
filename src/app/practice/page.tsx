@@ -74,7 +74,7 @@ function PracticeView() {
   if (!topicIds.length) {
     return (
       <div className="card text-sm">
-        Nothing to practise. <Link href="/exams" className="font-semibold text-brand-700">Choose an exam</Link> first.
+        Nothing to practise. <Link href="/exams" className="font-medium text-brand-700">Choose an exam</Link> first.
       </div>
     );
   }
@@ -89,7 +89,7 @@ function PracticeView() {
             ← {exam.name} syllabus
           </Link>
         )}
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">{title}</h1>
         <p className="text-sm text-slate-600">
           {isMock
             ? `${MOCK_SIZE} questions · ${MOCK_SIZE} minutes · answers revealed after you submit${exam?.negativeMarking ? ` · −${+exam.negativeMarking.toFixed(2)} per wrong answer` : ""}`

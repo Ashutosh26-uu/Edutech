@@ -24,9 +24,9 @@ export default function ProgressPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My progress</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">My progress</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-semibold text-brand-700">{exam.name}</Link></> : "Pick an exam to get started."} · Saved in this browser only.
+            {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-medium text-brand-700">{exam.name}</Link></> : "Pick an exam to get started."} · Saved in this browser only.
           </p>
         </div>
         <button
@@ -51,7 +51,7 @@ export default function ProgressPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="card">
-          <h2 className="font-bold text-slate-900">Focus on these topics</h2>
+          <h2 className="font-semibold text-slate-900">Focus on these topics</h2>
           {weak.length ? (
             <ul className="mt-3 divide-y divide-slate-100">
               {weak.map((t) => (
@@ -77,7 +77,7 @@ export default function ProgressPage() {
         </section>
 
         <section className="card">
-          <h2 className="font-bold text-slate-900">Mock test history</h2>
+          <h2 className="font-semibold text-slate-900">Mock test history</h2>
           {data.mocks.length ? (
             <ul className="mt-3 divide-y divide-slate-100 text-sm">
               {data.mocks.slice(0, 8).map((m) => (
@@ -97,7 +97,7 @@ export default function ProgressPage() {
         </section>
 
         <section className="card lg:col-span-2">
-          <h2 className="font-bold text-slate-900">Recently studied videos</h2>
+          <h2 className="font-semibold text-slate-900">Recently studied videos</h2>
           {data.videos.length ? (
             <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.videos.map((v) => (
@@ -115,7 +115,7 @@ export default function ProgressPage() {
             </ul>
           ) : (
             <p className="mt-2 text-sm text-slate-500">
-              No videos yet. <Link href="/video" className="font-semibold text-brand-700">Break down your first lecture</Link>.
+              No videos yet. <Link href="/video" className="font-medium text-brand-700">Break down your first lecture</Link>.
             </p>
           )}
         </section>

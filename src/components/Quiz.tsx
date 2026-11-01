@@ -1,5 +1,6 @@
 "use client";
 
+import { Play, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
 import type { MCQ } from "@/lib/types";
@@ -75,7 +76,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
         </span>
         {mode === "mock" && timeLimitSec ? (
-          <span className={`chip text-sm ${left < 60 ? "bg-red-100 text-red-700" : "bg-brand-50 text-brand-700"}`}>⏱ {formatTime(left)}</span>
+          <span className={`chip text-sm ${left < 60 ? "bg-red-100 text-red-700" : "bg-brand-50 text-brand-700"}`}><Timer className="h-3.5 w-3.5" /> <span className="font-mono tabular-nums">{formatTime(left)}</span></span>
         ) : null}
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -92,7 +93,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
           else if (picked) cls = "border-brand-500 bg-brand-50";
           return (
             <button key={i} onClick={() => choose(i)} className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
-              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-bold text-slate-600">{LETTERS[i]}</span>
+              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600">{LETTERS[i]}</span>
               <span>{opt}</span>
             </button>
           );
@@ -104,8 +105,8 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
           <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${q.options[q.answer]}.`}</p>
           <p className="mt-1">{q.explanation}</p>
           {q.timestamp !== undefined && onTimestamp && (
-            <button className="mt-2 font-semibold text-brand-700 underline" onClick={() => onTimestamp(q.timestamp!)}>
-              ▶ Watch this part ({formatTime(q.timestamp)})
+            <button className="mt-2 font-medium text-brand-700 underline" onClick={() => onTimestamp(q.timestamp!)}>
+              <Play className="mr-1 inline h-3 w-3" />Watch this part ({formatTime(q.timestamp)})
             </button>
           )}
         </div>
@@ -216,8 +217,8 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
             </p>
             <p className="mt-1 text-slate-600">{r.question.explanation}</p>
             {r.question.timestamp !== undefined && onTimestamp && (
-              <button className="mt-1 font-semibold text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
-                ▶ {formatTime(r.question.timestamp)}
+              <button className="mt-1 font-medium text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
+                <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}
               </button>
             )}
           </div>
@@ -238,7 +239,7 @@ export function Stat({ label, value, tone }: { label: string; value: React.React
   return (
     <div className={`rounded-xl p-3 ${TONES[tone]}`}>
       <div className="text-xs font-medium opacity-80">{label}</div>
-      <div className="text-xl font-bold">{value}</div>
+      <div className="text-xl font-semibold">{value}</div>
     </div>
   );
 }

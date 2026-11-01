@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EXAMS, EXAM_BY_ID } from "@/data/exams";
@@ -21,14 +22,14 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
           <Link href="/exams" className="text-sm text-brand-700">
             ← All exams
           </Link>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">{exam.name}</h1>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-900">{exam.name}</h1>
           <p className="text-sm text-slate-600">
             {exam.fullName} · Negative marking: {exam.negativeMarking ? `−${+exam.negativeMarking.toFixed(2)} per wrong answer` : "none"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
-            🧠 Smart practice
+            <Sparkles className="h-4 w-4" /> Smart practice
           </Link>
           <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
             Take a full mock test
@@ -36,12 +37,12 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid items-start gap-5 lg:grid-cols-2">
         {exam.subjects.map((s) => (
           <section key={s.name} className="card">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="font-bold text-slate-900">{s.name}</h2>
-              <Link href={`/practice?exam=${exam.id}&topics=${s.topicIds.join(",")}`} className="text-sm font-semibold text-brand-700">
+              <h2 className="font-semibold text-slate-900">{s.name}</h2>
+              <Link href={`/practice?exam=${exam.id}&topics=${s.topicIds.join(",")}`} className="text-sm font-medium text-brand-700">
                 Practise subject →
               </Link>
             </div>

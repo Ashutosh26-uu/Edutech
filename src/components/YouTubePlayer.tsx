@@ -84,5 +84,5 @@ export const YouTubePlayer = forwardRef<PlayerHandle, { videoId: string; start?:
     return () => clearInterval(t);
   }, [onTime]);
 
-  return <div ref={host} className="aspect-video w-full overflow-hidden rounded-2xl bg-black [&>iframe]:h-full [&>iframe]:w-full" />;
+  return <div ref={host} className="aspect-video w-full overflow-hidden rounded-xl bg-black [&>iframe]:h-full [&>iframe]:w-full" />;
 });
