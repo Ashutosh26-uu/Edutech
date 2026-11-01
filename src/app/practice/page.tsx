@@ -1,18 +1,18 @@
 "use client";
 
-import { ArrowLeft, Timer } from "lucide-react";
+import { ArrowLeft, Loader2, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { TestPaywall } from "@/components/Paywall";
 import { Quiz, type AnswerResult } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
+import { testAccessFor, useAccount } from "@/lib/account";
 import { topicWeights } from "@/lib/adaptive";
 import { api } from "@/lib/api";
-import { consumeTestAccess, load, recordAnswers, recordMock, testAccess } from "@/lib/storage";
+import { consumeTestAccess, load, recordAnswers, recordMock } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
-import { useStore } from "@/lib/useStore";
 
 export default function PracticePage() {
   return (
@@ -28,8 +28,23 @@ const PRACTICE_SIZE = 10;
 
 type Phase = "start" | "paywall" | "running";
 
+interface ServerTest {
+  attemptId: string;
+  deadline: number;
+}
+
+async function postJson(path: string, body: object) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return { status: res.status, data: await res.json().catch(() => ({})) };
+}
+
 function PracticeView() {
   const params = useSearchParams();
+  const router = useRouter();
+  const path = usePathname();
+  const account = useAccount();
+  const server = account.mode === "server";
+
   const exam = EXAM_BY_ID.get(params.get("exam") ?? "");
   const isTimed = params.get("mock") === "1";
   const isSmart = params.get("smart") === "1";
@@ -39,13 +54,15 @@ function PracticeView() {
   const topicIds = isTopicTest ? requestedTopics : (isTimed || isSmart) && exam ? examTopicIds(exam) : requestedTopics;
   const size = isTopicTest ? TOPIC_TEST_SIZE : isTimed ? MOCK_SIZE : PRACTICE_SIZE;
 
-  const store = useStore();
   const [phase, setPhase] = useState<Phase>(isTimed ? "start" : "running");
   const [questions, setQuestions] = useState<MCQ[] | null>(null);
+  const [serverTest, setServerTest] = useState<ServerTest | null>(null);
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
   const key = topicIds.join(",");
 
+  // Untimed practice (and timed tests on the static build) load questions directly.
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
@@ -59,16 +76,38 @@ function PracticeView() {
   }, [key, size, isSmart]);
 
   useEffect(() => {
-    if (key && phase === "running") loadQuestions();
-  }, [key, loadQuestions, round, phase]);
+    if (key && phase === "running" && !(isTimed && server)) loadQuestions();
+  }, [key, loadQuestions, round, phase, isTimed, server]);
 
-  const start = () => {
-    if (!consumeTestAccess(exam?.id)) {
-      setPhase("paywall");
+  const loginFirst = () => router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
+
+  const start = async () => {
+    setError("");
+    if (!server) {
+      if (!consumeTestAccess(exam?.id)) return setPhase("paywall");
+      setPhase("running");
+      setRound((r) => r + 1);
       return;
     }
+    if (!account.user) return loginFirst();
+    setStarting(true);
+    const { status, data } = await postJson("/api/tests/start", { examId: exam?.id, topicIds: isTopicTest ? requestedTopics : undefined });
+    setStarting(false);
+    if (status === 401) return loginFirst();
+    if (status === 402) return setPhase("paywall");
+    if (status !== 201) return setError(data.error ?? "Could not start the test.");
+    // The server keeps the answers until submission; the browser only gets questions and options.
+    setQuestions(data.questions.map((q: MCQ) => ({ ...q, answer: -1, explanation: "" })));
+    setServerTest({ attemptId: data.attemptId, deadline: data.deadline });
     setPhase("running");
     setRound((r) => r + 1);
+    account.refresh();
+  };
+
+  const submitToServer = async (chosen: (number | null)[]): Promise<MCQ[]> => {
+    const { status, data } = await postJson("/api/tests/submit", { attemptId: serverTest!.attemptId, answers: chosen });
+    if (status !== 200) throw new Error(data.error ?? "Could not submit the test.");
+    return data.questions;
   };
 
   const onFinish = (results: AnswerResult[]) => {
@@ -76,19 +115,11 @@ function PracticeView() {
     if (isTimed && !isTopicTest && exam) {
       const correct = results.filter((r) => r.correct).length;
       const wrong = results.filter((r) => r.chosen !== null && !r.correct).length;
-      recordMock({
-        examId: exam.id,
-        score: correct - wrong * (exam.negativeMarking ?? 0),
-        maxScore: results.length,
-        correct,
-        wrong,
-        skipped: results.length - correct - wrong,
-        takenAt: Date.now(),
-      });
+      recordMock({ examId: exam.id, score: correct - wrong * (exam.negativeMarking ?? 0), maxScore: results.length, correct, wrong, skipped: results.length - correct - wrong, takenAt: Date.now() });
     }
   };
 
-  if (!topicIds.length) {
+  if (!topicIds.length || (isTimed && server && !exam)) {
     return (
       <div className="card text-sm">
         Nothing to practise here yet.{" "}
@@ -103,6 +134,8 @@ function PracticeView() {
   const topicName = requestedTopics.length === 1 ? TOPIC_BY_ID.get(requestedTopics[0])!.name : `${requestedTopics.length} topics`;
   const title = isTopicTest ? `${topicName}: timed test` : isTimed ? `${exam?.name} full mock test` : isSmart ? `${exam?.name} smart practice` : requestedTopics.length === 1 ? topicName : `Practice: ${topicName}`;
   const marking = exam?.negativeMarking ? ` · −${+exam.negativeMarking.toFixed(2)} per wrong answer` : "";
+  const count = questions?.length ?? size;
+  const timeLimit = serverTest ? Math.max(30, Math.round((serverTest.deadline - Date.now()) / 1000)) : count * 60;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -115,17 +148,29 @@ function PracticeView() {
         <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
         <p className="text-sm text-slate-600">
           {isTimed
-            ? `${size} questions · ${size} minutes · answers revealed after you submit${marking}`
+            ? `Up to ${size} questions · 1 minute per question · answers revealed after you submit${marking}`
             : isSmart
               ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall."
               : "Instant feedback with an explanation after every answer."}
         </p>
       </div>
       <div className="card">
-        {phase === "start" && store ? (
-          <StartScreen access={testAccess(exam?.id, store)} credits={store.credits} onStart={start} onPaywall={() => setPhase("paywall")} size={size} />
+        {phase === "start" ? (
+          !account.ready ? (
+            <p className="text-sm text-slate-500">Loading…</p>
+          ) : server && !account.user ? (
+            <div className="mx-auto max-w-sm space-y-4 py-6 text-center">
+              <h2 className="text-lg font-semibold">Log in to take timed tests</h2>
+              <p className="text-sm text-slate-600">Your first test for every exam is free. Your score and progress are saved to your account.</p>
+              <button className="btn-primary w-full py-2.5" onClick={loginFirst}>
+                Log in or sign up
+              </button>
+            </div>
+          ) : (
+            <StartScreen access={testAccessFor(account, exam?.id)} credits={account.credits} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+          )
         ) : phase === "paywall" ? (
-          <TestPaywall used={exam && store?.freeMockUsed[exam.id] ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
+          <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : !questions ? (
@@ -136,9 +181,14 @@ function PracticeView() {
             questions={questions}
             mode={isTimed ? "mock" : "practice"}
             negativeMarking={isTimed ? (exam?.negativeMarking ?? 0) : 0}
-            timeLimitSec={isTimed ? size * 60 : undefined}
+            timeLimitSec={isTimed ? timeLimit : undefined}
+            submit={isTimed && serverTest ? submitToServer : undefined}
             onFinish={onFinish}
-            onRestart={() => (isTimed ? setPhase("start") : setRound((r) => r + 1))}
+            onRestart={() => {
+              setServerTest(null);
+              if (isTimed) setPhase("start");
+              else setRound((r) => r + 1);
+            }}
           />
         )}
       </div>
@@ -146,7 +196,7 @@ function PracticeView() {
   );
 }
 
-function StartScreen({ access, credits, onStart, onPaywall, size }: { access: "free" | "credit" | "none"; credits: number; onStart: () => void; onPaywall: () => void; size: number }) {
+function StartScreen({ access, credits, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none"; credits: number; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
@@ -158,13 +208,13 @@ function StartScreen({ access, credits, onStart, onPaywall, size }: { access: "f
       <div>
         <h2 className="text-lg font-semibold">Ready when you are</h2>
         <p className="mt-1 text-sm text-slate-600">
-          {size} minutes start as soon as you begin.{" "}
-          {access === "free" ? "This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
+          The timer starts as soon as you begin. {access === "free" ? "This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
         </p>
       </div>
-      <button className="btn-primary w-full py-2.5" onClick={onStart}>
-        Start test
+      <button className="btn-primary w-full py-2.5" onClick={onStart} disabled={busy}>
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />} Start test
       </button>
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

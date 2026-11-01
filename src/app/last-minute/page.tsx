@@ -2,14 +2,16 @@
 
 import { BookOpenCheck, Check, Clock, Layers, Lock, Printer, Timer } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BuyButton, DemoNotice } from "@/components/Paywall";
 import { RapidCards } from "@/components/RapidCards";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { QUESTION_BANK, TOPIC_BY_ID } from "@/data/topics";
+import { hasPass, testAccessFor, useAccount } from "@/lib/account";
 import { PRODUCTS } from "@/lib/products";
-import { hasRevisionPass, setExam, testAccess } from "@/lib/storage";
+import { setExam } from "@/lib/storage";
+import type { MCQ } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
 
 export default function LastMinutePage() {
@@ -24,6 +26,7 @@ const PRACTISABLE = EXAMS.filter((e) => examTopicIds(e).length > 0);
 
 function LastMinute() {
   const store = useStore();
+  const account = useAccount();
   const param = useSearchParams().get("exam");
   const [picked, setPicked] = useState<string | null>(null);
   const examId = picked ?? param ?? store?.examId ?? "";
@@ -66,7 +69,7 @@ function LastMinute() {
         </div>
       </div>
 
-      {!store ? null : !exam || !topics.length ? (
+      {!store || !account.ready ? null : !exam || !topics.length ? (
         <div className="card text-sm text-slate-600">Choose your exam to see its revision pack and tests.</div>
       ) : (
         <>
@@ -75,8 +78,8 @@ function LastMinute() {
               icon={<BookOpenCheck className="h-5 w-5" />}
               productId="revision-7d"
               examId={exam.id}
-              active={hasRevisionPass(exam.id, store)}
-              activeText={`Unlocked until ${new Date(store.revisionPasses[exam.id] ?? 0).toLocaleDateString()}`}
+              active={hasPass(account, exam.id)}
+              activeText={`Unlocked until ${new Date(account.revisionPasses[exam.id] ?? 0).toLocaleDateString()}`}
             />
             <ProductCard
               icon={<Timer className="h-5 w-5" />}
@@ -85,14 +88,14 @@ function LastMinute() {
               active={false}
               extra={
                 <p className="text-sm text-slate-600">
-                  You have <b className="text-slate-900">{store.credits}</b> test credit{store.credits === 1 ? "" : "s"}
-                  {testAccess(exam.id, store) === "free" ? ", plus one free test for this exam" : ""}.
+                  You have <b className="text-slate-900">{account.credits}</b> test credit{account.credits === 1 ? "" : "s"}
+                  {testAccessFor(account, exam.id) === "free" ? ", plus one free test for this exam" : ""}.
                 </p>
               }
             />
           </div>
           <TestLauncher examId={exam.id} topics={topics} />
-          <RevisionSheet examId={exam.id} unlocked={hasRevisionPass(exam.id, store)} />
+          <RevisionSheet examId={exam.id} unlocked={hasPass(account, exam.id)} />
         </>
       )}
     </div>
@@ -171,13 +174,68 @@ function TestLauncher({ examId, topics }: { examId: string; topics: string[] }) 
   );
 }
 
+interface SheetTopic {
+  id: string;
+  name: string;
+  keyPoints: string[];
+  locked: boolean;
+  preview: boolean;
+}
+interface Sheet {
+  unlocked: boolean;
+  subjects: { name: string; topics: SheetTopic[] }[];
+  flashcards: MCQ[];
+  totals: { topics: number; keyPoints: number; flashcards: number };
+}
+
+/** Revision content: from the server (which withholds locked topics) or built locally on the static site. */
+function useRevision(examId: string, unlocked: boolean): Sheet | null {
+  const { mode, user } = useAccount();
+  const local = useMemo<Sheet>(() => {
+    const exam = EXAM_BY_ID.get(examId)!;
+    const all = examTopicIds(exam);
+    const cards = QUESTION_BANK.filter((q) => q.topicId && all.includes(q.topicId));
+    return {
+      unlocked,
+      subjects: exam.subjects
+        .filter((s) => s.topicIds.length)
+        .map((s) => ({
+          name: s.name,
+          topics: s.topicIds.map((id) => {
+            const t = TOPIC_BY_ID.get(id)!;
+            const preview = !unlocked && id === all[0];
+            return { id, name: t.name, keyPoints: t.keyPoints, locked: !unlocked && !preview, preview };
+          }),
+        })),
+      flashcards: unlocked ? cards : [],
+      totals: { topics: all.length, keyPoints: all.reduce((n, id) => n + (TOPIC_BY_ID.get(id)?.keyPoints.length ?? 0), 0), flashcards: cards.length },
+    };
+  }, [examId, unlocked]);
+  const [remote, setRemote] = useState<Sheet | null>(null);
+  useEffect(() => {
+    if (mode !== "server") return;
+    let live = true;
+    fetch(`/api/revision/${examId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => live && setRemote(d))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [mode, examId, unlocked, user?.id]);
+  return mode === "server" ? remote : local;
+}
+
 function RevisionSheet({ examId, unlocked }: { examId: string; unlocked: boolean }) {
   const exam = EXAM_BY_ID.get(examId)!;
   const [rapid, setRapid] = useState(false);
-  const subjects = exam.subjects.filter((s) => s.topicIds.length);
-  const allTopics = examTopicIds(exam);
-  const questions = useMemo(() => QUESTION_BANK.filter((q) => q.topicId && allTopics.includes(q.topicId)), [allTopics]);
-  const totalPoints = allTopics.reduce((n, t) => n + (TOPIC_BY_ID.get(t)?.keyPoints.length ?? 0), 0);
+  const sheet = useRevision(examId, unlocked);
+  if (!sheet) return <p className="text-sm text-slate-500">Loading revision sheet…</p>;
+  const subjects = sheet.subjects;
+  const questions = sheet.flashcards;
+  const allTopics = { length: sheet.totals.topics };
+  const totalPoints = sheet.totals.keyPoints;
+  unlocked = sheet.unlocked;
 
   if (rapid && unlocked) {
     return (
@@ -193,7 +251,7 @@ function RevisionSheet({ examId, unlocked }: { examId: string; unlocked: boolean
         <div>
           <h2 className="text-xl font-semibold">{exam.name} revision sheet</h2>
           <p className="text-sm text-slate-500">
-            {allTopics.length} topics · {totalPoints} key points · {questions.length} flashcards
+            {allTopics.length} topics · {totalPoints} key points · {sheet.totals.flashcards} flashcards
           </p>
         </div>
         {unlocked && (
@@ -209,14 +267,14 @@ function RevisionSheet({ examId, unlocked }: { examId: string; unlocked: boolean
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {subjects.map((s, si) => (
+        {subjects.map((s) => (
           <div key={s.name} className="card break-inside-avoid">
             <h3 className="text-sm font-semibold">{s.name}</h3>
             <div className="mt-3 space-y-4">
-              {s.topicIds.map((tid, ti) => {
-                const t = TOPIC_BY_ID.get(tid)!;
-                const free = si === 0 && ti === 0; // first topic is a free preview
-                const open = unlocked || free;
+              {s.topics.map((t) => {
+                const tid = t.id;
+                const free = t.preview;
+                const open = !t.locked;
                 return (
                   <div key={tid}>
                     <div className="flex items-center justify-between gap-2">
@@ -235,11 +293,15 @@ function RevisionSheet({ examId, unlocked }: { examId: string; unlocked: boolean
                       </ul>
                     ) : (
                       <div aria-hidden className="mt-1.5 select-none space-y-1.5 blur-[3px]">
-                        {t.keyPoints.slice(0, 2).map((k) => (
-                          <p key={k} className="text-sm text-slate-400">
-                            {k}
-                          </p>
-                        ))}
+                        {(t.keyPoints.length ? t.keyPoints.slice(0, 2) : ["", ""]).map((k, i) =>
+                          k ? (
+                            <p key={i} className="text-sm text-slate-400">
+                              {k}
+                            </p>
+                          ) : (
+                            <div key={i} className={`h-3 rounded bg-slate-200 ${i ? "w-2/3" : "w-full"}`} />
+                          ),
+                        )}
                       </div>
                     )}
                   </div>

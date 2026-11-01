@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { DemoNotice } from "@/components/Paywall";
 import { EXAM_BY_ID } from "@/data/exams";
+import { useAccount } from "@/lib/account";
 import { FREE_PERKS, PRODUCTS } from "@/lib/products";
 import { useStore } from "@/lib/useStore";
 
@@ -16,6 +17,7 @@ const FAQ = [
 
 export default function PricingPage() {
   const store = useStore();
+  const account = useAccount();
   return (
     <div className="space-y-14">
       <div className="mx-auto max-w-2xl text-center">
@@ -53,7 +55,13 @@ export default function PricingPage() {
         ))}
       </div>
 
-      {store && store.purchases.length > 0 && (
+      {account.mode === "server" && account.user && (
+        <p className="text-center text-sm text-slate-600">
+          Signed in as {account.user.email} · Test credits: <b className="text-slate-900">{account.credits}</b>
+        </p>
+      )}
+
+      {account.mode === "local" && store && store.purchases.length > 0 && (
         <section className="card mx-auto max-w-2xl">
           <h2 className="font-semibold">Your purchases</h2>
           <ul className="mt-3 divide-y divide-slate-100 text-sm">
