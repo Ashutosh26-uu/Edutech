@@ -2,7 +2,7 @@ import { ArrowRight, CalendarCheck, Check, Layers, ListVideo, Mic, NotebookPen, 
 import Link from "next/link";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
-import { EXAMS, examTopicIds } from "@/data/exams";
+import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
 
 const FEATURES = [
   { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
@@ -54,9 +54,9 @@ export default function Home() {
 
       {/* Exams */}
       <section className="border-y border-slate-200 py-8">
-        <p className="text-center text-sm text-slate-500">Syllabus, practice questions and mock tests for</p>
+        <p className="text-center text-sm text-slate-500">Syllabus, practice questions and mock tests for {EXAMS.length} exams, including</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-          {EXAMS.map((e) => (
+          {FEATURED_EXAMS.map((e) => (
             <Link key={e.id} href={`/exams/${e.id}`} className="text-lg font-semibold tracking-tight text-slate-400 transition-colors hover:text-slate-900">
               {e.name}
             </Link>
@@ -110,16 +110,16 @@ export default function Home() {
             <h2 className="mt-2 text-3xl font-semibold">Choose your exam</h2>
           </div>
           <Link href="/exams" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-            View all exams <ArrowRight className="h-4 w-4" />
+            All {EXAMS.length} exams <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {EXAMS.map((e) => (
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURED_EXAMS.map((e) => (
             <Link key={e.id} href={`/exams/${e.id}`} className="group card flex flex-col p-4 transition-colors hover:border-slate-300">
               <span className="font-medium text-slate-900">{e.name}</span>
               <span className="mt-1 line-clamp-2 text-xs text-slate-500">{e.fullName}</span>
               <span className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                {examTopicIds(e).length} topics
+                {e.category} · {examTopicIds(e).length} topics
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </Link>

@@ -27,6 +27,16 @@ Turn long YouTube lectures into short chapters, crisp notes and quizzes, and pre
 
 Videos without captions can still be analysed: paste the transcript from YouTube's **Show transcript** panel.
 
+## Exams covered
+
+91 Indian government and competitive exams in 13 categories: SSC, banking, insurance, railways, UPSC, defence, 22 state PSCs, police, teaching (CTET, UGC NET, state TETs, KVS, DSSSB), engineering and medical entrance (JEE, NEET, GATE), law and management (CLAT, CAT), CUET and other central exams. Each exam lists its conducting body, syllabus areas, negative marking (only where it is fixed; otherwise the page points to the official notification) and official website. Subjects linked to the question bank have topic practice, smart practice and mock tests.
+
+## Live site (GitHub Pages)
+
+Every push to `main` builds a static version and publishes it to GitHub Pages via `.github/workflows/deploy-pages.yml`: **https://ashutosh26-uu.github.io/Edutech/**
+
+GitHub Pages has no server, so the static build (`NEXT_PUBLIC_STATIC=1`) runs the API logic in the browser (`src/lib/api.ts` → `src/lib/handlers.ts`). Everything works the same except automatic YouTube caption fetching, which browsers can't do directly; on the live site, paste the video's transcript instead. For the full version, run it locally or deploy it to a Node host such as Vercel.
+
 ## Running locally
 
 Requires Node.js 20 or later.

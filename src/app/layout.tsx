@@ -6,7 +6,7 @@ import { Logo } from "@/components/Logo";
 import { HeaderStats, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
-import { EXAMS } from "@/data/exams";
+import { EXAMS, FEATURED_EXAMS } from "@/data/exams";
 import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -30,7 +30,7 @@ const FOOTER = [
       ["Learn", "/learn"],
     ],
   },
-  { title: "Exams", links: EXAMS.map((e) => [e.name, `/exams/${e.id}`]) },
+  { title: "Exams", links: [...FEATURED_EXAMS.slice(0, 6).map((e) => [e.name, `/exams/${e.id}`]), [`All ${EXAMS.length} exams`, "/exams"]] },
   {
     title: "Your account",
     links: [

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
 import { MicButton, SpeakButton } from "@/components/Speak";
 import { TOPICS } from "@/data/topics";
+import { api } from "@/lib/api";
 import { cardsForTopic } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
@@ -49,8 +50,7 @@ function TopicSearch({ initial }: { initial: string }) {
   const search = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
-    const res = await fetch("/api/topic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: q }) });
-    setData(await res.json());
+    setData((await api("topic", { query: q })).json);
     setLoading(false);
   }, []);
 
@@ -196,8 +196,7 @@ function QuestionSolver() {
     e.preventDefault();
     if (!question.trim()) return;
     setLoading(true);
-    const res = await fetch("/api/solve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
-    setData(await res.json());
+    setData((await api("solve", { question })).json);
     setLoading(false);
   };
 

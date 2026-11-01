@@ -7,6 +7,7 @@ import { Quiz, type AnswerResult } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { topicWeights } from "@/lib/adaptive";
+import { api } from "@/lib/api";
 import { load, recordAnswers, recordMock } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 
@@ -36,17 +37,12 @@ function PracticeView() {
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
-    const res = await fetch("/api/practice", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        topicIds: key.split(","),
-        count: isMock ? MOCK_SIZE : PRACTICE_SIZE,
-        weights: isSmart ? topicWeights(key.split(","), load().topics) : undefined,
-      }),
+    const { ok, json } = await api("practice", {
+      topicIds: key.split(","),
+      count: isMock ? MOCK_SIZE : PRACTICE_SIZE,
+      weights: isSmart ? topicWeights(key.split(","), load().topics) : undefined,
     });
-    const json = await res.json();
-    if (!res.ok) setError(json.error);
+    if (!ok) setError(json.error);
     else setQuestions(json.questions);
   }, [key, isMock, isSmart]);
 
@@ -61,7 +57,7 @@ function PracticeView() {
       const wrong = results.filter((r) => r.chosen !== null && !r.correct).length;
       recordMock({
         examId: exam.id,
-        score: correct - wrong * exam.negativeMarking,
+        score: correct - wrong * (exam.negativeMarking ?? 0),
         maxScore: results.length,
         correct,
         wrong,
@@ -108,7 +104,7 @@ function PracticeView() {
             key={round}
             questions={questions}
             mode={isMock ? "mock" : "practice"}
-            negativeMarking={isMock ? exam?.negativeMarking : 0}
+            negativeMarking={isMock ? (exam?.negativeMarking ?? 0) : 0}
             timeLimitSec={isMock ? MOCK_SIZE * 60 : undefined}
             onFinish={onFinish}
             onRestart={() => setRound((r) => r + 1)}
