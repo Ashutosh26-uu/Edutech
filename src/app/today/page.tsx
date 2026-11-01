@@ -3,7 +3,7 @@
 import { Check, Flame } from "lucide-react";
 import Link from "next/link";
 import { Heatmap } from "@/components/Heatmap";
-import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
+import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
 import { dayKey, dueCards, level, setDailyGoal, setExam, setExamDate, streak, today } from "@/lib/storage";
@@ -188,10 +188,14 @@ function ExamPicker({ examId, examDate }: { examId?: string; examDate?: string }
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <select className="input w-auto py-2" value={examId ?? ""} onChange={(e) => e.target.value && setExam(e.target.value)} aria-label="Your exam">
         <option value="">Choose your exam…</option>
-        {EXAMS.map((e) => (
-          <option key={e.id} value={e.id}>
-            {e.name}
-          </option>
+        {CATEGORIES.map((c) => (
+          <optgroup key={c} label={c}>
+            {EXAMS.filter((e) => e.category === c).map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
       <label className="flex items-center gap-2 text-slate-600">

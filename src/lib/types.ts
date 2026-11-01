@@ -46,12 +46,34 @@ export interface VideoBreakdown {
   provider: string;
 }
 
+export type ExamCategory =
+  | "SSC"
+  | "Banking"
+  | "Insurance"
+  | "Railways"
+  | "UPSC"
+  | "Defence"
+  | "State PSC"
+  | "Police"
+  | "Teaching"
+  | "Engineering & Medical"
+  | "Law & Management"
+  | "University & Research"
+  | "Other Central";
+
 export interface Exam {
   id: string;
   name: string;
   fullName: string;
   conductedBy: string;
-  negativeMarking: number; // marks deducted per wrong answer (correct = 1)
+  category: ExamCategory;
+  level: "National" | "State";
+  /** Fraction of a question's marks deducted per wrong answer; null when it varies or should be checked in the notification. */
+  negativeMarking: number | null;
+  website?: string;
+  /** Shown on the home page and in the footer */
+  featured?: boolean;
+  /** Subjects with no topicIds have no practice questions yet */
   subjects: { name: string; topicIds: string[] }[];
 }
 

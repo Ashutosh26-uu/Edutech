@@ -7,7 +7,7 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.includes("/api/")) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {
@@ -17,6 +17,6 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match("/today"))),
+      .catch(() => caches.match(e.request).then((r) => r || caches.match(new URL("today/", self.registration.scope).href))),
   );
 });

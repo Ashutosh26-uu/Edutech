@@ -7,6 +7,7 @@ import { Quiz } from "@/components/Quiz";
 import { SpeakButton } from "@/components/Speak";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { YouTubePlayer, type PlayerHandle } from "@/components/YouTubePlayer";
+import { api } from "@/lib/api";
 import { cardsForVideo } from "@/lib/cards";
 import { downloadText, notesMarkdown, printNotes } from "@/lib/exportNotes";
 import { addCards, addVideoNote, deleteVideoNote, saveVideo } from "@/lib/storage";
@@ -46,13 +47,8 @@ function VideoView() {
       if (!videoId) return;
       setState({ status: "loading" });
       try {
-        const res = await fetch("/api/video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: videoId, transcript }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
+        const { ok, json } = await api("video", { url: videoId, transcript });
+        if (!ok) {
           setState({ status: "error", message: json.error, needsTranscript: !!json.needsTranscript });
           return;
         }

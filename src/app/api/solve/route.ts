@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getProvider } from "@/lib/ai";
+import { handleSolve } from "@/lib/handlers";
 
 export async function POST(req: Request) {
-  const { question } = (await req.json().catch(() => ({}))) as { question?: string };
-  if (!question?.trim()) return NextResponse.json({ error: "Type or paste a question." }, { status: 400 });
-  return NextResponse.json(await getProvider().solveQuestion(question));
+  const body = await req.json().catch(() => ({}));
+  const { status, json } = await handleSolve(body);
+  return NextResponse.json(json, { status });
 }
