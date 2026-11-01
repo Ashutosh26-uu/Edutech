@@ -63,6 +63,24 @@ interface Store {
   videoNotes: Record<string, VideoNote[]>;
   /** What was done each day: questions answered, cards reviewed, videos, mock tests */
   counts: Record<string, DayCounts>;
+  /** Paid test credits (one credit = one full mock or timed topic test) */
+  credits: number;
+  /** Full-syllabus revision access per exam: examId -> expiry (epoch ms) */
+  revisionPasses: Record<string, number>;
+  /** Exams whose one free mock test has been used */
+  freeMockUsed: Record<string, boolean>;
+  purchases: Purchase[];
+}
+
+export interface Purchase {
+  id: string;
+  productId: string;
+  examId?: string;
+  amount: number; // rupees
+  at: number;
+  /** "demo" purchases grant access without taking payment */
+  mode: "demo" | "live";
+  paymentId?: string;
 }
 
 export interface DayCounts {
@@ -73,7 +91,7 @@ export interface DayCounts {
 }
 
 const KEY = "studyclip:v1";
-const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {} };
+const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [] };
 export const UPDATE_EVENT = "studyclip:update";
 
 export const XP = { correct: 10, wrong: 2, review: 5, video: 20, mock: 50 } as const;
@@ -229,6 +247,40 @@ export function level(xp: number): { level: number; into: number; span: number }
   const lvl = Math.floor(Math.sqrt(xp / 50));
   const base = 50 * lvl * lvl;
   return { level: lvl + 1, into: xp - base, span: 50 * (lvl + 1) * (lvl + 1) - base };
+}
+
+// ---------- Purchases and access ----------
+
+export function recordPurchase(p: Purchase, grant: { credits?: number; revisionExamId?: string; revisionDays?: number }) {
+  const s = load();
+  s.purchases = [p, ...s.purchases].slice(0, 100);
+  if (grant.credits) s.credits += grant.credits;
+  if (grant.revisionExamId && grant.revisionDays) {
+    const from = Math.max(Date.now(), s.revisionPasses[grant.revisionExamId] ?? 0);
+    s.revisionPasses[grant.revisionExamId] = from + grant.revisionDays * 86_400_000;
+  }
+  save(s);
+}
+
+export function hasRevisionPass(examId: string, s = load()): boolean {
+  return (s.revisionPasses[examId] ?? 0) > Date.now();
+}
+
+/** Whether a timed test can start, and what it will use: the exam's free mock or a paid credit. */
+export function testAccess(examId: string | undefined, s = load()): "free" | "credit" | "none" {
+  if (examId && !s.freeMockUsed[examId]) return "free";
+  return s.credits > 0 ? "credit" : "none";
+}
+
+/** Uses the free mock or one credit. Returns false if neither is available. */
+export function consumeTestAccess(examId: string | undefined): boolean {
+  const s = load();
+  const access = testAccess(examId, s);
+  if (access === "none") return false;
+  if (access === "free") s.freeMockUsed[examId!] = true;
+  else s.credits -= 1;
+  save(s);
+  return true;
 }
 
 export function clearAll() {

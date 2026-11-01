@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/today", label: "Today" },
   { href: "/video", label: "Videos" },
   { href: "/exams", label: "Exams" },
+  { href: "/last-minute", label: "Exam tomorrow" },
   { href: "/review", label: "Flashcards" },
   { href: "/learn", label: "Learn" },
   { href: "/progress", label: "Progress" },

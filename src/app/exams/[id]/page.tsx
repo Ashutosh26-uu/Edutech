@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, ExternalLink, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -46,6 +46,9 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
           </div>
           {hasPractice && (
             <div className="flex flex-wrap gap-2">
+              <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
+                <Clock className="h-4 w-4" /> Exam tomorrow?
+              </Link>
               <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
                 <Sparkles className="h-4 w-4" /> Smart practice
               </Link>
