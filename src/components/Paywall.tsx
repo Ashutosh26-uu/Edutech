@@ -1,26 +1,44 @@
 "use client";
 
 import { Check, Loader2, Lock } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { buy, PAYMENTS_LIVE } from "@/lib/checkout";
+import { useAccount } from "@/lib/account";
+import { buy } from "@/lib/checkout";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
 export function DemoNotice({ className = "" }: { className?: string }) {
-  if (PAYMENTS_LIVE) return null;
-  return <p className={`text-xs text-slate-500 ${className}`}>Demo mode: payments aren’t switched on yet, so purchases are free and no money is taken.</p>;
+  const { payments, mode } = useAccount();
+  if (payments === "live") return null;
+  const text =
+    payments === "off"
+      ? "Payments aren’t switched on yet."
+      : mode === "local"
+        ? "Demo mode: payments aren’t switched on on this site, so purchases are free and no money is taken."
+        : "Demo mode: purchases are free and no money is taken.";
+  return <p className={`text-xs text-slate-500 ${className}`}>{text}</p>;
 }
 
 export function BuyButton({ productId, examId, onDone, className = "btn-primary", label }: { productId: ProductId; examId?: string; onDone?: () => void; className?: string; label?: string }) {
+  const account = useAccount();
+  const router = useRouter();
+  const path = usePathname();
   const p = PRODUCTS[productId];
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [error, setError] = useState("");
 
   const click = async () => {
+    if (account.mode === "server" && !account.user) {
+      router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
+      return;
+    }
     setState("busy");
-    const r = await buy(productId, examId);
+    const r = await buy(account, productId, examId);
     if (r.ok) {
       setState("done");
       onDone?.();
+    } else if ("needsLogin" in r && r.needsLogin) {
+      router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
     } else {
       setState("error");
       setError(r.error);
@@ -29,9 +47,9 @@ export function BuyButton({ productId, examId, onDone, className = "btn-primary"
 
   return (
     <div className="space-y-1.5">
-      <button className={className} disabled={state === "busy"} onClick={click}>
+      <button className={className} disabled={state === "busy" || account.payments === "off"} onClick={click}>
         {state === "busy" ? <Loader2 className="h-4 w-4 animate-spin" /> : state === "done" ? <Check className="h-4 w-4" /> : null}
-        {state === "done" ? "Unlocked" : (label ?? `Get it for ₹${p.price}`)}
+        {state === "done" ? "Unlocked" : account.mode === "server" && !account.user ? `Log in to buy · ₹${p.price}` : (label ?? `Get it for ₹${p.price}`)}
       </button>
       {state === "error" && <p className="text-xs text-red-600">{error}</p>}
     </div>
@@ -48,7 +66,9 @@ export function TestPaywall({ onUnlocked, used }: { onUnlocked: () => void; used
       </span>
       <div>
         <h2 className="text-xl font-semibold">Paper coming up? Take 3 more tests for ₹{p.price}</h2>
-        <p className="mt-1.5 text-sm text-slate-600">{used === "free-used" ? "You’ve used the free mock test for this exam." : "You’re out of test credits."} {p.tagline}</p>
+        <p className="mt-1.5 text-sm text-slate-600">
+          {used === "free-used" ? "You’ve used the free test for this exam." : "You’re out of test credits."} {p.tagline}
+        </p>
       </div>
       <ul className="space-y-1.5 text-left text-sm text-slate-600">
         {p.perks.map((perk) => (

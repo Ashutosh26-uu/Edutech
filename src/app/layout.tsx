@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { AccountMenu } from "@/components/AccountMenu";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { EXAMS, FEATURED_EXAMS } from "@/data/exams";
+import { AccountProvider } from "@/lib/account";
 import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -50,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="flex min-h-screen flex-col">
+        <AccountProvider>
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/80 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
             <Logo />
@@ -60,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <PaletteButton />
               <HeaderStats />
               <ThemeToggle />
+              <AccountMenu />
             </div>
           </div>
         </header>
@@ -96,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </footer>
         <CommandPalette />
         <RegisterSW />
+        </AccountProvider>
       </body>
     </html>
   );

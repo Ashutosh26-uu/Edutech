@@ -21,24 +21,47 @@ interface Props {
   onFinish?: (results: AnswerResult[]) => void;
   onTimestamp?: (secs: number) => void;
   onRestart?: () => void;
+  /**
+   * Server-scored tests: questions arrive without answers, and this sends the chosen options to
+   * the server and resolves with the full questions (with answers) for the review.
+   */
+  submit?: (chosen: (number | null)[]) => Promise<MCQ[]>;
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 
-export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFinish, onTimestamp, onRestart }: Props) {
+export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFinish, onTimestamp, onRestart, submit }: Props) {
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
   const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
   const [done, setDone] = useState(false);
   const [left, setLeft] = useState(timeLimitSec ?? 0);
+  const [scored, setScored] = useState<MCQ[] | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const results: AnswerResult[] = useMemo(
-    () => questions.map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer })),
-    [questions, chosen],
+    () => (scored ?? questions).map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer })),
+    [questions, scored, chosen],
   );
 
-  const finish = () => {
-    if (done) return;
+  const finish = async () => {
+    if (done || submitting) return;
+    if (submit) {
+      setSubmitting(true);
+      setSubmitError("");
+      try {
+        const full = await submit(chosen);
+        setScored(full);
+        setDone(true);
+        onFinish?.(full.map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer })));
+      } catch (e) {
+        setSubmitError((e as Error).message || "Could not submit. Check your connection and try again.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     setDone(true);
     onFinish?.(results);
   };
@@ -141,12 +164,13 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
               Next →
             </button>
           ) : (
-            <button className="btn-primary" disabled={mode === "practice" && !isRevealed} onClick={finish}>
-              {mode === "mock" ? `Submit test (${answeredCount}/${questions.length} answered)` : "See results"}
+            <button className="btn-primary" disabled={(mode === "practice" && !isRevealed) || submitting} onClick={finish}>
+              {submitting ? "Submitting…" : mode === "mock" ? `Submit test (${answeredCount}/${questions.length} answered)` : "See results"}
             </button>
           )}
         </div>
       </div>
+      {submitError && <p className="text-right text-sm text-red-600">{submitError}</p>}
     </div>
   );
 }

@@ -37,13 +37,30 @@ Every push to `main` builds a static version and publishes it to GitHub Pages vi
 
 GitHub Pages has no server, so the static build (`NEXT_PUBLIC_STATIC=1`) runs the API logic in the browser (`src/lib/api.ts` → `src/lib/handlers.ts`). Everything works the same except automatic YouTube caption fetching, which browsers can't do directly; on the live site, paste the video's transcript instead. For the full version, run it locally or deploy it to a Node host such as Vercel.
 
+## Backend
+
+The full version has accounts, server-side tests and payments (see **DEPLOYMENT.md**):
+
+- **Postgres** with Drizzle ORM and versioned SQL migrations (`drizzle/`).
+- **Auth:** email and password (scrypt), httpOnly session cookies; only token hashes are stored. Login and sign-up are rate-limited.
+- **Timed tests run on the server:** questions are sent without answers, credits and free tests are claimed atomically, and answers are scored server-side with the exam's negative marking.
+- **Revision packs:** locked topics are never sent to the browser without an active pass.
+- **Payments:** Razorpay orders priced on the server, signature verification, an idempotent webhook, and a demo mode for local testing.
+- **Resilience:** connection pooling, statement timeouts, load shedding (503 + Retry-After), and rate limiting shared via Upstash.
+- **Load-tested** with 1,000 simultaneous users (`scripts/load-test.mjs`); results are in DEPLOYMENT.md.
+
+The static GitHub Pages build (`NEXT_PUBLIC_STATIC=1`) excludes all of this and runs in browser-only demo mode.
+
 ## Running locally
 
 Requires Node.js 20 or later.
 
 ```bash
 npm install
-npm run dev
+cp .env.example .env.local      # then set PAYMENTS_DEMO=1 to try purchases locally
+npm run db:dev                  # terminal 1: starts a local Postgres on port 5433
+npm run db:migrate              # creates the tables
+npm run dev                     # terminal 2
 ```
 
 Then open http://localhost:3000.
