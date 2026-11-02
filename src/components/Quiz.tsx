@@ -3,7 +3,8 @@
 import { Play, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
-import type { MCQ } from "@/lib/types";
+import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
+import type { Difficulty, MCQ } from "@/lib/types";
 import { formatTime } from "@/lib/youtube";
 
 export interface AnswerResult {
@@ -29,6 +30,18 @@ interface Props {
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"];
+
+const DIFFICULTY_TONE: Record<Difficulty, string> = {
+  easy: "bg-emerald-50 text-emerald-700",
+  moderate: "bg-sky-50 text-sky-700",
+  hard: "bg-amber-50 text-amber-700",
+  "very-hard": "bg-red-50 text-red-700",
+};
+
+export function DifficultyChip({ difficulty }: { difficulty?: Difficulty }) {
+  if (!difficulty) return null;
+  return <span className={`chip ${DIFFICULTY_TONE[difficulty]}`}>{DIFFICULTY_LABEL[difficulty]}</span>;
+}
 
 export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFinish, onTimestamp, onRestart, submit }: Props) {
   const [idx, setIdx] = useState(0);
@@ -97,6 +110,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
         <span className="font-medium text-slate-600">
           Question {idx + 1} of {questions.length}
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
+          <span className="ml-2 inline-flex"><DifficultyChip difficulty={q.difficulty} /></span>
         </span>
         {mode === "mock" && timeLimitSec ? (
           <span className={`chip text-sm ${left < 60 ? "bg-red-100 text-red-700" : "bg-brand-50 text-brand-700"}`}><Timer className="h-3.5 w-3.5" /> <span className="font-mono tabular-nums">{formatTime(left)}</span></span>
@@ -183,7 +197,14 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
   const pct = Math.round((correct / results.length) * 100);
 
   const byTopic = new Map<string, { c: number; n: number }>();
+  const byTier = new Map<Difficulty, { c: number; n: number }>();
   for (const r of results) {
+    if (r.question.difficulty) {
+      const d = byTier.get(r.question.difficulty) ?? { c: 0, n: 0 };
+      d.n++;
+      if (r.correct) d.c++;
+      byTier.set(r.question.difficulty, d);
+    }
     if (!r.question.topicId) continue;
     const t = byTopic.get(r.question.topicId) ?? { c: 0, n: 0 };
     t.n++;
@@ -203,6 +224,25 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
         Accuracy <b>{pct}%</b>
         {negativeMarking > 0 && <> · Negative marking: −{+negativeMarking.toFixed(2)} per wrong answer</>}
       </p>
+
+      {byTier.size > 1 && (
+        <div className="card">
+          <h4 className="mb-3 font-semibold">By difficulty</h4>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {DIFFICULTIES.filter((d) => byTier.has(d)).map((d) => {
+              const t = byTier.get(d)!;
+              return (
+                <div key={d} className={`rounded-xl p-3 text-sm ${DIFFICULTY_TONE[d]}`}>
+                  <div className="text-xs font-medium opacity-80">{DIFFICULTY_LABEL[d]}</div>
+                  <div className="text-lg font-semibold">
+                    {t.c}/{t.n}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {byTopic.size > 1 && (
         <div className="card">
@@ -229,7 +269,7 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
         {results.map((r, i) => (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <p className="font-medium text-slate-900">
-              {i + 1}. {r.question.question}
+              {i + 1}. {r.question.question} <DifficultyChip difficulty={r.question.difficulty} />
             </p>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : r.question.options[r.chosen]}</b>

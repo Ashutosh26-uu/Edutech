@@ -12,7 +12,7 @@ const TOPIC_SIZE = 15;
 /** Late submissions within this window still count (slow networks, auto-submit at 0:00). */
 const GRACE_MS = 2 * 60_000;
 
-export type PublicQuestion = Pick<MCQ, "id" | "question" | "options" | "topicId">;
+export type PublicQuestion = Pick<MCQ, "id" | "question" | "options" | "topicId" | "difficulty">;
 
 export async function startTest(user: SessionUser, examId: string, requestedTopics: string[] = []) {
   const exam = EXAM_BY_ID.get(examId);
@@ -60,7 +60,7 @@ export async function startTest(user: SessionUser, examId: string, requestedTopi
       credits,
       deadline: deadlineAt.getTime(),
       negativeMarking: exam.negativeMarking ?? 0,
-      questions: questions.map(({ id, question, options, topicId }): PublicQuestion => ({ id, question, options, topicId })),
+      questions: questions.map(({ id, question, options, topicId, difficulty }): PublicQuestion => ({ id, question, options, topicId, difficulty })),
     };
   });
 }

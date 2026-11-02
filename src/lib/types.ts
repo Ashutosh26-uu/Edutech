@@ -15,6 +15,9 @@ export interface Chapter {
   importance: Importance;
 }
 
+/** Four tiers; every practice set mixes all of them. */
+export type Difficulty = "easy" | "moderate" | "hard" | "very-hard";
+
 export interface MCQ {
   id: string;
   question: string;
@@ -22,6 +25,8 @@ export interface MCQ {
   answer: number; // index into options
   explanation: string;
   topicId?: string;
+  /** Set on exam-practice questions; video quizzes have none. */
+  difficulty?: Difficulty;
   /** For video quizzes: where in the video the answer comes from. */
   timestamp?: number;
 }

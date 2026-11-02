@@ -148,10 +148,10 @@ function PracticeView() {
         <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
         <p className="text-sm text-slate-600">
           {isTimed
-            ? `Up to ${size} questions · 1 minute per question · answers revealed after you submit${marking}`
+            ? `Up to ${size} questions from easy to very hard · 1 minute per question · answers revealed after you submit${marking}`
             : isSmart
-              ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall."
-              : "Instant feedback with an explanation after every answer."}
+              ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall. Every set ramps from easy to very hard."
+              : `${size} questions, ramping from easy to very hard · instant feedback with an explanation after every answer.`}
         </p>
       </div>
       <div className="card">
