@@ -4,7 +4,7 @@ The GitHub Pages site is a static demo with no backend. The full version runs on
 
 | Piece | Service | Free tier |
 |---|---|---|
-| App and API | [Vercel](https://vercel.com) (connect the GitHub repo) | Hobby plan for testing; use Pro for a commercial site |
+| App and API | [Netlify](https://netlify.com) (current) or [Vercel](https://vercel.com) | Free tier for testing; use a paid plan for a commercial site |
 | Database | [Neon](https://neon.tech) or [Supabase](https://supabase.com) Postgres | Yes |
 | Shared rate limiting | [Upstash Redis](https://upstash.com) | Yes |
 | Payments | [Razorpay](https://razorpay.com) | Pay per transaction |
@@ -25,13 +25,18 @@ This repo is linked to the Neon project `quiet-salad-64911010` (branch `producti
    ```
    Run this again after any schema change. Migrations are SQL files in `drizzle/`.
 
-## 2. Vercel
+## 2. Hosting
 
-1. Import the GitHub repo in Vercel. `vercel.json` sets the framework (Next.js) and runs functions in `sin1` (Singapore), next to the Neon database.
-   Current deployment: https://studyclip-six.vercel.app (Vercel project `studyclip`).
-2. In Project → Settings → Environment Variables, add the variables from `.env.example`:
-   `DATABASE_URL`, `DB_POOL_MAX=3`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` (a new random value, not the local one), `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
-3. Deploy. Check `https://<your-app>/api/health` returns `{"ok":true,"db":"up"}`.
+Current deployment: **https://studyclip.netlify.app** (Netlify project `studyclip`, linked from this folder with `netlify link`). `netlify.toml` holds the build settings; Netlify's Next.js runtime turns the API routes into serverless functions. An older Vercel deployment (`vercel.json`, https://studyclip-six.vercel.app) still exists.
+
+1. Deploy from this folder (builds locally, then uploads):
+   ```bash
+   netlify deploy --prod --build
+   ```
+   Or connect the GitHub repo in the Netlify UI so every push to `main` deploys.
+2. Set the environment variables from `.env.example` (`netlify env:set KEY value --context production`, or Project configuration → Environment variables):
+   `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DB_POOL_MAX=3`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_AUTH_COOKIE_SECRET` (a new random value, not the local one), `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
+3. Check `https://<your-app>/api/health` returns `{"ok":true,"db":"up"}`. In Project configuration → Functions, set the region to Singapore (next to the Neon database) if it is not already.
 4. Trust the site's domain in Neon Auth, or sign-up and log-in fail with `INVALID_ORIGIN`:
    ```bash
    neon neon-auth domain add https://<your-domain>
@@ -47,7 +52,7 @@ This repo is linked to the Neon project `quiet-salad-64911010` (branch `producti
 
 ## How it handles load
 
-- **Stateless app servers.** Vercel adds instances as traffic grows. Sessions are managed by Neon Auth and cached in a signed cookie, so any instance can serve any user.
+- **Stateless app servers.** The host adds function instances as traffic grows. Sessions are managed by Neon Auth and cached in a signed cookie, so any instance can serve any user.
 - **Connection pooling.** Each instance keeps 1–3 connections; the provider's pooler multiplexes thousands of clients onto a few Postgres connections.
 - **No race conditions on money.** Credits are deducted with a single conditional `UPDATE … WHERE credits > 0`. Free tests are claimed with a primary-key insert. Payments are granted once per order (unique order and payment ids), whether by the browser or the webhook.
 - **Graceful overload.** Past `MAX_INFLIGHT` concurrent requests an instance answers `503` with `Retry-After` instead of slowing down for everyone. Database statements time out after 10 s.
