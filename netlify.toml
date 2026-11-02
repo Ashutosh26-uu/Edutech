@@ -1,0 +1,6 @@
+# Netlify builds the Next.js app with its Next.js runtime (auto-detected; API routes
+# become serverless functions). Set the env vars from .env.example in the Netlify UI
+# or with `netlify env:import`. Never set PAYMENTS_DEMO or NEXT_PUBLIC_STATIC here.
+[build]
+  command = "npm run build"
+  publish = ".next"

@@ -12,3 +12,4 @@ npm-debug.log*
 .claude/
 .pgdata/
 .neon
+.netlify
