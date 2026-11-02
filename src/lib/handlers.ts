@@ -1,5 +1,6 @@
 import { TOPIC_BY_ID } from "@/data/topics";
 import { getProvider } from "./ai";
+import { MIN_SET_SIZE } from "./difficulty";
 import type { VideoBreakdown } from "./types";
 import { fetchTranscript, parsePastedTranscript, parseVideoId, type VideoTranscript } from "./youtube";
 
@@ -53,7 +54,8 @@ export async function handlePractice(body: { topicIds?: string[]; count?: number
   const ids = (body.topicIds ?? []).filter((id) => TOPIC_BY_ID.has(id));
   if (!ids.length) return fail(400, "Pick at least one topic.");
   const weights = body.weights && Object.fromEntries(ids.map((id) => [id, Math.max(0, Number(body.weights![id]) || 0)]));
-  const questions = await getProvider().practiceQuestions({ topicIds: ids, count: Math.min(50, Math.max(1, body.count ?? 10)), weights });
+  // Every set has at least MIN_SET_SIZE questions so all four difficulty tiers are covered.
+  const questions = await getProvider().practiceQuestions({ topicIds: ids, count: Math.min(50, Math.max(MIN_SET_SIZE, body.count ?? MIN_SET_SIZE)), weights });
   return ok({ questions });
 }
 

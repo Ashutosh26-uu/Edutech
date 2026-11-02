@@ -1,6 +1,7 @@
 import { EXAMS, examTopicIds } from "@/data/exams";
 import { QUESTION_BANK, TOPICS } from "@/data/topics";
-import type { MCQ, Topic } from "../types";
+import type { Difficulty, MCQ, Topic } from "../types";
+import { DIFFICULTIES, MIN_SET_SIZE, tierQuota } from "../difficulty";
 import { generateQuestions, hasGenerator } from "../generators";
 import { cosine, shuffle, termFreq, tokenize } from "../nlp";
 import type { AIProvider } from "./provider";
@@ -32,22 +33,56 @@ function rankTopics(query: string): { topic: Topic; score: number }[] {
 }
 
 /**
- * Draws each question's topic at random in proportion to its weight, so weak topics come up
- * more often, and topics end up interleaved rather than blocked.
+ * Builds a set of at least MIN_SET_SIZE questions that mixes all four difficulty tiers
+ * (see tierQuota) and ramps from easy to very hard. Within a tier, each question's topic is
+ * drawn at random in proportion to its weight (equal weights without `weights`), so topics
+ * interleave rather than block and, in smart practice, weak topics come up more often.
+ * Bank questions come first; Quant topics with a generator never run dry. A tier that runs
+ * short borrows from the nearest tiers so the set is always full.
  */
-function adaptivePractice(topicIds: string[], count: number, weights: Record<string, number>): MCQ[] {
-  const pools = new Map(topicIds.map((id) => [id, shuffle(QUESTION_BANK.filter((q) => q.topicId === id))]));
-  const live = () => topicIds.filter((id) => (pools.get(id)?.length ?? 0) > 0 || hasGenerator(id));
+function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}): MCQ[] {
+  const size = Math.max(MIN_SET_SIZE, count);
+  const quota = tierQuota(size);
+  // pools[topic][tier]: shuffled bank questions, popped as they are used.
+  const pools = new Map(
+    topicIds.map((id) => [
+      id,
+      Object.fromEntries(DIFFICULTIES.map((d) => [d, shuffle(QUESTION_BANK.filter((q) => q.topicId === id && q.difficulty === d))])) as Record<Difficulty, MCQ[]>,
+    ]),
+  );
+  const seen = new Set<string>();
   const out: MCQ[] = [];
-  for (let i = 0; i < count; i++) {
-    const ids = live();
-    if (!ids.length) break;
-    const total = ids.reduce((s, id) => s + (weights[id] ?? 0.5), 0);
-    let r = Math.random() * total;
-    const id = ids.find((x) => (r -= weights[x] ?? 0.5) <= 0) ?? ids.at(-1)!;
-    const fromBank = pools.get(id)!.pop();
-    const q = fromBank ? shuffleOptions(fromBank) : generateQuestions(id, 1)[0];
-    if (q && !out.some((o) => o.question === q.question)) out.push(q);
+
+  const draw = (tier: Difficulty): MCQ | null => {
+    for (let tries = 0; tries < 4; tries++) {
+      const ids = topicIds.filter((id) => pools.get(id)![tier].length > 0 || hasGenerator(id));
+      if (!ids.length) return null;
+      const total = ids.reduce((s, id) => s + (weights[id] ?? 1), 0);
+      let r = Math.random() * total;
+      const id = ids.find((x) => (r -= weights[x] ?? 1) <= 0) ?? ids.at(-1)!;
+      const fromBank = pools.get(id)![tier].pop();
+      const q = fromBank ? shuffleOptions(fromBank) : generateQuestions(id, 1, Math.random, tier)[0];
+      if (q && !seen.has(q.question)) {
+        seen.add(q.question);
+        return q;
+      }
+    }
+    return null;
+  };
+
+  for (const tier of DIFFICULTIES) {
+    const picked: MCQ[] = [];
+    // Neighbouring tiers in order of closeness: hard → very-hard, moderate, easy.
+    const order = [tier, ...DIFFICULTIES.filter((d) => d !== tier).sort((a, b) => Math.abs(DIFFICULTIES.indexOf(a) - DIFFICULTIES.indexOf(tier)) - Math.abs(DIFFICULTIES.indexOf(b) - DIFFICULTIES.indexOf(tier)))];
+    for (const from of order) {
+      while (picked.length < quota[tier]) {
+        const q = draw(from);
+        if (!q) break;
+        picked.push(q);
+      }
+      if (picked.length >= quota[tier]) break;
+    }
+    out.push(...picked);
   }
   return out;
 }
@@ -60,15 +95,7 @@ export const localProvider: AIProvider = {
   },
 
   async practiceQuestions({ topicIds, count, weights }) {
-    if (weights) return adaptivePractice(topicIds, count, weights);
-    const bank = shuffle(QUESTION_BANK.filter((q) => q.topicId && topicIds.includes(q.topicId))).map(shuffleOptions);
-    const generatable = topicIds.filter(hasGenerator);
-    // Mix bank questions with generated ones; generated Quant questions fill any shortfall.
-    const generatedShare = generatable.length ? Math.ceil((count * generatable.length) / topicIds.length) : 0;
-    const generated = generatable.flatMap((id) => generateQuestions(id, Math.ceil(generatedShare / generatable.length) + 2));
-    const fromBank = bank.slice(0, Math.max(0, count - Math.min(generatedShare, generated.length)));
-    const pool = [...fromBank, ...shuffle(generated)];
-    return shuffle(pool.slice(0, count));
+    return buildSet(topicIds, count, weights);
   },
 
   async explainTopic(query) {
@@ -78,7 +105,7 @@ export const localProvider: AIProvider = {
     }
     const topic = ranked[0].topic;
     const exams = EXAMS.filter((e) => examTopicIds(e).includes(topic.id)).map((e) => ({ id: e.id, name: e.name }));
-    const questions = [...QUESTION_BANK.filter((q) => q.topicId === topic.id), ...generateQuestions(topic.id, 3)];
+    const questions = [...QUESTION_BANK.filter((q) => q.topicId === topic.id), ...generateQuestions(topic.id, 4)];
     return { result: { topic, exams, questions }, suggestions: ranked.slice(1, 5).map((r) => r.topic) };
   },
 
