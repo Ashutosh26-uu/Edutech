@@ -27,7 +27,8 @@ This repo is linked to the Neon project `quiet-salad-64911010` (branch `producti
 
 ## 2. Vercel
 
-1. Import the GitHub repo in Vercel. Framework: Next.js (detected automatically).
+1. Import the GitHub repo in Vercel. `vercel.json` sets the framework (Next.js) and runs functions in `sin1` (Singapore), next to the Neon database.
+   Current deployment: https://studyclip-six.vercel.app (Vercel project `studyclip`).
 2. In Project → Settings → Environment Variables, add the variables from `.env.example`:
    `DATABASE_URL`, `DB_POOL_MAX=3`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` (a new random value, not the local one), `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
 3. Deploy. Check `https://<your-app>/api/health` returns `{"ok":true,"db":"up"}`.
