@@ -11,13 +11,17 @@ The GitHub Pages site is a static demo with no backend. The full version runs on
 
 ## 1. Database
 
-1. Create a Postgres project on Neon (region: Mumbai / `ap-south-1`) or Supabase.
-2. Copy two connection strings:
-   - **Pooled** (Neon "-pooler" host, or Supabase port 6543) → `DATABASE_URL`
-   - **Direct** (non-pooled) → `DIRECT_DATABASE_URL`
-3. Create the tables:
+This repo is linked to the Neon project `quiet-salad-64911010` (branch `production`) through `neon.ts` and `.neon`.
+
+1. Pull the connection strings into `.env.local`:
    ```bash
-   DATABASE_URL="<pooled>" DIRECT_DATABASE_URL="<direct>" npm run db:migrate
+   neon deploy
+   ```
+   This writes `DATABASE_URL` (the pooled "-pooler" host, used by the app) and `DATABASE_URL_UNPOOLED` (direct, used by migrations).
+   On Supabase or another provider, set `DATABASE_URL` to the pooled url and `DIRECT_DATABASE_URL` to the direct one yourself.
+2. Create the tables:
+   ```bash
+   npm run db:migrate
    ```
    Run this again after any schema change. Migrations are SQL files in `drizzle/`.
 
@@ -25,8 +29,13 @@ The GitHub Pages site is a static demo with no backend. The full version runs on
 
 1. Import the GitHub repo in Vercel. Framework: Next.js (detected automatically).
 2. In Project → Settings → Environment Variables, add the variables from `.env.example`:
-   `DATABASE_URL`, `DB_POOL_MAX=3`, `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
+   `DATABASE_URL`, `DB_POOL_MAX=3`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` (a new random value, not the local one), `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
 3. Deploy. Check `https://<your-app>/api/health` returns `{"ok":true,"db":"up"}`.
+4. Trust the site's domain in Neon Auth, or sign-up and log-in fail with `INVALID_ORIGIN`:
+   ```bash
+   neon neon-auth domain add https://<your-domain>
+   ```
+5. Before launch, follow Neon's [Auth production checklist](https://neon.com/docs/auth/production-checklist): your own SMTP for auth emails, the application name, email verification, and turning off "Allow Localhost".
 
 ## 3. Payments
 
@@ -37,7 +46,7 @@ The GitHub Pages site is a static demo with no backend. The full version runs on
 
 ## How it handles load
 
-- **Stateless app servers.** Vercel adds instances as traffic grows. Sessions live in the database, so any instance can serve any user.
+- **Stateless app servers.** Vercel adds instances as traffic grows. Sessions are managed by Neon Auth and cached in a signed cookie, so any instance can serve any user.
 - **Connection pooling.** Each instance keeps 1–3 connections; the provider's pooler multiplexes thousands of clients onto a few Postgres connections.
 - **No race conditions on money.** Credits are deducted with a single conditional `UPDATE … WHERE credits > 0`. Free tests are claimed with a primary-key insert. Payments are granted once per order (unique order and payment ids), whether by the browser or the webhook.
 - **Graceful overload.** Past `MAX_INFLIGHT` concurrent requests an instance answers `503` with `Retry-After` instead of slowing down for everyone. Database statements time out after 10 s.

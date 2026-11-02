@@ -2,13 +2,16 @@
 //
 //   DATABASE_URL=... node scripts/load-test.mjs [users=1000] [seconds=30] [urls=http://localhost:3000]
 //
+// Test users are real Neon Auth accounts signed up through the app, so run this against a Neon
+// dev branch (`neon checkout dev --create`), not production. Use localhost urls: Neon Auth trusts
+// localhost origins by default.
+//
 // urls may be a comma-separated list of server instances (traffic is split evenly, like a load
 // balancer). Three phases:
 //   1. Spike: every user starts a timed test at the same instant, then all submit at once.
 //   2. Sustained: N open connections sending a realistic mix of requests for the duration.
 //   3. Integrity: no credit lost, double-spent or negative; at most one free test per user per exam.
 import autocannon from "autocannon";
-import { createHash, randomBytes } from "node:crypto";
 import postgres from "postgres";
 
 const N = +(process.argv[2] ?? 1000);
@@ -18,21 +21,34 @@ const CREDITS = 5;
 const sql = postgres(process.env.DATABASE_URL, { max: 5 });
 
 // ---------- Seed ----------
-await sql`delete from users where email like 'load-%@test.in'`;
-const rows = Array.from({ length: N }, (_, i) => ({ email: `load-${i}@test.in`, password_hash: "x", credits: CREDITS }));
-const ids = [];
-for (let i = 0; i < N; i += 500) ids.push(...(await sql`insert into users ${sql(rows.slice(i, i + 500))} returning id`));
-const cookies = [];
-const sessions = ids.map(({ id }) => {
-  const token = randomBytes(32).toString("base64url");
-  cookies.push(`sc_session=${token}`);
-  return { id: createHash("sha256").update(token).digest("hex"), user_id: id, expires_at: new Date(Date.now() + 86_400_000) };
-});
-for (let i = 0; i < N; i += 500) await sql`insert into sessions ${sql(sessions.slice(i, i + 500))}`;
+const ip = () => `10.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}`;
+const cleanup = async () => {
+  await sql`delete from users where email like 'load-%@test.in'`;
+  await sql`delete from neon_auth."user" where email like 'load-%@test.in'`;
+};
+await cleanup();
+const cookies = new Array(N);
+// Neon Auth rate-limits sign-ups per calling IP (the app server), so seeding backs off on 429.
+async function signUp(i, attempt = 0) {
+  const base = URLS[i % URLS.length];
+  const res = await fetch(`${base}/api/auth/sign-up/email`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: base, "x-forwarded-for": ip() },
+    body: JSON.stringify({ email: `load-${i}@test.in`, password: `load-pass-${i}-x`, name: `Load ${i}` }),
+  });
+  if (res.status === 429 && attempt < 12) {
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    return signUp(i, attempt + 1);
+  }
+  if (!res.ok) throw new Error(`sign-up ${i} failed: HTTP ${res.status} ${await res.text()}`);
+  cookies[i] = res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  await fetch(`${base}/api/me`, { headers: { cookie: cookies[i] } }); // creates the app account row
+}
+for (let i = 0; i < N; i += 5) await Promise.all(Array.from({ length: Math.min(5, N - i) }, (_, k) => signUp(i + k)));
+await sql`update users set credits = ${CREDITS} where email like 'load-%@test.in'`;
 console.log(`Seeded ${N} logged-in users with ${CREDITS} credits each. Server instances: ${URLS.length}\n`);
 
 const pct = (arr, p) => arr.sort((a, b) => a - b)[Math.min(arr.length - 1, Math.floor((p / 100) * arr.length))];
-const ip = () => `10.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}`;
 
 async function burst(label, makeRequest) {
   const times = [];
@@ -127,6 +143,6 @@ console.log(`  negative balances: ${c.negative}  ${c.negative === 0 ? "OK" : "PR
 console.log(`  free tests used ${c.free_attempts} = free claims ${c.free_claims} (one per user per exam)  ${freeOk ? "OK" : "MISMATCH"}`);
 console.log(`  tests submitted and scored: ${c.submitted}`);
 
-await sql`delete from users where email like 'load-%@test.in'`;
+await cleanup();
 await sql.end();
 process.exit(spentOk && freeOk && c.negative === 0 && server5xx === 0 ? 0 : 1);

@@ -42,7 +42,7 @@ GitHub Pages has no server, so the static build (`NEXT_PUBLIC_STATIC=1`) runs th
 The full version has accounts, server-side tests and payments (see **DEPLOYMENT.md**):
 
 - **Postgres** with Drizzle ORM and versioned SQL migrations (`drizzle/`).
-- **Auth:** email and password (scrypt), httpOnly session cookies; only token hashes are stored. Login and sign-up are rate-limited.
+- **Auth:** [Neon Auth](https://neon.com/docs/auth/overview) (Managed Better Auth) for sign-up, log-in and sessions, proxied through `/api/auth/*`. Users live in the `neon_auth` schema; the app's `users` row (credits, tests, payments) shares the same id. Auth writes are rate-limited per IP.
 - **Timed tests run on the server:** questions are sent without answers, credits and free tests are claimed atomically, and answers are scored server-side with the exam's negative marking.
 - **Revision packs:** locked topics are never sent to the browser without an active pass.
 - **Payments:** Razorpay orders priced on the server, signature verification, an idempotent webhook, and a demo mode for local testing.
