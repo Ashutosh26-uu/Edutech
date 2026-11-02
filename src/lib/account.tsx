@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { IS_STATIC } from "./api";
+import { authAttempt, authClient } from "./auth-client";
 import { load } from "./storage";
 import { useStore } from "./useStore";
 
@@ -35,11 +36,6 @@ interface ServerAccount {
 
 const Ctx = createContext<AccountState | null>(null);
 
-async function post(path: string, body: object) {
-  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  return { ok: res.ok, status: res.status, data: await res.json().catch(() => ({})) };
-}
-
 export function AccountProvider({ children }: { children: React.ReactNode }) {
   const store = useStore();
   const [server, setServer] = useState<ServerAccount | null>(null);
@@ -58,22 +54,31 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const r = await post("/api/auth/login", { email, password });
-    if (!r.ok) return r.data.error ?? "Could not log in.";
-    setServer(r.data);
-    return null;
-  }, []);
+  // Neon Auth owns passwords and sessions; after it answers, /api/me loads the app account.
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const err = await authAttempt(() => authClient.signIn.email({ email: email.trim().toLowerCase(), password }), "Could not log in.");
+      if (!err) await refresh();
+      return err;
+    },
+    [refresh],
+  );
 
-  const signup = useCallback(async (email: string, password: string, name?: string) => {
-    const r = await post("/api/auth/signup", { email, password, name });
-    if (!r.ok) return r.data.error ?? "Could not create your account.";
-    setServer(r.data);
-    return null;
-  }, []);
+  const signup = useCallback(
+    async (email: string, password: string, name?: string) => {
+      const clean = email.trim().toLowerCase();
+      const err = await authAttempt(
+        () => authClient.signUp.email({ email: clean, password, name: name?.trim() || clean.split("@")[0] }),
+        "Could not create your account.",
+      );
+      if (!err) await refresh();
+      return err;
+    },
+    [refresh],
+  );
 
   const logout = useCallback(async () => {
-    await post("/api/auth/logout", {});
+    await authClient.signOut().catch(() => {});
     setServer(null);
   }, []);
 

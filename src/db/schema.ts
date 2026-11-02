@@ -5,28 +5,14 @@ import type { MCQ } from "@/lib/types";
 export const users = pgTable(
   "users",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    // Same id as the Neon Auth user (neon_auth.user.id), which owns the password and sessions.
+    id: uuid("id").primaryKey(),
     email: text("email").notNull().unique(), // stored lower-cased
     name: text("name"),
-    passwordHash: text("password_hash").notNull(),
     credits: integer("credits").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [check("credits_non_negative", sql`${t.credits} >= 0`)],
-);
-
-/** Only a SHA-256 hash of the session token is stored, so a database leak can't be replayed as logins. */
-export const sessions = pgTable(
-  "sessions",
-  {
-    id: text("id").primaryKey(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [index("sessions_user_idx").on(t.userId), index("sessions_expires_idx").on(t.expiresAt)],
 );
 
 /** One free timed test per user per exam. The primary key makes claiming it race-free. */
