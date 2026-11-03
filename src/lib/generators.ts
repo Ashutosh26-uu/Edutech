@@ -11,6 +11,8 @@ import { shuffle } from "./nlp";
 type Rand = () => number;
 type Gen = (id: string, r: Rand) => MCQ;
 const pick = <T,>(arr: T[], r: Rand) => arr[Math.floor(r() * arr.length)];
+/** A tier with several templates: each question picks one at random. */
+const either = (...gens: Gen[]): Gen => (id, r) => pick(gens, r)(id, r);
 const fmt = (n: number) => (Number.isInteger(n) ? n.toLocaleString("en-IN") : n.toFixed(2).replace(/\.?0+$/, ""));
 
 /** Builds a numeric MCQ with plausible near-miss distractors. */
@@ -52,7 +54,20 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       if (!Number.isInteger(part)) return GENERATORS["quant-percentage"].moderate(id, r);
       return numeric(id, "quant-percentage", "moderate", `What percent of ${fmt(n)} is ${fmt(part)}?`, p, `Required % = ${fmt(part)} ÷ ${fmt(n)} × 100 = ${p}%.`, r, "", "%");
     },
-    hard: (id, r) => {
+    hard: either((id, r) => {
+      // Successive change: net = a − b − ab/100.
+      const [a, b] = pick([[20, 10], [25, 10], [30, 20], [10, 20], [20, 25], [40, 25], [50, 20], [15, 10]], r);
+      const net = a - b - (a * b) / 100;
+      const up = net > 0;
+      const ans = Math.abs(net);
+      return numeric(
+        id, "quant-percentage", "hard",
+        `The price of an article is first increased by ${a}% and then decreased by ${b}%. What is the net percentage ${up ? "increase" : "decrease"} in its price?`,
+        ans,
+        `Net change = a − b − ab/100 = ${a} − ${b} − ${a}×${b}/100 = ${fmt(net)}%, i.e. a ${fmt(ans)}% ${up ? "increase" : "decrease"}.`,
+        r, "", "%",
+      );
+    }, (id, r) => {
       const pop = pick([10000, 20000, 40000, 50000, 80000], r);
       const rate = pick([5, 10, 20], r);
       const ans = (pop * (100 + rate) * (100 + rate)) / 10000;
@@ -63,15 +78,29 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `After 2 years = ${fmt(pop)} × (${100 + rate}/100)² = ${fmt(pop)} × ${(((100 + rate) / 100) ** 2).toFixed(4).replace(/0+$/, "")} = ${fmt(ans)}.`,
         r,
       );
-    },
-    "very-hard": (id, r) => {
+    }),
+    "very-hard": either((id, r) => {
       const [x, ans] = pick([[25, 20], [100, 50], [150, 60], [400, 80], [50, 33.33], [20, 16.67]], r);
       const income = r() < 0.5;
       const q = income
         ? `A’s income is ${x}% more than B’s. By what percent is B’s income less than A’s?`
         : `The price of sugar rises by ${x}%. By what percent must a family cut its consumption so that its expenditure stays the same?`;
       return numeric(id, "quant-percentage", "very-hard", q, ans, `Required % = x ÷ (100 + x) × 100 = ${x} ÷ ${100 + x} × 100 = ${fmt(ans)}%.`, r, "", "%");
-    },
+    }, (id, r) => {
+      // Pass/fail overlap: passed in both = 100 − (x + y − z)%.
+      const [x, y, z] = pick([[30, 35, 15], [25, 40, 20], [20, 30, 10], [35, 25, 20], [40, 30, 20], [32, 28, 12]], r);
+      const pass = 100 - (x + y - z);
+      const total = pick([400, 500, 800, 1000, 1200, 1500], r);
+      const passed = (pass * total) / 100;
+      if (!Number.isInteger(passed)) return GENERATORS["quant-percentage"]["very-hard"](id, r);
+      return numeric(
+        id, "quant-percentage", "very-hard",
+        `In an exam, ${x}% of the candidates failed in Hindi, ${y}% failed in English and ${z}% failed in both. If ${fmt(passed)} candidates passed in both subjects, how many candidates appeared?`,
+        total,
+        `Failed in at least one = ${x} + ${y} − ${z} = ${x + y - z}%, so passed in both = ${pass}%. Total = ${fmt(passed)} × 100 ÷ ${pass} = ${fmt(total)}.`,
+        r,
+      );
+    }),
   },
 
   "quant-profit-loss": {
@@ -105,7 +134,19 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     },
-    hard: (id, r) => {
+    hard: either((id, r) => {
+      // Dishonest dealer: false weight plus a markup on cost.
+      const [g, x, ans] = pick([[800, 20, 50], [900, 8, 20], [960, 20, 25], [800, 10, 37.5], [750, 5, 40], [900, 0, 11.11], [950, 14, 20]], r);
+      return numeric(
+        id, "quant-profit-loss", "hard",
+        x
+          ? `A dealer uses a weight of ${g} g instead of 1 kg and also sells at ${x}% above the cost price. What is his total gain percentage?`
+          : `A dishonest dealer claims to sell at cost price but uses a weight of ${g} g instead of 1 kg. What is his gain percentage?`,
+        ans,
+        `He gives ${g} g but charges for 1,000 g${x ? ` plus ${x}%` : ""}. Gain % = (1000/${g}${x ? ` × ${(100 + x) / 100}` : ""} − 1) × 100 = ${fmt(ans)}%.`,
+        r, "", "%",
+      );
+    }, (id, r) => {
       const [mark, disc] = pick([[50, 20], [40, 25], [60, 25], [25, 12], [100, 40], [30, 10], [50, 10], [20, 10], [75, 20]], r);
       const ans = Math.round(((100 + mark) * (100 - disc)) / 100 - 100);
       return numeric(
@@ -115,8 +156,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Take CP = 100. Marked price = ${100 + mark}; SP after ${disc}% discount = ${100 + mark} × ${100 - disc} ÷ 100 = ${fmt(((100 + mark) * (100 - disc)) / 100)}. Profit = ${ans}%.`,
         r, "", "%",
       );
-    },
-    "very-hard": (id, r) => {
+    }),
+    "very-hard": either((id, r) => {
+      // Mark-up needed so that a discount still leaves a target profit.
+      const [d, g, ans] = pick([[20, 20, 50], [25, 20, 60], [10, 8, 20], [20, 4, 30], [25, 5, 40], [16, 26, 50], [10, 17, 30]], r);
+      return numeric(
+        id, "quant-profit-loss", "very-hard",
+        `A shopkeeper wants to gain ${g}% even after allowing a discount of ${d}%. By what percentage above the cost price must he mark his goods?`,
+        ans,
+        `MP × (100 − ${d})/100 = CP × (100 + ${g})/100, so MP/CP = ${100 + g}/${100 - d} = ${fmt((100 + g) / (100 - d))}. Mark-up = ${ans}%.`,
+        r, "", "%",
+      );
+    }, (id, r) => {
       if (r() < 0.5) {
         const x = pick([10, 20, 25, 30, 40, 50], r);
         const ans = (x * x) / 100;
@@ -138,7 +189,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `CP of ${n} articles = SP of ${n - g} articles. Profit % = ${g} ÷ ${n - g} × 100 = ${fmt(ans)}%.`,
         r, "", "%",
       );
-    },
+    }),
   },
 
   "quant-simple-interest": {
@@ -168,7 +219,21 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     },
-    hard: (id, r) => {
+    hard: either((id, r) => {
+      // A sum split between two rates (alligation).
+      const [r1, r2] = pick([[8, 12], [5, 10], [6, 9], [10, 15], [4, 8]], r);
+      const p = pick([10000, 12000, 15000, 20000, 24000], r);
+      const x = pick([0.25, 0.4, 0.5, 0.6, 0.75], r) * p;
+      const yearly = (x * r1 + (p - x) * r2) / 100;
+      if (!Number.isInteger(yearly)) return GENERATORS["quant-simple-interest"].hard(id, r);
+      return numeric(
+        id, "quant-simple-interest", "hard",
+        `₹${fmt(p)} is lent in two parts, one at ${r1}% and the other at ${r2}% simple interest per annum. The total yearly interest is ₹${fmt(yearly)}. How much was lent at ${r1}%?`,
+        x,
+        `If all were at ${r2}%, interest would be ₹${fmt((p * r2) / 100)}. The shortfall ₹${fmt((p * r2) / 100 - yearly)} comes from the ${r2 - r1}% gap on the ${r1}% part: ${fmt((p * r2) / 100 - yearly)} × 100 ÷ ${r2 - r1} = ₹${fmt(x)}.`,
+        r, "₹",
+      );
+    }, (id, r) => {
       const t = pick([4, 5, 6, 8, 10, 12, 15, 20], r);
       const [times, word] = pick([[3, "triple"], [4, "become four times"]], r);
       const ans = t * (times - 1);
@@ -179,8 +244,31 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Doubling means SI = P in ${t} years, so SI grows by P every ${t} years. To ${word}, SI must be ${times - 1}P, which takes ${times - 1} × ${t} = ${ans} years.`,
         r, "", " years",
       );
-    },
-    "very-hard": (id, r) => {
+    }),
+    "very-hard": either((id, r) => {
+      // Rate equal to time: R² = 100 × SI/P.
+      const [rate, frac] = pick([[4, "4/25"], [5, "1/4"], [6, "9/25"], [8, "16/25"], [10, "1"], [12, "36/25"]], r);
+      return numeric(
+        id, "quant-simple-interest", "very-hard",
+        `The simple interest on a sum is ${frac === "1" ? "equal to the sum" : `${frac} of the sum`}, and the rate per annum equals the number of years. What is the rate?`,
+        rate,
+        `SI/P = R × T/100 with R = T, so R² = 100 × ${frac} = ${rate * rate}, giving R = ${rate}%.`,
+        r, "", "%",
+      );
+    }, (id, r) => {
+      // A higher rate fetches more interest.
+      const p = pick([2000, 2500, 4000, 5000, 6000, 8000], r);
+      const k = pick([1, 2, 3], r);
+      const t = pick([2, 3, 4, 5], r);
+      const more = (p * k * t) / 100;
+      return numeric(
+        id, "quant-simple-interest", "very-hard",
+        `Had a sum been lent at ${k}% higher simple interest, it would have fetched ₹${fmt(more)} more in ${t} years. What is the sum?`,
+        p,
+        `The extra interest comes only from the extra ${k}%: P × ${k} × ${t} ÷ 100 = ${fmt(more)}, so P = ${fmt(more)} × 100 ÷ ${k * t} = ₹${fmt(p)}.`,
+        r, "₹",
+      );
+    }, (id, r) => {
       const p = pick([2000, 4000, 5000, 6000, 8000, 10000], r);
       const rate = pick([5, 8, 10, 12], r);
       const t1 = pick([2, 3], r);
@@ -194,7 +282,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Interest for ${t2 - t1} years = ${fmt(a2)} − ${fmt(a1)} = ₹${fmt(a2 - a1)}, so interest per year = ₹${fmt((a2 - a1) / (t2 - t1))}. Sum = ${fmt(a1)} − ${t1} × ${fmt((a2 - a1) / (t2 - t1))} = ₹${fmt(p)}.`,
         r, "₹",
       );
-    },
+    }),
   },
 
   "quant-time-work": {
@@ -220,7 +308,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " days",
       );
     },
-    hard: (id, r) => {
+    hard: either((id, r) => {
+      // Men × days × hours stays constant for the same work.
+      const [m1, d1, h1, m2, h2] = pick([[12, 18, 8, 16, 9], [15, 20, 6, 10, 9], [20, 12, 9, 24, 6], [8, 24, 6, 12, 8], [18, 10, 8, 12, 6], [25, 12, 8, 20, 10]], r);
+      const ans = (m1 * d1 * h1) / (m2 * h2);
+      return numeric(
+        id, "quant-time-work", "hard",
+        `${m1} men working ${h1} hours a day can finish a job in ${d1} days. In how many days will ${m2} men working ${h2} hours a day finish it?`,
+        ans,
+        `M₁D₁H₁ = M₂D₂H₂: ${m1} × ${d1} × ${h1} = ${m2} × D × ${h2}, so D = ${m1 * d1 * h1} ÷ ${m2 * h2} = ${fmt(ans)} days.`,
+        r, "", " days",
+      );
+    }, (id, r) => {
       const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [30, 60], [40, 60], [21, 42], [15, 10]], r);
       const k = pick([1, 2, 3, 4, 5], r);
       const ans = b * (1 - k / a - k / b);
@@ -232,8 +331,23 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `In ${k} day${k > 1 ? "s" : ""} they do ${k} × (1/${a} + 1/${b}) = ${fmt((k * (a + b)) / (a * b))} of the work. Remaining = ${fmt(1 - (k * (a + b)) / (a * b))}, which B alone does in ${fmt(1 - (k * (a + b)) / (a * b))} × ${b} = ${ans} days.`,
         r, "", " days",
       );
-    },
-    "very-hard": (id, r) => {
+    }),
+    "very-hard": either((id, r) => {
+      // Pairwise rates: A+B, B+C, C+A given; find one person alone.
+      const [a, b, c] = pick([[20, 30, 60], [30, 60, 20], [40, 60, 120], [15, 30, 30], [6, 12, 12], [60, 20, 30]], r);
+      const pair = (x: number, y: number) => (x * y) / (x + y);
+      const [ab, bc, ca] = [pair(a, b), pair(b, c), pair(c, a)];
+      if (![ab, bc, ca].every(Number.isInteger)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
+      const who = pick(["A", "C"], r);
+      const ans = who === "A" ? a : c;
+      return numeric(
+        id, "quant-time-work", "very-hard",
+        `A and B together can finish a work in ${ab} days, B and C in ${bc} days, and C and A in ${ca} days. In how many days can ${who} alone finish it?`,
+        ans,
+        `Adding the three pairs gives twice the work of A+B+C per day: 2(A+B+C) = 1/${ab} + 1/${bc} + 1/${ca}, so A+B+C does 1/${pair(pair(a, b), c)} per day. ${who} alone = (A+B+C) − (${who === "A" ? "B+C" : "A+B"}) = 1/${ans}, i.e. ${ans} days.`,
+        r, "", " days",
+      );
+    }, (id, r) => {
       const [a, b, c, ans] = pick([[6, 12, 8, 8], [12, 18, 36, 9], [20, 30, 60, 15], [8, 12, 24, 6], [15, 20, 30, 12], [6, 8, 24, 4]], r);
       const lcm = [a, b, c].reduce((x, y) => (x * y) / gcd(x, y));
       return numeric(
@@ -243,7 +357,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Take the tank as ${lcm} units. A fills ${lcm / a}/h, B fills ${lcm / b}/h, C empties ${lcm / c}/h: net ${lcm / a + lcm / b - lcm / c} units/h. Time = ${lcm} ÷ ${lcm / a + lcm / b - lcm / c} = ${ans} hours.`,
         r, "", " hours",
       );
-    },
+    }),
   },
 
   "quant-average": {
@@ -274,7 +388,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r,
       );
     },
-    hard: (id, r) => {
+    hard: either((id, r) => {
+      // Average speed over equal distances is the harmonic mean, not the plain average.
+      const [x, y] = pick([[40, 60], [30, 60], [60, 90], [20, 30], [45, 90], [36, 45], [60, 40]], r);
+      const ans = (2 * x * y) / (x + y);
+      return numeric(
+        id, "quant-average", "hard",
+        `A car goes from town P to town Q at ${x} km/h and returns along the same road at ${y} km/h. What is its average speed for the whole journey?`,
+        ans,
+        `For equal distances, average speed = 2xy ÷ (x + y) = 2 × ${x} × ${y} ÷ ${x + y} = ${fmt(ans)} km/h (not ${fmt((x + y) / 2)}).`,
+        r, "", " km/h",
+      );
+    }, (id, r) => {
       const n = pick([20, 24, 29, 30, 35, 39], r);
       const avg = pick([12, 14, 15, 16], r);
       const d = pick([1, 2], r);
@@ -286,8 +411,21 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `New average = ${avg + d} for ${n + 1} people. Teacher’s age = ${n + 1} × ${avg + d} − ${n} × ${avg} = ${(n + 1) * (avg + d)} − ${n * avg} = ${ans} years.`,
         r, "", " years",
       );
-    },
-    "very-hard": (id, r) => {
+    }),
+    "very-hard": either((id, r) => {
+      // Batsman's innings: one score lifts the average by d.
+      const n = pick([10, 11, 15, 16, 19, 20], r);
+      const d = pick([2, 3, 4], r);
+      const newAvg = pick([32, 36, 40, 45, 48, 52], r);
+      const score = newAvg + n * d;
+      return numeric(
+        id, "quant-average", "very-hard",
+        `A batsman scores ${score} runs in his ${ordinal(n + 1)} innings and thereby raises his average by ${d}. What is his average after the ${ordinal(n + 1)} innings?`,
+        newAvg,
+        `Let the new average be A. Then ${n}(A − ${d}) + ${score} = ${n + 1}A, so A = ${score} − ${n} × ${d} = ${newAvg}.`,
+        r,
+      );
+    }, (id, r) => {
       const m = pick([5, 6, 7], r);
       const n = 2 * m - 1;
       const all = pick([40, 50, 60], r);
@@ -302,7 +440,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `The ${ordinal(m)} result is counted in both groups: ${m} × ${first} + ${m} × ${last} − ${n} × ${all} = ${m * first} + ${m * last} − ${n * all} = ${ans}.`,
         r,
       );
-    },
+    }),
   },
 };
 

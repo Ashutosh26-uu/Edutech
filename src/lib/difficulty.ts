@@ -7,12 +7,13 @@ export const MIN_SET_SIZE = 10;
 
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", moderate: "Moderate", hard: "Hard", "very-hard": "Very hard" };
 
-/** Share of a set that each tier gets; the mix skews towards the harder end a little less than half. */
-const SHARE: Record<Difficulty, number> = { easy: 0.3, moderate: 0.3, hard: 0.2, "very-hard": 0.2 };
+/** Share of a set that each tier gets: the set leans towards exam-level difficulty, 60% hard or very hard. */
+const SHARE: Record<Difficulty, number> = { easy: 0.2, moderate: 0.2, hard: 0.3, "very-hard": 0.3 };
 
 /**
  * How many questions of each tier go into a set of `n`. Every tier gets at least one
- * (for n ≥ 4) and the counts add up to n exactly. For 10: 3 easy, 3 moderate, 2 hard, 2 very hard.
+ * (for n ≥ 4) and the counts add up to n exactly. For 10: 2 easy, 2 moderate, 3 hard, 3 very hard;
+ * for 15: 3/3/5/4; for 25: 5/5/8/7.
  */
 export function tierQuota(n: number): Record<Difficulty, number> {
   const quota = Object.fromEntries(DIFFICULTIES.map((d) => [d, n >= DIFFICULTIES.length ? 1 : 0])) as Record<Difficulty, number>;
