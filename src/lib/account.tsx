@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { IS_STATIC } from "./api";
-import { authAttempt, authClient } from "./auth-client";
+import { authAttempt, authClient, sendVerificationCode, verifyEmailCode, type AuthError } from "./auth-client";
 import { load } from "./storage";
 import { useStore } from "./useStore";
 
@@ -22,8 +22,14 @@ export interface AccountState {
   payments: "live" | "demo" | "off";
   razorpayKeyId: string | null;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<string | null>;
-  signup: (email: string, password: string, name?: string) => Promise<string | null>;
+  /** Null on success. An `EMAIL_NOT_VERIFIED` error means the account still needs its code. */
+  login: (email: string, password: string) => Promise<AuthError | null>;
+  /** "verify" when the account was created and a code was emailed; null if it was signed in directly. */
+  signup: (email: string, password: string, name?: string) => Promise<AuthError | "verify" | null>;
+  /** Checks the emailed code and signs the user in. */
+  verifyEmail: (email: string, otp: string) => Promise<AuthError | null>;
+  /** Emails a new code to an account that has not verified yet. */
+  resendCode: (email: string) => Promise<AuthError | null>;
   logout: () => Promise<void>;
 }
 
@@ -64,18 +70,35 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     [refresh],
   );
 
+  // The Neon Auth branch requires email verification: sign-up creates the account, emails a
+  // 6-digit code and returns no session. The session arrives once the code is verified.
   const signup = useCallback(
     async (email: string, password: string, name?: string) => {
       const clean = email.trim().toLowerCase();
-      const err = await authAttempt(
-        () => authClient.signUp.email({ email: clean, password, name: name?.trim() || clean.split("@")[0] }),
-        "Could not create your account.",
-      );
+      let signedIn = false;
+      const err = await authAttempt(async () => {
+        const res = await authClient.signUp.email({ email: clean, password, name: name?.trim() || clean.split("@")[0] });
+        signedIn = !!res.data?.token;
+        return res;
+      }, "Could not create your account.");
+      if (err) return err;
+      if (!signedIn) return "verify";
+      await refresh();
+      return null;
+    },
+    [refresh],
+  );
+
+  const verifyEmail = useCallback(
+    async (email: string, otp: string) => {
+      const err = await verifyEmailCode(email.trim().toLowerCase(), otp.trim());
       if (!err) await refresh();
       return err;
     },
     [refresh],
   );
+
+  const resendCode = useCallback((email: string) => sendVerificationCode(email.trim().toLowerCase()), []);
 
   const logout = useCallback(async () => {
     await authClient.signOut().catch(() => {});
@@ -97,6 +120,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         refresh,
         login,
         signup,
+        verifyEmail,
+        resendCode,
         logout,
       };
     }
@@ -111,9 +136,11 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       refresh,
       login,
       signup,
+      verifyEmail,
+      resendCode,
       logout,
     };
-  }, [store, server, config, ready, refresh, login, signup, logout]);
+  }, [store, server, config, ready, refresh, login, signup, verifyEmail, resendCode, logout]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

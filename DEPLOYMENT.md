@@ -41,7 +41,8 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
    ```bash
    neon neon-auth domain add https://<your-domain>
    ```
-5. Before launch, follow Neon's [Auth production checklist](https://neon.com/docs/auth/production-checklist): your own SMTP for auth emails, the application name, email verification, and turning off "Allow Localhost".
+5. Email verification is on: sign-up emails a 6-digit code (`neon neon-auth config email-password get` shows the settings), and the login page asks for it before the first session. Codes go out through Neon's shared SMTP, which is fine to start with; for production, set up your own SMTP (`neon neon-auth config email-provider`) so the emails carry your domain.
+6. Before launch, follow Neon's [Auth production checklist](https://neon.com/docs/auth/production-checklist): your own SMTP for auth emails, the application name, and turning off "Allow Localhost".
 
 ## 3. Payments
 
