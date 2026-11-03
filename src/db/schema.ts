@@ -86,6 +86,25 @@ export const testAttempts = pgTable(
   (t) => [index("attempts_user_idx").on(t.userId, t.startedAt)],
 );
 
+/**
+ * Messages sent from the Contact page: support, refunds, privacy requests and grievances.
+ * Read and answer them from the Neon console (SQL editor) until there is an admin screen.
+ */
+export const contactMessages = pgTable(
+  "contact_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    name: text("name"),
+    email: text("email").notNull(),
+    topic: text("topic", { enum: ["account", "payment", "refund", "question", "privacy", "grievance", "other"] }).notNull(),
+    message: text("message").notNull(),
+    status: text("status", { enum: ["open", "answered", "closed"] }).notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("contact_status_idx").on(t.status, t.createdAt)],
+);
+
 export const topicStats = pgTable(
   "topic_stats",
   {

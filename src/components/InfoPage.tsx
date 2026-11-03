@@ -18,13 +18,17 @@ export function InfoPage({ eyebrow, title, intro, updated, children }: { eyebrow
   );
 }
 
-/** The support email as a link, or a pointer to the Contact page until NEXT_PUBLIC_CONTACT_EMAIL is set. */
-export function ContactEmail() {
+/**
+ * How to reach us, for use inside a sentence: the contact form (with a topic preselected),
+ * plus the support email once NEXT_PUBLIC_CONTACT_EMAIL is set.
+ */
+export function ContactEmail({ topic }: { topic?: string }) {
+  const form = <Link href={`/contact${topic ? `?topic=${topic}` : ""}#form`}>our contact form</Link>;
   return CONTACT_EMAIL ? (
-    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-  ) : (
     <>
-      the address on our <Link href="/contact">Contact page</Link>
+      {form} or <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
     </>
+  ) : (
+    form
   );
 }

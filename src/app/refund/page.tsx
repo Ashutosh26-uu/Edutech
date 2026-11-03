@@ -33,7 +33,7 @@ export default function RefundPage() {
 
       <h2>How to ask</h2>
       <p>
-        Write to <ContactEmail /> from the email you signed up with. Include the amount, the date and the Razorpay payment ID (it starts with “pay_”).
+        Send a request through <ContactEmail topic="refund" />, using the email you signed up with. Include the amount, the date and the Razorpay payment ID (it starts with “pay_”).
       </p>
 
       <h2>When you will get it</h2>
