@@ -370,6 +370,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Take the tank as ${lcm} units. A fills ${lcm / a}/h, B fills ${lcm / b}/h, C empties ${lcm / c}/h: net ${lcm / a + lcm / b - lcm / c} units/h. Time = ${lcm} ÷ ${lcm / a + lcm / b - lcm / c} = ${ans} hours.`,
         r, "", " hours",
       );
+    }, (id, r) => {
+      // One worker k times as efficient as the other.
+      const [k, t] = pick([[2, 18], [3, 12], [2, 12], [4, 20], [3, 24], [2, 24]], r);
+      const askA = r() < 0.5;
+      const ans = askA ? (t * (k + 1)) / k : t * (k + 1);
+      return numeric(
+        id, "quant-time-work", "very-hard",
+        `A is ${k === 2 ? "twice" : `${k} times`} as efficient as B, and together they finish a work in ${t} days. In how many days can ${askA ? "A" : "B"} alone finish it?`,
+        ans,
+        `If B does 1 unit a day, A does ${k}; together ${k + 1} units a day for ${t} days = ${(k + 1) * t} units. ${askA ? `A alone = ${(k + 1) * t} ÷ ${k}` : `B alone = ${(k + 1) * t} ÷ 1`} = ${ans} days.`,
+        r, "", " days",
+      );
     }),
   },
 
@@ -497,7 +509,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r,
       );
     },
-    "very-hard": (id, r) => {
+    "very-hard": either((id, r) => {
+      // Repeated draw-and-replace: milk left = P × (1 − x/P)^n.
+      const [p, x, n] = pick([[80, 8, 2], [40, 4, 2], [100, 10, 3], [50, 10, 2], [60, 6, 2], [125, 25, 3]], r);
+      const ans = Math.round(p * (1 - x / p) ** n * 100) / 100;
+      return numeric(
+        id, "quant-ratio", "very-hard",
+        `A vessel holds ${p} litres of pure milk. ${x} litres are taken out and replaced with water, and this is done ${n === 2 ? "twice" : "three times"} in all. How much milk is left in the vessel?`,
+        ans,
+        `Each round keeps ${p - x}/${p} of the milk, so milk left = ${p} × (${p - x}/${p})^${n} = ${fmt(ans)} litres.`,
+        r, "", " litres",
+      );
+    }, (id, r) => {
       const [t, m, w, m2, w2] = pick([[60, 2, 1, 1, 2], [40, 3, 1, 1, 1], [80, 3, 1, 2, 1], [90, 7, 2, 7, 3], [45, 4, 1, 3, 2], [100, 4, 1, 2, 1]], r);
       const milk = (t * m) / (m + w);
       const water = t - milk;
@@ -509,7 +532,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Milk = ${milk} L and water = ${water} L. Milk stays the same, so water needed = ${milk} × ${w2}/${m2} = ${(milk * w2) / m2} L. Add ${(milk * w2) / m2} − ${water} = ${ans} L.`,
         r, "", " litres",
       );
-    },
+    }),
   },
 
   "quant-tsd": {
@@ -557,7 +580,18 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " seconds",
       );
     }),
-    "very-hard": (id, r) => {
+    "very-hard": either((id, r) => {
+      // Chase: the gap closes at the relative speed while the thief keeps running.
+      const [gap, vt, vp] = pick([[200, 10, 12], [100, 8, 10], [300, 12, 15], [150, 9, 12], [250, 10, 15], [120, 10, 14]], r);
+      const ans = (gap * vt) / (vp - vt);
+      return numeric(
+        id, "quant-tsd", "very-hard",
+        `A thief is spotted by a policeman ${gap} m away. The thief runs at ${vt} km/h and the policeman chases at ${vp} km/h. How far will the thief have run before he is caught?`,
+        ans,
+        `The gap closes at ${vp} − ${vt} = ${vp - vt} km/h, so the chase lasts as long as covering ${gap} m at ${vp - vt} km/h. In that time the thief runs ${vt}/${vp - vt} × ${gap} = ${fmt(ans)} m.`,
+        r, "", " m",
+      );
+    }, (id, r) => {
       const [down, up] = pick([[12, 8], [15, 9], [20, 12], [18, 10], [16, 8], [14, 10]], r);
       const lcm = (down * up) / gcd(down, up);
       const d = lcm * pick([1, 2], r);
@@ -570,7 +604,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         `Downstream speed = ${d} ÷ ${d / down} = ${down} km/h; upstream = ${d} ÷ ${d / up} = ${up} km/h. ${askStream ? `Stream = (${down} − ${up}) ÷ 2` : `Still water = (${down} + ${up}) ÷ 2`} = ${ans} km/h.`,
         r, "", " km/h",
       );
-    },
+    }),
   },
 
   "quant-ci": {
@@ -630,6 +664,16 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         rate,
         `The third year’s interest is earned on ₹${fmt(a2)}: ${fmt(a3)} − ${fmt(a2)} = ₹${fmt(a3 - a2)}. Rate = ${fmt(a3 - a2)} ÷ ${fmt(a2)} × 100 = ${rate}%.`,
         r, "", "%",
+      );
+    }, (id, r) => {
+      const [p, rate] = pick([[10000, 10], [8000, 5], [20000, 10], [5000, 20], [15625, 4], [30000, 10]], r);
+      const ans = Math.round(((p * rate * rate) / 1e4) * (3 + rate / 100) * 100) / 100;
+      return numeric(
+        id, "quant-ci", "very-hard",
+        `What is the difference between compound interest and simple interest on ₹${fmt(p)} for 3 years at ${rate}% per annum?`,
+        ans,
+        `For 3 years, CI − SI = P × (R/100)² × (3 + R/100) = ${fmt(p)} × (${rate}/100)² × ${fmt(3 + rate / 100)} = ₹${fmt(ans)}.`,
+        r, "₹",
       );
     }),
   },
