@@ -43,6 +43,12 @@ export function DifficultyChip({ difficulty }: { difficulty?: Difficulty }) {
   return <span className={`chip ${DIFFICULTY_TONE[difficulty]}`}>{DIFFICULTY_LABEL[difficulty]}</span>;
 }
 
+/** Marks a question on a point that previous-year papers of the named exams keep testing. */
+export function SourceChip({ source }: { source?: string }) {
+  if (!source) return null;
+  return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
+}
+
 export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFinish, onTimestamp, onRestart, submit }: Props) {
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
@@ -110,7 +116,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, timeLimitSec, onFin
         <span className="font-medium text-slate-600">
           Question {idx + 1} of {questions.length}
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
-          <span className="ml-2 inline-flex"><DifficultyChip difficulty={q.difficulty} /></span>
+          <span className="ml-2 inline-flex gap-1"><DifficultyChip difficulty={q.difficulty} /><SourceChip source={q.source} /></span>
         </span>
         {mode === "mock" && timeLimitSec ? (
           <span className={`chip text-sm ${left < 60 ? "bg-red-100 text-red-700" : "bg-brand-50 text-brand-700"}`}><Timer className="h-3.5 w-3.5" /> <span className="font-mono tabular-nums">{formatTime(left)}</span></span>
@@ -269,7 +275,7 @@ function Results({ results, negativeMarking, onTimestamp, onRestart }: { results
         {results.map((r, i) => (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <p className="font-medium text-slate-900">
-              {i + 1}. {r.question.question} <DifficultyChip difficulty={r.question.difficulty} />
+              {i + 1}. {r.question.question} <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} />
             </p>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : r.question.options[r.chosen]}</b>
