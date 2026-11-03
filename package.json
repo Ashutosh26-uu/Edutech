@@ -10,7 +10,8 @@
     "lint": "tsc --noEmit",
     "db:dev": "node scripts/dev-db.mjs",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
+    "check:questions": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/check-questions.mjs"
   },
   "dependencies": {
     "@neon/auth": "^0.8.2",

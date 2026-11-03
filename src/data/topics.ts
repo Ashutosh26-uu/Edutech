@@ -23,6 +23,9 @@ interface TopicSeed extends Topic {
   questions: Q[];
 }
 
+/** Answer options for syllogism questions. */
+const SY = ["Only conclusion I follows", "Only conclusion II follows", "Both I and II follow", "Neither I nor II follows"];
+
 const E: Difficulty = "easy";
 const M: Difficulty = "moderate";
 const H: Difficulty = "hard";
@@ -535,6 +538,64 @@ const SEED: TopicSeed[] = [
     ],
   },
 
+  {
+    id: "quant-ratio",
+    name: "Ratio, Proportion and Mixtures",
+    subject: "Quantitative Aptitude",
+    aliases: ["ratio", "proportion", "mixture", "alligation"],
+    summary: "A ratio compares two quantities by division. Split a total into parts, chain ratios through a common term, and keep the unchanged ingredient fixed in mixture problems.",
+    keyPoints: [
+      "To divide N in a : b, one part = N ÷ (a + b).",
+      "A : C = (A : B) × (B : C); make the common term equal first.",
+      "Adding the same number to both terms moves a ratio towards 1 : 1.",
+      "In mixtures, the ingredient you do not add or remove stays fixed.",
+    ],
+    questions: [
+      ["₹700 is divided in the ratio 3 : 4. The larger share is:", ["₹300", "₹350", "₹400", "₹450"], 2, "One part = 700 ÷ 7 = 100, so the larger share is 4 × 100 = ₹400.", E],
+      ["If A : B = 2 : 3 and B : C = 4 : 5, then A : C is:", ["8 : 15", "2 : 5", "5 : 6", "3 : 10"], 0, "A : C = (2/3) × (4/5) = 8/15.", M],
+      ["The ages of A and B are in the ratio 4 : 5. After 5 years the ratio will be 5 : 6. What is A’s present age?", ["15 years", "20 years", "25 years", "30 years"], 1, "(4k + 5)/(5k + 5) = 5/6 gives 24k + 30 = 25k + 25, so k = 5 and A is 20.", H],
+      ["A 30-litre mixture has milk and water in the ratio 7 : 3. How much water must be added to make it 3 : 2?", ["3 litres", "5 litres", "7 litres", "9 litres"], 1, "Milk = 21 L, water = 9 L. For 3 : 2, water must be 21 × 2/3 = 14 L, so add 5 L.", V],
+    ],
+  },
+  {
+    id: "quant-tsd",
+    name: "Time, Speed and Distance",
+    subject: "Quantitative Aptitude",
+    aliases: ["speed", "distance", "train", "boat", "stream", "km/h"],
+    summary: "Distance = Speed × Time. Trains, boats and relative speed are all this one formula with the right distance and the right speed.",
+    keyPoints: [
+      "km/h × 5/18 = m/s; m/s × 18/5 = km/h.",
+      "A train passing a pole covers its own length; passing a platform covers train + platform.",
+      "Opposite directions: add speeds. Same direction: subtract them.",
+      "Boats: still water = (down + up) ÷ 2; stream = (down − up) ÷ 2.",
+    ],
+    questions: [
+      ["72 km/h is equal to:", ["18 m/s", "20 m/s", "25 m/s", "36 m/s"], 1, "72 × 5/18 = 20 m/s.", E],
+      ["A 150 m long train passes a pole in 9 seconds. Its speed is:", ["50 km/h", "54 km/h", "60 km/h", "72 km/h"], 2, "150 ÷ 9 = 50/3 m/s; × 18/5 = 60 km/h.", M],
+      ["Trains 120 m and 180 m long run in opposite directions at 40 km/h and 50 km/h. How long do they take to cross each other?", ["10 seconds", "12 seconds", "15 seconds", "18 seconds"], 1, "Relative speed = 90 km/h = 25 m/s; distance = 300 m; time = 12 s.", H],
+      ["A boat goes 24 km downstream in 2 hours and returns upstream in 3 hours. What is the speed of the stream?", ["1 km/h", "2 km/h", "3 km/h", "4 km/h"], 1, "Downstream 12 km/h, upstream 8 km/h; stream = (12 − 8) ÷ 2 = 2 km/h.", V],
+    ],
+  },
+  {
+    id: "quant-ci",
+    name: "Compound Interest",
+    subject: "Quantitative Aptitude",
+    aliases: ["compound interest", "ci", "compounded"],
+    summary: "Compound interest is interest on interest: Amount = P × (1 + R/100)ⁿ. For 2 years it exceeds simple interest by P × (R/100)².",
+    keyPoints: [
+      "Amount = P(1 + R/100)ⁿ; CI = Amount − P.",
+      "2 years: CI − SI = P(R/100)².",
+      "At 10%: 2 years → × 1.21, 3 years → × 1.331.",
+      "If a sum doubles in n years at CI, it becomes 2ᵏ times in k × n years.",
+    ],
+    questions: [
+      ["Compound interest on ₹10,000 at 10% per annum for 2 years is:", ["₹2,000", "₹2,100", "₹2,200", "₹2,310"], 1, "10,000 × 1.21 = 12,100, so CI = ₹2,100.", E],
+      ["The difference between CI and SI on ₹5,000 for 2 years at 10% is:", ["₹25", "₹50", "₹100", "₹500"], 1, "P(R/100)² = 5,000 × 0.01 = ₹50.", M],
+      ["₹8,000 at 5% compound interest for 2 years amounts to:", ["₹8,400", "₹8,800", "₹8,820", "₹9,000"], 2, "8,000 × 1.05² = 8,000 × 1.1025 = ₹8,820.", H],
+      ["A sum doubles in 5 years at compound interest. In how many years will it become 8 times?", ["10", "15", "20", "40"], 1, "8 = 2³, so it takes 3 × 5 = 15 years.", V],
+    ],
+  },
+
   // ---------------- Reasoning ----------------
   {
     id: "reason-series",
@@ -618,6 +679,64 @@ const SEED: TopicSeed[] = [
       ["Introducing a boy, Meena said, “He is the son of the daughter of the father of my uncle.” How is the boy related to Meena?", ["Brother", "Nephew", "Cousin", "Son"], 0, "Father of my uncle = grandfather; his daughter = Meena’s mother; her son = Meena’s brother.", M, "SSC CGL · SSC CHSL"],
       ["P is the father of Q, but Q is not the son of P. R is the husband of Q. How is R related to P?", ["Son", "Son-in-law", "Brother", "Nephew"], 1, "Q is P’s daughter, so her husband R is P’s son-in-law.", H, "SSC CGL · RRB NTPC"],
       ["If “A $ B” means A is the mother of B and “A # B” means A is the father of B, which expression shows that M is the grandfather of N?", ["M # P $ N", "M $ P # N", "P # M $ N", "N # P $ M"], 0, "M # P: M is father of P; P $ N: P is mother of N; so M is N’s maternal grandfather.", V, "SBI PO · SSC CGL"],
+    ],
+  },
+
+  {
+    id: "reason-syllogism",
+    name: "Syllogism",
+    subject: "Reasoning",
+    aliases: ["syllogism", "statements and conclusions", "venn"],
+    summary: "Take the statements as true even if they sound odd, draw the smallest Venn diagram they allow, and accept only conclusions that hold in every possible diagram.",
+    keyPoints: [
+      "“All A are B” converts to “Some B are A”, never to “All B are A”.",
+      "“No A is B” converts to “No B is A”.",
+      "Some + Some gives no definite conclusion.",
+      "Some A are B + No B is C ⇒ Some A are not C.",
+      "“Only a few A are B” means some are and some are not, so “All A are B” is impossible.",
+    ],
+    questions: [
+      ["Statements: All cats are animals. All animals are living beings. Conclusions: I. All cats are living beings. II. Some living beings are cats.", SY, 2, "Cats ⊂ animals ⊂ living beings, so I follows, and converting it gives II.", E],
+      ["Statements: All pens are books. No book is a table. Conclusions: I. No pen is a table. II. Some books are pens.", SY, 2, "Pens sit inside books, which never touch tables, so I follows; II is the conversion of “All pens are books”.", E],
+      ["Statements: Some boys are players. All players are tall. Conclusions: I. Some boys are tall. II. All tall people are players.", SY, 0, "The boys who are players are tall, so I follows. “All players are tall” cannot be reversed, so II does not.", E],
+      ["Statements: Some apples are mangoes. Some mangoes are bananas. Conclusions: I. Some apples are bananas. II. Some bananas are mangoes.", SY, 1, "Two “some” statements give no link between apples and bananas. II just converts the second statement.", M],
+      ["Statements: No dog is a cat. All cats are pets. Conclusions: I. No dog is a pet. II. Some pets are not dogs.", SY, 1, "Dogs could still be pets, so I fails. The cats are pets that are not dogs, so II follows.", M],
+      ["Statements: All roses are flowers. Some flowers are red. Conclusions: I. Some roses are red. II. All red things are flowers.", SY, 3, "The red flowers may or may not include roses, and nothing says every red thing is a flower.", M],
+      ["Statements: Some teachers are doctors. No doctor is a lawyer. Conclusions: I. Some teachers are not lawyers. II. Some lawyers are teachers.", SY, 0, "The teachers who are doctors cannot be lawyers, so I follows; II is only a possibility.", H],
+      ["Statements: All A are B. Some B are C. No C is D. Conclusions: I. Some B are not D. II. Some A are C.", SY, 0, "The B that are C cannot be D, so I follows. A may or may not overlap C.", H],
+      ["Statements: Only a few phones are laptops. All laptops are tablets. Conclusions: I. Some phones are tablets. II. All phones being laptops is a possibility.", SY, 0, "The phones that are laptops are tablets, so I follows. “Only a few” rules out all phones being laptops.", H],
+      ["Statements: All stars are planets. No planet is a moon. Some moons are satellites. Conclusions: I. Some satellites are not planets. II. No star is a moon.", SY, 2, "The satellites that are moons cannot be planets (I). Stars sit inside planets, which never touch moons (II).", V],
+      ["Statements: Some X are Y. All Y are Z. No Z is W. Conclusions: I. Some X are not W. II. Some Z are X.", SY, 2, "The X that are Y are also Z and so cannot be W (I); those same X are Z, giving II.", V],
+      ["Statements: All pencils are erasers. Some erasers are sharpeners. No sharpener is a scale. Conclusions: I. All pencils being sharpeners is a possibility. II. Some erasers are not scales.", SY, 2, "Nothing stops pencils from all being sharpeners (I). The erasers that are sharpeners cannot be scales (II).", V],
+      ["Statements: No man is a machine. Some machines are robots. All robots are smart. Conclusions: I. Some smart things are not men. II. Some machines are smart.", SY, 2, "The machines that are robots are smart (II), and being machines they are not men, so some smart things are not men (I).", V],
+    ],
+  },
+  {
+    id: "reason-direction",
+    name: "Direction Sense",
+    subject: "Reasoning",
+    aliases: ["direction", "directions", "north", "distance from start", "shadow"],
+    summary: "Track each turn on a rough sketch: right and left depend on which way the person is facing. The final distance from the start is often a Pythagoras triangle.",
+    keyPoints: [
+      "Facing north, right is east; facing south, right is west.",
+      "Morning sun is in the east, so shadows fall to the west; evening shadows fall to the east.",
+      "Net displacement = √(net east–west² + net north–south²).",
+      "Common triples: 3-4-5, 5-12-13, 6-8-10.",
+    ],
+    questions: [
+      ["Ravi walks 5 km north, turns right and walks 3 km. In which direction is he from the start?", ["North-east", "North-west", "South-east", "East"], 0, "He is north and then east of the start, so north-east.", E],
+      ["You face north and turn 90° clockwise. Which way do you face now?", ["West", "East", "South", "North"], 1, "Clockwise from north is east.", E],
+      ["A man walks 10 m east and then 10 m west. How far is he from the start?", ["0 m", "10 m", "20 m", "5 m"], 0, "He comes straight back to the starting point.", E],
+      ["Meena walks 4 km north and then 3 km east. How far is she from the start?", ["5 km", "7 km", "1 km", "6 km"], 0, "√(4² + 3²) = 5 km.", M],
+      ["Facing south, Arun turns left and then left again. Which way is he facing now?", ["South", "East", "North", "West"], 2, "Facing south, left is east; facing east, left is north.", M],
+      ["In the morning the Sun is directly behind you. Which way are you facing?", ["East", "West", "North", "South"], 1, "The morning Sun is in the east; with it behind you, you face west.", M],
+      ["A walks 6 km south, turns left and walks 8 km, then turns left and walks 6 km. Where is he from the start?", ["8 km east", "8 km west", "10 km south-east", "6 km north"], 0, "South 6, east 8, north 6: the north–south moves cancel, leaving 8 km east.", H],
+      ["In the evening, Rahul’s shadow falls exactly to his right. Which way is he facing?", ["North", "South", "East", "West"], 0, "The evening Sun is in the west, so shadows point east. East on his right means he faces north.", H],
+      ["A boy walks 12 m north, turns right and walks 5 m. How far is he from the start?", ["13 m", "17 m", "7 m", "15 m"], 0, "√(12² + 5²) = 13 m.", H],
+      ["At 3 o’clock the minute hand of a clock points north. Where does the hour hand point?", ["North", "South", "East", "West"], 2, "With 12 at north, 3 is a quarter-turn clockwise: east.", V],
+      ["A man walks 10 km north, turns right and walks 6 km, turns right and walks 10 km, then turns left and walks 4 km. Where is he from the start?", ["10 km east", "6 km east", "4 km west", "10 km north-east"], 0, "North 10, east 6, south 10, then left of south is east 4: net 10 km east.", V],
+      ["P is 4 km north of Q, and R is 3 km east of Q. Where is R with respect to P?", ["5 km south-east", "5 km north-east", "7 km south-east", "5 km south-west"], 0, "From P, R is 4 km south and 3 km east: 5 km to the south-east.", V],
+      ["A man facing west turns 45° clockwise, then 180° clockwise, then 270° anticlockwise. Which way is he facing now?", ["South-west", "North-west", "South-east", "North-east"], 0, "Net turn = 45 + 180 − 270 = 45° anticlockwise; 45° anticlockwise from west is south-west.", V],
     ],
   },
 

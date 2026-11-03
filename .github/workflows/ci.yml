@@ -1,0 +1,44 @@
+# Runs on every pull request and every push to main: type-check, question-bank checks and a build.
+# A red check here means the change would break the site or ship a wrong answer.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24 runs the TypeScript sources directly for the question checks.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npm run lint
+
+      - name: Question bank, practice sets and generated answers
+        run: npm run check:questions
+
+      # The static build needs no database or secrets, so it can run on every PR.
+      - name: Build (static)
+        run: |
+          rm -rf src/app/api
+          npm run build
+        env:
+          NEXT_PUBLIC_STATIC: "1"
+          NEXT_TELEMETRY_DISABLED: "1"
