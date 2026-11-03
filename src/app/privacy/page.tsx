@@ -27,6 +27,9 @@ export default function PrivacyPage() {
           <strong>Payments:</strong> the order and payment IDs, amount, status and date. Card, UPI and bank details are entered on Razorpay and never reach our servers.
         </li>
         <li>
+          <strong>Messages to us:</strong> the name, email, topic and message you send through the contact form, so we can reply and keep a record of the request.
+        </li>
+        <li>
           <strong>On your device:</strong> practice progress, flashcards, notes and your light or dark theme are saved in your browser’s local storage.
         </li>
         <li>
@@ -74,7 +77,7 @@ export default function PrivacyPage() {
         <li>You can withdraw consent by deleting your account; this does not affect processing done before.</li>
       </ul>
       <p>
-        To make a request, write to <ContactEmail />.
+        To make a request, use <ContactEmail topic="privacy" />.
       </p>
 
       <h2>Security</h2>
@@ -88,7 +91,7 @@ export default function PrivacyPage() {
 
       <h2>Contact and grievances</h2>
       <p>
-        Questions or complaints about your data can be sent to <ContactEmail /> with the subject “Privacy”. We respond within 15 days.
+        Questions or complaints about your data can be sent through <ContactEmail topic="privacy" />. We respond within 15 days.
       </p>
     </InfoPage>
   );

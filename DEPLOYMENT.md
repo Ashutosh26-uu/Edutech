@@ -43,6 +43,18 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
    ```
 5. Email verification is on: sign-up emails a 6-digit code (`neon neon-auth config email-password get` shows the settings), and the login page asks for it before the first session. Codes go out through Neon's shared SMTP, which is fine to start with; for production, set up your own SMTP (`neon neon-auth config email-provider`) so the emails carry your domain.
 6. Before launch, follow Neon's [Auth production checklist](https://neon.com/docs/auth/production-checklist): your own SMTP for auth emails, the application name, and turning off "Allow Localhost".
+7. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL` (your support address). The Contact, Privacy, Terms and Refund pages then show it next to the contact form.
+
+## Contact messages
+
+The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Read new messages in the Neon console's SQL editor:
+
+```sql
+select created_at, topic, name, email, message, left(id::text, 8) as reference
+from contact_messages where status = 'open' order by created_at;
+```
+
+Mark one as answered with `update contact_messages set status = 'answered' where id::text like 'ea365ca4%';` (use the reference the user quotes, in lower case).
 
 ## 3. Payments
 

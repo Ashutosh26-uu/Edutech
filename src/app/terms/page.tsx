@@ -69,7 +69,7 @@ export default function TermsPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions about these terms can be sent to <ContactEmail />.
+        Questions about these terms can be sent through <ContactEmail />.
       </p>
     </InfoPage>
   );
