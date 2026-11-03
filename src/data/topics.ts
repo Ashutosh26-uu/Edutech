@@ -1,4 +1,5 @@
 import type { Difficulty, MCQ, Topic } from "@/lib/types";
+import { ELITE_QUESTIONS } from "./elite-questions";
 import { TOUGH_QUESTIONS } from "./tough-questions";
 import { YOUR_PYQS } from "./your-pyqs";
 
@@ -14,7 +15,8 @@ import { YOUR_PYQS } from "./your-pyqs";
  * (see lib/generators.ts), so their bank only needs worked examples and PYQs.
  *
  * Exam-level hard and very hard questions (multi-statement, assertion–reason, chronology)
- * live in tough-questions.ts and are appended to each topic.
+ * live in tough-questions.ts, and topper-level very hard ones in elite-questions.ts; both are
+ * appended to each topic.
  */
 
 export type Q = [question: string, options: string[], answer: number, explanation: string, difficulty: Difficulty, source?: string];
@@ -903,7 +905,7 @@ export const TOPICS: Topic[] = SEED.map(({ questions, ...t }) => t);
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
 
 export const QUESTION_BANK: MCQ[] = SEED.flatMap((t) => {
-  const own = [...t.questions, ...(TOUGH_QUESTIONS[t.id] ?? [])].map(([question, options, answer, explanation, difficulty, source], i): MCQ => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source }));
+  const own = [...t.questions, ...(TOUGH_QUESTIONS[t.id] ?? []), ...(ELITE_QUESTIONS[t.id] ?? [])].map(([question, options, answer, explanation, difficulty, source], i): MCQ => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source }));
   // Your own previous-year questions get stable ids of their own and the PYQ flag.
   const pyqs = (YOUR_PYQS[t.id] ?? []).map(([question, options, answer, explanation, difficulty, source], i): MCQ => ({ id: `${t.id}-pyq-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source, pyq: true }));
   return [...own, ...pyqs];

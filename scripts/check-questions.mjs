@@ -95,6 +95,13 @@ const CHECKS = [
   [/What does ₹([\d,]+) amount to in 3 years at (\d+)%/, (m) => n(m[1]) * (1 + +m[2] / 100) ** 3],
   [/doubles itself in (\d+) years at compound interest\. In how many years will it become (\d+) times/, (m) => +m[1] * Math.log2(+m[2])],
   [/amounts to ₹([\d,]+) in 2 years and ₹([\d,]+) in 3 years/, (m) => ((n(m[2]) - n(m[1])) / n(m[1])) * 100],
+  [/A is (twice|\d+ times) as efficient as B, and together they finish a work in (\d+) days\. In how many days can (A|B)/, (m) => {
+    const k = m[1] === "twice" ? 2 : parseInt(m[1]);
+    return m[3] === "A" ? (+m[2] * (k + 1)) / k : +m[2] * (k + 1);
+  }],
+  [/holds (\d+) litres of pure milk\. (\d+) litres are taken out and replaced with water, and this is done (twice|three times)/, (m) => +m[1] * (1 - +m[2] / +m[1]) ** (m[3] === "twice" ? 2 : 3)],
+  [/spotted by a policeman (\d+) m away\. The thief runs at (\d+) km\/h and the policeman chases at (\d+) km\/h/, (m) => (+m[1] * +m[2]) / (+m[3] - +m[2])],
+  [/difference between compound interest and simple interest on ₹([\d,]+) for 3 years at (\d+)%/, (m) => n(m[1]) * (+m[2] / 100) ** 2 * (3 + +m[2] / 100)],
 ];
 let derived = 0;
 for (const t of TOPICS.filter((x) => hasGenerator(x.id))) {
