@@ -10,8 +10,8 @@ const POLITY = ["polity-preamble", "polity-fundamental-rights", "polity-dpsp-dut
 const HISTORY = ["history-national-movement", "history-mughal"];
 const GEO = ["geo-indian-rivers", "geo-solar-system"];
 const SCIENCE = ["sci-physics", "sci-biology", "sci-chemistry"];
-const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-time-work", "quant-average"];
-const REASONING = ["reason-series", "reason-coding", "reason-blood-relations"];
+const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-ci", "quant-time-work", "quant-tsd", "quant-average", "quant-ratio"];
+const REASONING = ["reason-series", "reason-coding", "reason-blood-relations", "reason-syllogism", "reason-direction"];
 const ENGLISH = ["eng-vocabulary", "eng-grammar"];
 const GA = [...POLITY, ...HISTORY, ...GEO, "eco-basics", ...SCIENCE];
 
@@ -31,7 +31,7 @@ const bankingGa = s("General, Economy & Banking Awareness", ["bank-awareness", "
 const cdp = s("Child Development & Pedagogy", ["cdp-child-development"]);
 const evs = s("Environmental Studies", ["sci-biology", "geo-solar-system", "geo-indian-rivers"]);
 const stateGk = s("State-specific GK (history, geography, culture)");
-const csat = s("CSAT / Aptitude", ["quant-percentage", "quant-average", ...REASONING]);
+const csat = s("CSAT / Aptitude", ["quant-percentage", "quant-average", "quant-ratio", "quant-tsd", ...REASONING]);
 const gsBlocks = [s("Indian Polity", POLITY), s("History", HISTORY), s("Geography", GEO), s("Economy", ["eco-basics"]), s("General Science", SCIENCE)];
 
 type Def = Omit<Exam, "category" | "level" | "conductedBy" | "website"> & Partial<Pick<Exam, "level" | "conductedBy" | "website">>;

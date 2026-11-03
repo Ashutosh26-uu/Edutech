@@ -84,7 +84,9 @@ function buildSet(topicIds: string[], count: number, weights: Record<string, num
     }
     out.push(...picked);
   }
-  return out;
+  // Borrowed questions keep their own tier, so re-sort to keep the easy → very hard ramp.
+  const rank = (q: MCQ) => DIFFICULTIES.indexOf(q.difficulty ?? "moderate");
+  return out.map((q, i) => ({ q, i })).sort((a, b) => rank(a.q) - rank(b.q) || a.i - b.i).map(({ q }) => q);
 }
 
 export const localProvider: AIProvider = {

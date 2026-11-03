@@ -38,6 +38,19 @@ function numeric(id: string, topicId: string, difficulty: Difficulty, question: 
   };
 }
 
+/** Builds an MCQ whose answer is text (a ratio, say) from the right answer and candidate distractors. */
+function choice(id: string, topicId: string, difficulty: Difficulty, question: string, answer: string, distractors: string[], explanation: string, r: Rand): MCQ {
+  const wrong = [...new Set(distractors)].filter((d) => d !== answer).slice(0, 3);
+  const options = shuffle([answer, ...wrong], r);
+  return { id, topicId, difficulty, question, options, answer: options.indexOf(answer), explanation };
+}
+
+/** a : b in lowest terms. */
+const ratio = (a: number, b: number) => {
+  const g = gcd(a, b);
+  return `${a / g} : ${b / g}`;
+};
+
 const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
   "quant-percentage": {
     easy: (id, r) => {
@@ -439,6 +452,184 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         ans,
         `The ${ordinal(m)} result is counted in both groups: ${m} × ${first} + ${m} × ${last} − ${n} × ${all} = ${m * first} + ${m * last} − ${n * all} = ${ans}.`,
         r,
+      );
+    }),
+  },
+
+  "quant-ratio": {
+    easy: (id, r) => {
+      const [a, b] = pick([[2, 3], [3, 5], [4, 5], [5, 7], [3, 7], [1, 4], [2, 5], [7, 8]], r);
+      const k = pick([20, 25, 40, 50, 100, 120], r);
+      const larger = r() < 0.5;
+      const ans = (larger ? b : a) * k;
+      return numeric(
+        id, "quant-ratio", "easy",
+        `₹${fmt((a + b) * k)} is divided between A and B in the ratio ${a} : ${b}. What is ${larger ? "B’s" : "A’s"} share?`,
+        ans,
+        `Total parts = ${a} + ${b} = ${a + b}; one part = ${fmt((a + b) * k)} ÷ ${a + b} = ${k}. ${larger ? "B" : "A"} gets ${larger ? b : a} × ${k} = ₹${fmt(ans)}.`,
+        r, "₹",
+      );
+    },
+    moderate: (id, r) => {
+      const [a, b] = pick([[2, 3], [3, 4], [4, 5], [5, 6], [2, 5], [3, 7]], r);
+      const [c, d] = pick([[4, 5], [2, 3], [5, 7], [3, 4], [6, 7], [3, 8]], r);
+      const ans = ratio(a * c, b * d);
+      return choice(
+        id, "quant-ratio", "moderate",
+        `If A : B = ${a} : ${b} and B : C = ${c} : ${d}, what is A : C?`,
+        ans,
+        [ratio(a * d, b * c), ratio(b * d, a * c), ratio(a, d), ratio(a * c, d), ratio(a + c, b + d)],
+        `A : C = (A/B) × (B/C) = (${a}/${b}) × (${c}/${d}) = ${a * c}/${b * d} = ${ans}.`,
+        r,
+      );
+    },
+    hard: (id, r) => {
+      const [a, b] = pick([[3, 5], [2, 3], [4, 7], [5, 8], [3, 4], [5, 9]], r);
+      const k = pick([4, 5, 6, 8, 10, 12], r);
+      const x = pick([2, 4, 5, 6, 8, 10], r);
+      const g = gcd(a * k + x, b * k + x);
+      const [c, d] = [(a * k + x) / g, (b * k + x) / g];
+      return numeric(
+        id, "quant-ratio", "hard",
+        `Two numbers are in the ratio ${a} : ${b}. If ${x} is added to each, the ratio becomes ${c} : ${d}. What is the smaller number?`,
+        a * k,
+        `Let the numbers be ${a}k and ${b}k. (${a}k + ${x}) ÷ (${b}k + ${x}) = ${c}/${d} gives k = ${k}, so the smaller number is ${a} × ${k} = ${a * k}.`,
+        r,
+      );
+    },
+    "very-hard": (id, r) => {
+      const [t, m, w, m2, w2] = pick([[60, 2, 1, 1, 2], [40, 3, 1, 1, 1], [80, 3, 1, 2, 1], [90, 7, 2, 7, 3], [45, 4, 1, 3, 2], [100, 4, 1, 2, 1]], r);
+      const milk = (t * m) / (m + w);
+      const water = t - milk;
+      const ans = (milk * w2) / m2 - water;
+      return numeric(
+        id, "quant-ratio", "very-hard",
+        `A ${t}-litre mixture has milk and water in the ratio ${m} : ${w}. How much water must be added to make the ratio ${m2} : ${w2}?`,
+        ans,
+        `Milk = ${milk} L and water = ${water} L. Milk stays the same, so water needed = ${milk} × ${w2}/${m2} = ${(milk * w2) / m2} L. Add ${(milk * w2) / m2} − ${water} = ${ans} L.`,
+        r, "", " litres",
+      );
+    },
+  },
+
+  "quant-tsd": {
+    easy: (id, r) => {
+      const kmh = pick([18, 36, 54, 72, 90, 108, 126, 144], r);
+      return numeric(id, "quant-tsd", "easy", `Convert ${kmh} km/h into metres per second.`, (kmh * 5) / 18, `Multiply by 5/18: ${kmh} × 5/18 = ${(kmh * 5) / 18} m/s.`, r, "", " m/s");
+    },
+    moderate: (id, r) => {
+      const kmh = pick([36, 54, 72, 90, 108], r);
+      const v = (kmh * 5) / 18;
+      const t = pick([6, 8, 9, 10, 12, 15, 18], r);
+      return numeric(
+        id, "quant-tsd", "moderate",
+        `A train ${v * t} m long runs at ${kmh} km/h. How long does it take to pass a pole?`,
+        t,
+        `${kmh} km/h = ${v} m/s. To pass a pole the train covers its own length: ${v * t} ÷ ${v} = ${t} seconds.`,
+        r, "", " seconds",
+      );
+    },
+    hard: either((id, r) => {
+      const v = pick([10, 15, 20, 25, 30], r);
+      const t = pick([12, 15, 18, 20, 24, 30], r);
+      const len = pick([100, 120, 150, 180, 200, 240], r);
+      const plat = v * t - len;
+      if (plat < 60) return GENERATORS["quant-tsd"].hard(id, r);
+      return numeric(
+        id, "quant-tsd", "hard",
+        `A train ${len} m long crosses a ${plat} m long platform in ${t} seconds. What is its speed?`,
+        v * 3.6,
+        `Distance = train + platform = ${len} + ${plat} = ${v * t} m. Speed = ${v * t} ÷ ${t} = ${v} m/s = ${v} × 18/5 = ${fmt(v * 3.6)} km/h.`,
+        r, "", " km/h",
+      );
+    }, (id, r) => {
+      const [s1, s2] = pick([[40, 50], [45, 63], [36, 54], [60, 48], [72, 54], [30, 42]], r);
+      const rel = ((s1 + s2) * 5) / 18;
+      const t = pick([6, 8, 9, 10, 12, 15], r);
+      const total = rel * t;
+      const l1 = Math.round((total * pick([0.4, 0.5, 0.6], r)) / 10) * 10;
+      if (!Number.isInteger(rel) || l1 <= 0 || l1 >= total) return GENERATORS["quant-tsd"].hard(id, r);
+      return numeric(
+        id, "quant-tsd", "hard",
+        `Two trains, ${l1} m and ${total - l1} m long, run on parallel tracks in opposite directions at ${s1} km/h and ${s2} km/h. How long do they take to cross each other?`,
+        t,
+        `Relative speed = ${s1} + ${s2} = ${s1 + s2} km/h = ${rel} m/s. Distance = ${l1} + ${total - l1} = ${total} m. Time = ${total} ÷ ${rel} = ${t} seconds.`,
+        r, "", " seconds",
+      );
+    }),
+    "very-hard": (id, r) => {
+      const [down, up] = pick([[12, 8], [15, 9], [20, 12], [18, 10], [16, 8], [14, 10]], r);
+      const lcm = (down * up) / gcd(down, up);
+      const d = lcm * pick([1, 2], r);
+      const askStream = r() < 0.5;
+      const ans = askStream ? (down - up) / 2 : (down + up) / 2;
+      return numeric(
+        id, "quant-tsd", "very-hard",
+        `A boat goes ${d} km downstream in ${d / down} hours and comes back the same distance upstream in ${d / up} hours. What is the speed of ${askStream ? "the stream" : "the boat in still water"}?`,
+        ans,
+        `Downstream speed = ${d} ÷ ${d / down} = ${down} km/h; upstream = ${d} ÷ ${d / up} = ${up} km/h. ${askStream ? `Stream = (${down} − ${up}) ÷ 2` : `Still water = (${down} + ${up}) ÷ 2`} = ${ans} km/h.`,
+        r, "", " km/h",
+      );
+    },
+  },
+
+  "quant-ci": {
+    easy: (id, r) => {
+      const [p, rate] = pick([[5000, 10], [8000, 10], [2000, 20], [4000, 5], [8000, 5], [5000, 8], [10000, 4], [12000, 10], [2500, 20]], r);
+      const ci = (p * (200 * rate + rate * rate)) / 10000;
+      return numeric(
+        id, "quant-ci", "easy",
+        `Find the compound interest on ₹${fmt(p)} at ${rate}% per annum for 2 years, compounded annually.`,
+        ci,
+        `Amount = ${fmt(p)} × (1 + ${rate}/100)² = ₹${fmt(p + ci)}. CI = ${fmt(p + ci)} − ${fmt(p)} = ₹${fmt(ci)}.`,
+        r, "₹",
+      );
+    },
+    moderate: (id, r) => {
+      const p = pick([5000, 8000, 10000, 12000, 20000, 25000], r);
+      const rate = pick([4, 5, 8, 10, 12], r);
+      const ans = (p * rate * rate) / 10000;
+      if (!Number.isInteger(ans)) return GENERATORS["quant-ci"].moderate(id, r);
+      return numeric(
+        id, "quant-ci", "moderate",
+        `What is the difference between compound interest and simple interest on ₹${fmt(p)} for 2 years at ${rate}% per annum?`,
+        ans,
+        `For 2 years, CI − SI = P × (R/100)² = ${fmt(p)} × (${rate}/100)² = ₹${fmt(ans)}.`,
+        r, "₹",
+      );
+    },
+    hard: (id, r) => {
+      const p = pick([1000, 2000, 5000, 8000, 10000, 15000, 20000], r);
+      const rate = pick([10, 20], r);
+      const amt = (p * (100 + rate) ** 3) / 1e6;
+      return numeric(
+        id, "quant-ci", "hard",
+        `What does ₹${fmt(p)} amount to in 3 years at ${rate}% per annum compound interest?`,
+        amt,
+        `Amount = ${fmt(p)} × (${100 + rate}/100)³ = ${fmt(p)} × ${(((100 + rate) / 100) ** 3).toFixed(3)} = ₹${fmt(amt)}.`,
+        r, "₹",
+      );
+    },
+    "very-hard": either((id, r) => {
+      const n = pick([3, 4, 5, 6, 8, 10], r);
+      const [times, pow] = pick([[4, 2], [8, 3], [16, 4]], r);
+      return numeric(
+        id, "quant-ci", "very-hard",
+        `A sum of money doubles itself in ${n} years at compound interest. In how many years will it become ${times} times itself?`,
+        n * pow,
+        `At compound interest the sum doubles every ${n} years: ${times} = 2^${pow}, so it takes ${pow} × ${n} = ${n * pow} years.`,
+        r, "", " years",
+      );
+    }, (id, r) => {
+      const [p, rate] = pick([[10000, 10], [20000, 10], [40000, 5], [10000, 20], [5000, 20], [16000, 25]], r);
+      const a2 = (p * (100 + rate) ** 2) / 1e4;
+      const a3 = (a2 * (100 + rate)) / 100;
+      return numeric(
+        id, "quant-ci", "very-hard",
+        `At compound interest, a sum amounts to ₹${fmt(a2)} in 2 years and ₹${fmt(a3)} in 3 years. What is the rate of interest?`,
+        rate,
+        `The third year’s interest is earned on ₹${fmt(a2)}: ${fmt(a3)} − ${fmt(a2)} = ₹${fmt(a3 - a2)}. Rate = ${fmt(a3 - a2)} ÷ ${fmt(a2)} × 100 = ${rate}%.`,
+        r, "", "%",
       );
     }),
   },
