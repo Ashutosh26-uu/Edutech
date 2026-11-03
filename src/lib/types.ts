@@ -27,6 +27,8 @@ export interface MCQ {
   topicId?: string;
   /** Set on exam-practice questions; video quizzes have none. */
   difficulty?: Difficulty;
+  /** Exams whose previous-year papers keep testing this point, e.g. "SSC CGL · UPSC Prelims". */
+  source?: string;
   /** For video quizzes: where in the video the answer comes from. */
   timestamp?: number;
 }

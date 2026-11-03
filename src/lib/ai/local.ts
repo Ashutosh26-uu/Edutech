@@ -43,13 +43,13 @@ function rankTopics(query: string): { topic: Topic; score: number }[] {
 function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}): MCQ[] {
   const size = Math.max(MIN_SET_SIZE, count);
   const quota = tierQuota(size);
-  // pools[topic][tier]: shuffled bank questions, popped as they are used.
-  const pools = new Map(
-    topicIds.map((id) => [
-      id,
-      Object.fromEntries(DIFFICULTIES.map((d) => [d, shuffle(QUESTION_BANK.filter((q) => q.topicId === id && q.difficulty === d))])) as Record<Difficulty, MCQ[]>,
-    ]),
-  );
+  // pools[topic][tier]: shuffled bank questions, popped as they are used. Previous-year
+  // questions sit at the end so they are drawn before the written practice questions.
+  const pool = (id: string, d: Difficulty) => {
+    const qs = shuffle(QUESTION_BANK.filter((q) => q.topicId === id && q.difficulty === d));
+    return [...qs.filter((q) => !q.source), ...qs.filter((q) => q.source)];
+  };
+  const pools = new Map(topicIds.map((id) => [id, Object.fromEntries(DIFFICULTIES.map((d) => [d, pool(id, d)])) as Record<Difficulty, MCQ[]>]));
   const seen = new Set<string>();
   const out: MCQ[] = [];
 

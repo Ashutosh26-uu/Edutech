@@ -1,16 +1,18 @@
 import type { Difficulty, MCQ, Topic } from "@/lib/types";
 
 /**
- * Sample study content. Questions are practice questions written in the style of
- * one-day exams; they are not labelled as previous-year questions (PYQs).
+ * Study content. Each topic mixes general practice questions with "exam favourites": original
+ * questions on the facts and patterns that previous-year papers of SSC, UPSC, Banking, Railway
+ * and teaching exams test again and again, tagged with those exams in `source`. Favourites are
+ * drawn first when a set is built, so every set leans on what the exams actually ask.
  *
  * Every topic without a generator has at least 10 questions spread over all four difficulty
  * tiers (at least two per tier), so a 10-question set on a single topic always mixes easy,
  * moderate, hard and very hard questions. Quant topics have a template generator per tier
- * (see lib/generators.ts), so their bank only needs a few worked examples.
+ * (see lib/generators.ts), so their bank only needs worked examples and PYQs.
  */
 
-type Q = [question: string, options: string[], answer: number, explanation: string, difficulty: Difficulty];
+type Q = [question: string, options: string[], answer: number, explanation: string, difficulty: Difficulty, source?: string];
 
 interface TopicSeed extends Topic {
   questions: Q[];
@@ -50,6 +52,10 @@ const SEED: TopicSeed[] = [
       ["Which is the correct order of words in the Preamble?", ["Sovereign, Secular, Socialist, Democratic, Republic", "Sovereign, Socialist, Secular, Democratic, Republic", "Socialist, Sovereign, Secular, Democratic, Republic", "Sovereign, Democratic, Socialist, Secular, Republic"], 1, "The Preamble reads “Sovereign Socialist Secular Democratic Republic”.", V],
       ["The Preamble was adopted by the Constituent Assembly on:", ["26 November 1949", "26 January 1950", "9 December 1946", "15 August 1947"], 0, "The Constitution, with its Preamble, was adopted on 26 November 1949 and came into force on 26 January 1950.", V],
       ["Consider: 1. The Preamble is justiciable. 2. The Preamble can be amended under Article 368. Which is correct?", ["Only 1", "Only 2", "Both 1 and 2", "Neither"], 1, "The Preamble is non-justiciable (not enforceable in court), but Kesavananda Bharati held it can be amended without altering the basic structure.", V],
+      ["The word “Integrity” in the phrase “unity and integrity of the Nation” was inserted into the Preamble by the:", ["1st Amendment", "7th Amendment", "42nd Amendment", "44th Amendment"], 2, "The 42nd Amendment (1976) added Socialist, Secular and “and integrity”.", E, "SSC CGL · SSC CHSL"],
+      ["The Preamble describes the Indian state as “Secular”. In the Indian sense this means the state:", ["Has an official religion", "Promotes one religion", "Has no religion of its own and treats all equally", "Bans religious practice in public"], 2, "Indian secularism is equal treatment of all religions by a state that has none of its own.", M, "SSC CGL · UPSC Prelims"],
+      ["Which type of justice is NOT mentioned in the Preamble?", ["Social", "Economic", "Political", "Legal"], 3, "The Preamble promises social, economic and political justice; “legal” is not listed.", H, "SSC CGL · RRB NTPC"],
+      ["“Fraternity” in the Preamble assures the dignity of the individual and the:", ["Sovereignty of the state", "Unity and integrity of the Nation", "Supremacy of Parliament", "Independence of the judiciary"], 1, "The text reads “Fraternity assuring the dignity of the individual and the unity and integrity of the Nation”.", V, "UPSC Prelims · SSC CGL"],
     ],
   },
   {
@@ -69,7 +75,6 @@ const SEED: TopicSeed[] = [
     questions: [
       ["Fundamental Rights are contained in which Part of the Constitution?", ["Part II", "Part III", "Part IV", "Part V"], 1, "Part III (Articles 12–35) contains the Fundamental Rights.", E],
       ["How many Fundamental Rights does the Constitution guarantee today?", ["5", "6", "7", "8"], 1, "Six: originally seven, but the Right to Property was removed in 1978.", E],
-      ["Which Article of the Constitution abolishes untouchability?", ["Article 14", "Article 15", "Article 17", "Article 21"], 2, "Article 17 abolishes untouchability and forbids its practice in any form.", E],
       ["Dr. B. R. Ambedkar described which Article as the “heart and soul” of the Constitution?", ["Article 19", "Article 21", "Article 32", "Article 368"], 2, "Article 32 (Right to Constitutional Remedies) lets citizens move the Supreme Court directly to enforce Fundamental Rights.", M],
       ["The Right to Education (Article 21A) was inserted by which Amendment?", ["73rd Amendment", "74th Amendment", "86th Amendment", "93rd Amendment"], 2, "The 86th Amendment Act, 2002 inserted Article 21A for free and compulsory education for children aged 6–14.", M],
       ["Fundamental Rights in the Indian Constitution were borrowed from the Constitution of:", ["UK", "USA", "Ireland", "Canada"], 1, "The idea came from the American Bill of Rights.", M],
@@ -79,6 +84,10 @@ const SEED: TopicSeed[] = [
       ["Which Fundamental Right is available to citizens only, not to foreigners?", ["Article 14", "Article 19", "Article 21", "Article 25"], 1, "Article 19 (six freedoms) is for citizens only; Articles 14, 21 and 25 apply to all persons.", V],
       ["Which Fundamental Rights cannot be suspended even during a National Emergency?", ["Articles 14 and 19", "Articles 19 and 32", "Articles 20 and 21", "Articles 25 and 26"], 2, "After the 44th Amendment, Articles 20 and 21 cannot be suspended under Article 359.", V],
       ["Under which Article can Parliament restrict the Fundamental Rights of members of the armed forces?", ["Article 33", "Article 34", "Article 35", "Article 31"], 0, "Article 33 empowers Parliament to modify Fundamental Rights for armed forces, police and intelligence agencies.", V],
+      ["Which Article of the Constitution abolishes untouchability?", ["Article 14", "Article 15", "Article 17", "Article 21"], 2, "Article 17 abolishes untouchability and forbids its practice in any form.", E, "SSC CGL · RRB NTPC"],
+      ["Which Article is called the “heart and soul of the Constitution” (right to constitutional remedies)?", ["Article 19", "Article 21", "Article 32", "Article 226"], 2, "Ambedkar called Article 32 the heart and soul of the Constitution.", M, "SSC CGL · UPSC Prelims"],
+      ["The writ issued to a person holding a public office to show by what authority they hold it is:", ["Habeas corpus", "Mandamus", "Certiorari", "Quo warranto"], 3, "Quo warranto means “by what warrant”.", H, "SSC CGL · SSC CHSL"],
+      ["The right to property was removed from the Fundamental Rights by the 44th Amendment and placed as a legal right under:", ["Article 19(1)(f)", "Article 31", "Article 300A", "Article 350"], 2, "Since 1978 Article 300A protects property as a constitutional, not fundamental, right.", V, "UPSC Prelims · SSC CGL"],
     ],
   },
   {
@@ -95,7 +104,6 @@ const SEED: TopicSeed[] = [
       "Originally 10 duties; the 11th (education of children 6–14) was added by the 86th Amendment (2002).",
     ],
     questions: [
-      ["Directive Principles of State Policy are contained in which Part of the Constitution?", ["Part III", "Part IV", "Part IVA", "Part V"], 1, "Part IV (Articles 36–51) contains the DPSP.", E],
       ["Fundamental Duties are listed in which Article?", ["Article 32", "Article 44", "Article 51A", "Article 368"], 2, "Article 51A, in Part IVA, lists the Fundamental Duties.", E],
       ["How many Fundamental Duties are there in the Constitution today?", ["9", "10", "11", "12"], 2, "There were 10 originally; the 86th Amendment (2002) added the 11th.", E],
       ["The idea of Directive Principles of State Policy was borrowed from the Constitution of:", ["USA", "Ireland", "Canada", "Australia"], 1, "DPSPs were borrowed from the Irish Constitution.", M],
@@ -107,6 +115,10 @@ const SEED: TopicSeed[] = [
       ["The Fundamental Duties were inspired by the Constitution of:", ["USA", "USSR", "Ireland", "UK"], 1, "The idea of Fundamental Duties was taken from the Constitution of the erstwhile USSR.", V],
       ["Which Article of the DPSP deals with the promotion of international peace and security?", ["Article 48A", "Article 49", "Article 50", "Article 51"], 3, "Article 51 directs the state to promote international peace and respect for international law.", V],
       ["Which Article provides for the separation of the judiciary from the executive?", ["Article 44", "Article 47", "Article 50", "Article 51"], 2, "Article 50 asks the state to separate the judiciary from the executive in public services.", V],
+      ["Directive Principles of State Policy are contained in which Part of the Constitution?", ["Part II", "Part III", "Part IV", "Part IV-A"], 2, "Part IV (Articles 36–51) holds the DPSP; Part IV-A holds Fundamental Duties.", E, "SSC CGL · SSC CHSL"],
+      ["Fundamental Duties were added by which Amendment, on the recommendation of which committee?", ["42nd; Swaran Singh Committee", "44th; Sarkaria Commission", "86th; Kothari Commission", "52nd; Punchhi Commission"], 0, "The 42nd Amendment (1976) added Article 51A on the Swaran Singh Committee’s advice.", M, "SSC CGL · UPSC Prelims"],
+      ["Which DPSP directs the State to organise village panchayats as units of self-government?", ["Article 39", "Article 40", "Article 44", "Article 48"], 1, "Article 40 deals with village panchayats; Article 44 is the Uniform Civil Code.", H, "SSC CGL · RRB NTPC"],
+      ["The duty “to provide opportunities for education to one’s child between 6 and 14 years” was added to Article 51A by the:", ["42nd Amendment", "44th Amendment", "86th Amendment", "97th Amendment"], 2, "The 86th Amendment (2002) added the 11th duty along with Article 21A.", V, "UPSC Prelims · CTET"],
     ],
   },
   {
@@ -135,6 +147,10 @@ const SEED: TopicSeed[] = [
       ["A joint sitting of Parliament is provided under:", ["Article 108", "Article 110", "Article 112", "Article 123"], 0, "Article 108 provides for a joint sitting to resolve a deadlock on ordinary bills.", V],
       ["Who decides whether a bill is a Money Bill?", ["President", "Speaker of the Lok Sabha", "Chairman of the Rajya Sabha", "Finance Minister"], 1, "Under Article 110(3), the Speaker’s decision on whether a bill is a Money Bill is final.", V],
       ["The quorum to constitute a sitting of either House of Parliament is:", ["One-fifth of the total members", "One-tenth of the total members", "One-fourth of the total members", "One-third of the total members"], 1, "Article 100 fixes the quorum at one-tenth of the total membership of the House.", V],
+      ["Who presides over a joint sitting of the two Houses of Parliament?", ["President", "Vice-President", "Speaker of the Lok Sabha", "Prime Minister"], 2, "The Speaker presides; in their absence the Deputy Speaker, then the Deputy Chairman of Rajya Sabha.", E, "SSC CGL · RRB NTPC"],
+      ["A Money Bill can be introduced only in the Lok Sabha and only on the recommendation of the:", ["Speaker", "President", "Finance Minister", "Prime Minister"], 1, "Article 110 defines a Money Bill; Article 117 requires the President’s recommendation.", M, "SSC CGL · SSC CHSL"],
+      ["The maximum gap allowed between two sessions of Parliament is:", ["Three months", "Six months", "Nine months", "One year"], 1, "Article 85: six months must not pass between the last sitting of one session and the first of the next.", H, "SSC CGL · UPSC Prelims"],
+      ["Which of these motions, if passed, requires the Council of Ministers to resign?", ["Adjournment motion", "Calling-attention motion", "No-confidence motion", "Privilege motion"], 2, "A no-confidence motion needs 50 members’ support to be admitted and, if passed, brings the government down.", V, "SSC CGL · UPSC Prelims"],
     ],
   },
 
@@ -156,7 +172,6 @@ const SEED: TopicSeed[] = [
     questions: [
       ["The Indian National Congress was founded in:", ["1857", "1885", "1905", "1920"], 1, "The INC was founded in 1885 by A. O. Hume.", E],
       ["The Jallianwala Bagh massacre took place in:", ["1905", "1919", "1930", "1942"], 1, "On 13 April 1919, General Dyer’s troops fired on a peaceful gathering in Amritsar.", E],
-      ["The slogan “Do or Die” is associated with which movement?", ["Non-Cooperation Movement", "Civil Disobedience Movement", "Quit India Movement", "Swadeshi Movement"], 2, "Gandhi gave the call “Do or Die” when the Quit India Movement was launched in August 1942.", E],
       ["Who presided over the first session of the Indian National Congress in 1885?", ["Dadabhai Naoroji", "W. C. Bonnerjee", "A. O. Hume", "Surendranath Banerjee"], 1, "W. C. Bonnerjee presided over the first session held in Bombay in December 1885.", M],
       ["The Partition of Bengal (1905) was carried out under which Viceroy?", ["Lord Ripon", "Lord Curzon", "Lord Minto", "Lord Dalhousie"], 1, "Lord Curzon announced the Partition of Bengal in 1905.", M],
       ["The Non-Cooperation Movement was withdrawn after which incident?", ["Jallianwala Bagh massacre", "Chauri Chaura incident", "Kakori conspiracy", "Partition of Bengal"], 1, "After a mob burnt a police station at Chauri Chaura (February 1922), Gandhi called off the movement.", M],
@@ -166,6 +181,12 @@ const SEED: TopicSeed[] = [
       ["The Gandhi–Irwin Pact was signed in:", ["1929", "1931", "1932", "1935"], 1, "The pact (March 1931) ended the Civil Disobedience Movement and led to Gandhi attending the Second Round Table Conference.", V],
       ["The Simon Commission (1927) was boycotted in India because:", ["It recommended partition", "It had no Indian member", "It rejected dominion status", "It imposed the Rowlatt Act"], 1, "All seven members were British, so Indians protested with the slogan “Simon Go Back”.", V],
       ["Which session of the Congress adopted the resolution of “Purna Swaraj” (complete independence)?", ["Lahore, 1929", "Karachi, 1931", "Calcutta, 1928", "Lucknow, 1916"], 0, "The Lahore session (December 1929), presided over by Jawaharlal Nehru, declared Purna Swaraj; 26 January 1930 was celebrated as Independence Day.", V],
+      ["The Indian National Congress was founded in 1885 by:", ["W. C. Bonnerjee", "A. O. Hume", "Dadabhai Naoroji", "Surendranath Banerjee"], 1, "A. O. Hume founded the INC; W. C. Bonnerjee presided over its first session in Bombay.", E, "SSC CGL · RRB NTPC"],
+      ["The Jallianwala Bagh massacre (1919) took place in the city of:", ["Lahore", "Amritsar", "Delhi", "Jalandhar"], 1, "On 13 April 1919 General Dyer fired on a gathering at Jallianwala Bagh, Amritsar.", E, "SSC CHSL · RRB Group D"],
+      ["The Dandi March of 1930 was launched to protest against the:", ["Rowlatt Act", "Partition of Bengal", "Salt tax", "Simon Commission"], 2, "Gandhi walked from Sabarmati to Dandi (12 March – 6 April 1930) to break the salt law.", M, "SSC CGL · SSC CHSL"],
+      ["The slogan “Do or Die” is associated with which movement?", ["Non-Cooperation Movement", "Civil Disobedience Movement", "Quit India Movement", "Swadeshi Movement"], 2, "Gandhi gave the call at the Bombay session of the AICC on 8 August 1942.", M, "SSC CGL · RRB NTPC"],
+      ["Who was the President of the Congress at the Lahore session (1929) where Purna Swaraj was demanded?", ["Motilal Nehru", "Jawaharlal Nehru", "Subhas Chandra Bose", "Sardar Patel"], 1, "Jawaharlal Nehru presided at Lahore; 26 January 1930 was declared Independence Day.", H, "SSC CGL · UPSC Prelims"],
+      ["The Cabinet Mission (1946) consisted of three members. Who among these was NOT one of them?", ["Lord Pethick-Lawrence", "Stafford Cripps", "A. V. Alexander", "Lord Wavell"], 3, "Wavell was the Viceroy; the Mission was Pethick-Lawrence, Cripps and Alexander.", V, "UPSC Prelims · SSC CGL"],
     ],
   },
   {
@@ -182,7 +203,6 @@ const SEED: TopicSeed[] = [
     ],
     questions: [
       ["Who founded the Mughal Empire in India?", ["Akbar", "Babur", "Humayun", "Aurangzeb"], 1, "Babur founded the Mughal Empire after the First Battle of Panipat in 1526.", E],
-      ["The First Battle of Panipat (1526) was fought between Babur and:", ["Rana Sanga", "Ibrahim Lodi", "Hemu", "Sher Shah Suri"], 1, "Babur defeated Ibrahim Lodi, the last Sultan of Delhi, and founded the Mughal Empire.", E],
       ["The Taj Mahal was built by:", ["Akbar", "Jahangir", "Shah Jahan", "Aurangzeb"], 2, "Shah Jahan built it in Agra in memory of his wife Mumtaz Mahal.", E],
       ["The Battle of Haldighati (1576) was fought between the Mughal army and:", ["Shivaji", "Rana Sanga", "Maharana Pratap", "Hemu"], 2, "Akbar’s forces, led by Man Singh, fought Maharana Pratap of Mewar.", M],
       ["Which Mughal emperor built Fatehpur Sikri?", ["Babur", "Humayun", "Akbar", "Shah Jahan"], 2, "Akbar built Fatehpur Sikri as his capital.", M],
@@ -193,6 +213,12 @@ const SEED: TopicSeed[] = [
       ["The Mansabdari system was introduced by:", ["Babur", "Akbar", "Jahangir", "Aurangzeb"], 1, "Akbar introduced the Mansabdari system to organise the nobility and army by ranks (mansabs).", V],
       ["The Battle of Khanwa (1527) was fought between Babur and:", ["Ibrahim Lodi", "Rana Sanga", "Hemu", "Medini Rai"], 1, "Babur defeated Rana Sanga of Mewar at Khanwa, near Agra, in 1527.", V],
       ["Which Mughal emperor reimposed the jizya tax in 1679?", ["Akbar", "Jahangir", "Shah Jahan", "Aurangzeb"], 3, "Akbar had abolished jizya in 1564; Aurangzeb reimposed it in 1679.", V],
+      ["The First Battle of Panipat (1526) was fought between Babur and:", ["Rana Sanga", "Ibrahim Lodi", "Hemu", "Sher Shah"], 1, "Babur defeated Ibrahim Lodi and founded the Mughal Empire.", E, "SSC CGL · RRB NTPC"],
+      ["Din-i-Ilahi, a syncretic faith, was propounded by:", ["Babur", "Akbar", "Jahangir", "Shah Jahan"], 1, "Akbar announced Din-i-Ilahi in 1582.", E, "SSC CHSL · RRB Group D"],
+      ["The Battle of Haldighati (1576) was fought between Akbar’s forces and:", ["Rana Sanga", "Rana Pratap", "Rana Kumbha", "Rana Udai Singh"], 1, "Man Singh led the Mughal army against Maharana Pratap of Mewar.", M, "SSC CGL · SSC CHSL"],
+      ["Which Mughal ruler’s reign is called the “Golden Age of Mughal architecture”, with the Taj Mahal and Red Fort built?", ["Akbar", "Jahangir", "Shah Jahan", "Aurangzeb"], 2, "Shah Jahan (1628–58) built the Taj Mahal, Red Fort and Jama Masjid.", M, "SSC CGL · RRB NTPC"],
+      ["Which Mughal emperor re-imposed the jizya tax on non-Muslims in 1679?", ["Akbar", "Jahangir", "Shah Jahan", "Aurangzeb"], 3, "Akbar abolished jizya in 1564; Aurangzeb brought it back.", H, "SSC CGL · UPSC Prelims"],
+      ["The Mughal emperor who was a prisoner of the Marathas and later of the British, and in whose reign the Battle of Buxar (1764) took place, was:", ["Farrukhsiyar", "Muhammad Shah", "Shah Alam II", "Bahadur Shah Zafar"], 2, "Shah Alam II fought at Buxar and granted the Diwani of Bengal to the Company in 1765.", V, "UPSC Prelims · SSC CGL"],
     ],
   },
 
@@ -223,6 +249,12 @@ const SEED: TopicSeed[] = [
       ["Which river is known as the “Sorrow of Bihar”?", ["Gandak", "Kosi", "Son", "Ghaghara"], 1, "The Kosi frequently changes course and floods north Bihar.", V],
       ["The Sardar Sarovar Dam is built on which river?", ["Tapi", "Narmada", "Mahi", "Sabarmati"], 1, "Sardar Sarovar, in Gujarat, is on the Narmada.", V],
       ["Which of these rivers does NOT originate in India?", ["Godavari", "Krishna", "Brahmaputra", "Mahanadi"], 2, "The Brahmaputra rises near Mansarovar in Tibet; the other three are peninsular rivers rising in India.", V],
+      ["The longest river flowing entirely within India is the:", ["Ganga", "Godavari", "Krishna", "Narmada"], 1, "The Godavari (about 1,465 km) is the longest river wholly within India; the Ganga is longer overall but partly in Bangladesh.", E, "SSC CGL · RRB NTPC"],
+      ["Which river forms the Jog (Gersoppa) Falls?", ["Kaveri", "Sharavathi", "Periyar", "Tungabhadra"], 1, "The Sharavathi river in Karnataka plunges at Jog Falls.", M, "SSC CGL · SSC CHSL"],
+      ["The Brahmaputra is known in Tibet as the:", ["Dihang", "Tsangpo", "Jamuna", "Lohit"], 1, "It rises as the Tsangpo in Tibet, enters India as the Dihang/Siang, and is the Jamuna in Bangladesh.", M, "SSC CGL · RRB NTPC"],
+      ["Which of these rivers flows westward into the Arabian Sea through a rift valley?", ["Mahanadi", "Krishna", "Narmada", "Godavari"], 2, "The Narmada and Tapi flow west through rift valleys; the others drain east into the Bay of Bengal.", H, "SSC CGL · UPSC Prelims"],
+      ["The Bhakra Nangal dam is built on which river?", ["Beas", "Ravi", "Sutlej", "Chenab"], 2, "Bhakra Nangal, one of India’s highest gravity dams, stands on the Sutlej in Himachal Pradesh/Punjab.", H, "SSC CGL · SSC CHSL"],
+      ["The Indus Waters Treaty (1960) gives India unrestricted use of which three rivers?", ["Indus, Jhelum, Chenab", "Ravi, Beas, Sutlej", "Jhelum, Ravi, Beas", "Indus, Chenab, Sutlej"], 1, "The eastern rivers (Ravi, Beas, Sutlej) went to India; the western ones (Indus, Jhelum, Chenab) to Pakistan.", V, "UPSC Prelims · SSC CGL"],
     ],
   },
   {
@@ -251,6 +283,12 @@ const SEED: TopicSeed[] = [
       ["Which planet has the shortest day (fastest rotation)?", ["Earth", "Mars", "Jupiter", "Mercury"], 2, "Jupiter rotates once in just under 10 hours.", V],
       ["The asteroid belt lies between the orbits of:", ["Earth and Mars", "Mars and Jupiter", "Jupiter and Saturn", "Venus and Earth"], 1, "Most asteroids orbit in the main belt between Mars and Jupiter.", V],
       ["Olympus Mons, the largest volcano in the Solar System, is on:", ["Venus", "Mars", "Earth", "Io"], 1, "Olympus Mons on Mars is about 22 km high, nearly three times the height of Mount Everest.", V],
+      ["Which planet is called the “Red Planet”?", ["Venus", "Mars", "Jupiter", "Saturn"], 1, "Iron oxide on Mars’s surface gives it a reddish colour.", E, "RRB Group D · SSC CHSL"],
+      ["The hottest planet in the Solar System is:", ["Mercury", "Venus", "Mars", "Jupiter"], 1, "Venus is hotter than Mercury because its thick CO₂ atmosphere traps heat.", M, "SSC CGL · RRB NTPC"],
+      ["Which planet is known as the “Morning Star” or “Evening Star”?", ["Mercury", "Venus", "Mars", "Jupiter"], 1, "Venus is bright enough to be seen just before sunrise or after sunset.", M, "SSC CHSL · RRB Group D"],
+      ["The largest moon in the Solar System, Ganymede, belongs to:", ["Saturn", "Jupiter", "Neptune", "Uranus"], 1, "Ganymede, a moon of Jupiter, is bigger than the planet Mercury.", H, "SSC CGL · RRB NTPC"],
+      ["Which planet rotates on its side, with an axial tilt of about 98°?", ["Venus", "Saturn", "Uranus", "Neptune"], 2, "Uranus’s extreme tilt means its poles take turns facing the Sun.", H, "SSC CGL · UPSC Prelims"],
+      ["Which planet takes the longest to complete one revolution around the Sun?", ["Jupiter", "Saturn", "Uranus", "Neptune"], 3, "Neptune, the farthest planet, takes about 165 Earth years per orbit.", V, "SSC CGL · SSC CHSL"],
     ],
   },
 
@@ -270,7 +308,6 @@ const SEED: TopicSeed[] = [
     ],
     questions: [
       ["GDP stands for:", ["Gross Domestic Product", "General Development Programme", "Gross Development Product", "Grand Domestic Production"], 0, "GDP is the total value of final goods and services produced within a country in a year.", E],
-      ["The Reserve Bank of India was established in:", ["1935", "1947", "1949", "1969"], 0, "The RBI was set up on 1 April 1935 and nationalised in 1949.", E],
       ["GST was implemented in India from:", ["1 April 2016", "1 July 2017", "1 January 2018", "1 April 2017"], 1, "GST came into force on 1 July 2017.", E],
       ["The rate at which the RBI lends money to commercial banks is called the:", ["Reverse repo rate", "Repo rate", "Bank rate", "CRR"], 1, "The repo rate is the rate at which the RBI lends to banks against government securities.", M],
       ["NITI Aayog replaced which body?", ["Finance Commission", "Planning Commission", "National Development Council", "Election Commission"], 1, "NITI Aayog replaced the Planning Commission on 1 January 2015.", M],
@@ -281,6 +318,12 @@ const SEED: TopicSeed[] = [
       ["The Fiscal Responsibility and Budget Management (FRBM) Act was enacted in:", ["1991", "2003", "2005", "2016"], 1, "The FRBM Act, 2003 set targets for reducing the fiscal deficit.", V],
       ["Who was the first Governor of the Reserve Bank of India?", ["C. D. Deshmukh", "Sir Osborne Smith", "James Braid Taylor", "Benegal Rama Rau"], 1, "Sir Osborne Smith was the first Governor (1935–37); C. D. Deshmukh was the first Indian Governor.", V],
       ["The Minimum Support Price (MSP) for crops is recommended by the:", ["NITI Aayog", "Commission for Agricultural Costs and Prices (CACP)", "Food Corporation of India", "Ministry of Finance"], 1, "The CACP recommends MSPs; the Cabinet Committee on Economic Affairs approves them.", V],
+      ["The Reserve Bank of India was established in:", ["1921", "1935", "1947", "1949"], 1, "The RBI started on 1 April 1935 under the RBI Act, 1934, and was nationalised in 1949.", E, "SSC CGL · IBPS PO"],
+      ["Inflation measured on the basis of the wholesale price of goods uses the index:", ["CPI", "WPI", "GDP deflator", "PPI"], 1, "WPI tracks wholesale prices; CPI tracks retail prices paid by consumers.", M, "SSC CGL · RRB NTPC"],
+      ["The rate at which the RBI lends short-term funds to commercial banks against securities is the:", ["Reverse repo rate", "Repo rate", "Bank rate", "CRR"], 1, "Repo is the RBI’s lending rate; reverse repo is what it pays banks for their deposits.", M, "IBPS PO · SBI PO"],
+      ["Which of these is NOT a direct tax?", ["Income tax", "Corporation tax", "Goods and Services Tax", "Wealth tax"], 2, "GST is an indirect tax, passed on to the consumer.", H, "SSC CGL · SSC CHSL"],
+      ["The “Hindu rate of growth”, describing India’s slow growth before the 1980s, was coined by:", ["Amartya Sen", "Raj Krishna", "C. Rangarajan", "Jagdish Bhagwati"], 1, "Economist Raj Krishna used the phrase for the roughly 3.5% growth of 1950–80.", H, "UPSC Prelims · SSC CGL"],
+      ["Fiscal deficit equals:", ["Revenue receipts − revenue expenditure", "Total expenditure − total receipts excluding borrowings", "Total receipts − total expenditure", "Interest payments − revenue deficit"], 1, "Fiscal deficit is the gap that must be met by borrowing.", V, "UPSC Prelims · IBPS PO"],
     ],
   },
 
@@ -310,6 +353,12 @@ const SEED: TopicSeed[] = [
       ["One pascal, the SI unit of pressure, equals:", ["1 N/m", "1 N/m²", "1 N·m", "1 kg/m²"], 1, "Pressure = force ÷ area, so 1 Pa = 1 N/m².", V],
       ["A 60 W bulb runs for 10 hours. The energy consumed, in kWh, is:", ["0.6", "6", "60", "600"], 0, "Energy = power × time = 0.06 kW × 10 h = 0.6 kWh (0.6 units).", V],
       ["The range of frequencies audible to humans is approximately:", ["20 Hz to 2,000 Hz", "20 Hz to 20,000 Hz", "200 Hz to 20,000 Hz", "2 Hz to 200 Hz"], 1, "Humans hear roughly 20 Hz to 20 kHz; below is infrasound, above is ultrasound.", V],
+      ["The SI unit of electric current is the:", ["Volt", "Ampere", "Ohm", "Watt"], 1, "Current is measured in amperes; volt is potential difference and ohm is resistance.", E, "RRB Group D · SSC CHSL"],
+      ["Sound travels fastest through:", ["Air", "Water", "Steel", "Vacuum"], 2, "Sound is fastest in solids and cannot travel through a vacuum.", E, "SSC CGL · RRB NTPC"],
+      ["A concave mirror is used in car headlights because it:", ["Forms virtual images only", "Produces a parallel beam from a source at its focus", "Spreads light in all directions", "Reverses the image"], 1, "A bulb at the focus of a concave mirror gives a parallel reflected beam.", M, "SSC CGL · RRB Group D"],
+      ["The phenomenon behind the blue colour of the sky is:", ["Reflection", "Refraction", "Scattering of light", "Dispersion"], 2, "Shorter (blue) wavelengths are scattered more by air molecules (Rayleigh scattering).", M, "SSC CGL · SSC CHSL"],
+      ["The weight of a body is maximum at the:", ["Equator", "Poles", "Centre of the Earth", "Top of a mountain"], 1, "g is greatest at the poles because Earth is flattened there and has no rotational effect.", H, "SSC CGL · RRB NTPC"],
+      ["A 60 W bulb runs for 5 hours a day. Energy consumed in 30 days, in units (kWh), is:", ["6", "9", "12", "18"], 1, "60 W × 5 h × 30 = 9,000 Wh = 9 kWh.", V, "SSC CGL · RRB Group D"],
     ],
   },
   {
@@ -338,6 +387,12 @@ const SEED: TopicSeed[] = [
       ["Which part of the brain controls balance and coordination?", ["Cerebrum", "Cerebellum", "Medulla oblongata", "Hypothalamus"], 1, "The cerebellum coordinates voluntary movement and balance.", V],
       ["The structural and functional unit of the kidney is the:", ["Neuron", "Nephron", "Alveolus", "Villus"], 1, "Each kidney has about a million nephrons that filter blood to form urine.", V],
       ["The average lifespan of a human red blood cell is about:", ["12 days", "60 days", "120 days", "365 days"], 2, "Red blood cells live about 120 days before being broken down in the spleen and liver.", V],
+      ["The largest organ of the human body is the:", ["Liver", "Skin", "Lungs", "Brain"], 1, "Skin is the largest organ; the liver is the largest internal organ.", E, "RRB Group D · SSC CHSL"],
+      ["Which blood group is the “universal donor”?", ["A", "B", "AB", "O negative"], 3, "O negative has no A, B or Rh antigens, so it can be given to anyone.", E, "SSC CGL · RRB NTPC"],
+      ["Which vitamin deficiency causes scurvy?", ["Vitamin A", "Vitamin B12", "Vitamin C", "Vitamin D"], 2, "Scurvy comes from a lack of vitamin C (ascorbic acid).", M, "SSC CGL · SSC CHSL"],
+      ["Insulin is produced by which cells of the pancreas?", ["Alpha cells", "Beta cells", "Delta cells", "Kupffer cells"], 1, "Beta cells of the islets of Langerhans secrete insulin; alpha cells secrete glucagon.", M, "SSC CGL · RRB NTPC"],
+      ["The normal human body has how many pairs of chromosomes?", ["22", "23", "24", "46"], 1, "Humans have 23 pairs (46 chromosomes), including one pair of sex chromosomes.", H, "SSC CGL · RRB Group D"],
+      ["Which part of the human eye controls the amount of light entering it?", ["Cornea", "Iris", "Retina", "Lens"], 1, "The iris adjusts the size of the pupil; the retina forms the image.", V, "SSC CGL · SSC CHSL"],
     ],
   },
   {
@@ -365,6 +420,12 @@ const SEED: TopicSeed[] = [
       ["Plaster of Paris is chemically:", ["CaSO₄·2H₂O", "CaSO₄·½H₂O", "CaCO₃", "Ca(OH)₂"], 1, "Plaster of Paris is calcium sulphate hemihydrate; gypsum is the dihydrate.", V],
       ["The pH of normal human blood is approximately:", ["6.4", "7.0", "7.4", "8.4"], 2, "Blood is slightly alkaline, with a pH of about 7.35–7.45.", V],
       ["Bleaching powder is chemically:", ["CaOCl₂", "CaCl₂", "Ca(OH)₂", "CaCO₃"], 0, "Bleaching powder is calcium oxychloride, CaOCl₂, made by passing chlorine over slaked lime.", V],
+      ["The chemical formula of washing soda is:", ["NaHCO₃", "Na₂CO₃·10H₂O", "NaOH", "CaOCl₂"], 1, "Washing soda is hydrated sodium carbonate; NaHCO₃ is baking soda.", E, "SSC CGL · RRB Group D"],
+      ["The gas used in fire extinguishers is:", ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], 2, "CO₂ is heavier than air and does not support combustion.", E, "SSC CHSL · RRB NTPC"],
+      ["Which metal is liquid at room temperature?", ["Sodium", "Mercury", "Gallium", "Lead"], 1, "Mercury is the only metal that is liquid at ordinary room temperature.", M, "SSC CGL · RRB Group D"],
+      ["The pH of pure water at 25 °C is:", ["0", "7", "10", "14"], 1, "Pure water is neutral; below 7 is acidic and above 7 is basic.", M, "SSC CGL · SSC CHSL"],
+      ["Which element has the highest electronegativity?", ["Oxygen", "Chlorine", "Fluorine", "Nitrogen"], 2, "Fluorine, top right of the periodic table, is the most electronegative element.", H, "SSC CGL · RRB NTPC"],
+      ["Brass is an alloy of:", ["Copper and tin", "Copper and zinc", "Iron and carbon", "Lead and tin"], 1, "Brass is copper + zinc; bronze is copper + tin.", V, "SSC CGL · SSC CHSL"],
     ],
   },
 
@@ -386,6 +447,10 @@ const SEED: TopicSeed[] = [
       ["12.5% expressed as a fraction is:", ["1/4", "1/6", "1/8", "1/12"], 2, "12.5% = 12.5/100 = 1/8.", E],
       ["If 40% of a number is 80, the number is:", ["120", "160", "200", "320"], 2, "Number = 80 ÷ 40 × 100 = 200.", M],
       ["In an election between two candidates, the winner got 60% of the votes and won by 1,200 votes. The total number of votes was:", ["3,000", "4,800", "6,000", "7,200"], 2, "The margin is 60% − 40% = 20% of the votes, so 20% = 1,200 and total = 6,000.", V],
+      ["If 20% of a number is 60, the number is:", ["120", "240", "300", "360"], 2, "20% × N = 60 ⇒ N = 60 × 5 = 300.", E, "SSC CHSL · RRB Group D"],
+      ["A number is increased by 20% and then decreased by 20%. The net change is:", ["No change", "4% increase", "4% decrease", "2% decrease"], 2, "1.2 × 0.8 = 0.96, a 4% decrease. Successive x% up and x% down always loses x²/100 %.", M, "SSC CGL · IBPS Clerk"],
+      ["In an election between two candidates, the winner got 60% of the votes and won by 1,200 votes. Total votes polled:", ["3,000", "4,800", "6,000", "7,200"], 2, "Margin = 60% − 40% = 20% of total = 1,200 ⇒ total = 6,000.", H, "SSC CGL · RRB NTPC"],
+      ["The price of sugar rises by 25%. By what percent must a family cut consumption to keep spending unchanged?", ["20%", "25%", "30%", "33⅓%"], 0, "Cut = 25/(100 + 25) × 100 = 20%.", V, "SSC CGL · SBI Clerk"],
     ],
   },
   {
@@ -405,6 +470,10 @@ const SEED: TopicSeed[] = [
       ["Profit and loss percentages are always calculated on the:", ["Selling price", "Marked price", "Cost price", "Discount"], 2, "Unless stated otherwise, profit % and loss % are on the cost price.", E],
       ["A shopkeeper allows a 10% discount on a marked price of ₹800. The selling price is:", ["₹700", "₹720", "₹780", "₹790"], 1, "Discount = 10% of 800 = ₹80, so SP = ₹720.", M],
       ["The cost price of 20 articles equals the selling price of 16 articles. The profit percentage is:", ["20%", "25%", "30%", "40%"], 1, "Let CP of each article be ₹1: CP = 20, SP of 16 = 20, so SP of each = 1.25. Profit = 25%.", V],
+      ["An article bought for ₹400 is sold for ₹500. The profit percent is:", ["20%", "25%", "30%", "40%"], 1, "Profit = 100 on CP 400 ⇒ 25%.", E, "RRB Group D · SSC CHSL"],
+      ["A shopkeeper marks an article 40% above cost and gives a 20% discount. His profit percent is:", ["12%", "16%", "20%", "24%"], 0, "SP = 1.4 × 0.8 = 1.12 × CP ⇒ 12% profit.", M, "SSC CGL · IBPS Clerk"],
+      ["The cost price of 20 articles equals the selling price of 16 articles. The gain percent is:", ["20%", "25%", "30%", "40%"], 1, "SP/CP per article = 20/16 = 1.25 ⇒ 25% gain.", H, "SSC CGL · RRB NTPC"],
+      ["A dishonest dealer sells at cost price but uses a weight of 800 g for 1 kg. His gain percent is:", ["20%", "25%", "30%", "40%"], 1, "Gain = error/(true − error) = 200/800 = 25%.", V, "SSC CGL · SSC CPO"],
     ],
   },
   {
@@ -419,6 +488,10 @@ const SEED: TopicSeed[] = [
       ["Amount at simple interest equals:", ["Principal × Rate", "Principal + Simple Interest", "Principal − Simple Interest", "Rate × Time"], 1, "Amount = Principal + SI.", E],
       ["The simple interest on ₹1,000 at 5% per annum for 2 years is:", ["₹50", "₹100", "₹150", "₹200"], 1, "SI = 1000 × 5 × 2 ÷ 100 = ₹100.", E],
       ["A sum becomes ₹1,200 in 2 years and ₹1,500 in 5 years at simple interest. The rate of interest is:", ["5%", "8%", "10%", "12%"], 2, "Interest for 3 years = 1,500 − 1,200 = ₹300, so ₹100 per year. Principal = 1,200 − 2 × 100 = ₹1,000; rate = 100 ÷ 1,000 × 100 = 10%.", H],
+      ["Simple interest on ₹5,000 at 8% per annum for 3 years is:", ["₹1,000", "₹1,200", "₹1,500", "₹2,400"], 1, "SI = 5000 × 8 × 3 / 100 = ₹1,200.", E, "RRB Group D · SSC CHSL"],
+      ["A sum doubles itself in 8 years at simple interest. The rate per annum is:", ["8%", "10%", "12.5%", "16%"], 2, "SI = P in 8 years ⇒ R = 100/8 = 12.5%.", M, "SSC CGL · IBPS Clerk"],
+      ["At simple interest a sum amounts to ₹6,500 in 3 years and ₹7,500 in 5 years. The sum is:", ["₹4,500", "₹5,000", "₹5,500", "₹6,000"], 1, "Two years’ interest = 1,000 ⇒ ₹500 per year ⇒ P = 6,500 − 1,500 = ₹5,000.", H, "SSC CGL · RRB NTPC"],
+      ["A sum at simple interest becomes 3 times itself in 20 years. In how many years will it become 5 times?", ["30", "35", "40", "50"], 2, "Interest of 2P in 20 years ⇒ P per 10 years; 4P needs 40 years.", V, "SSC CGL · SBI Clerk"],
     ],
   },
   {
@@ -432,6 +505,10 @@ const SEED: TopicSeed[] = [
       ["If A can do a piece of work in 8 days, the fraction of work A does in one day is:", ["1/4", "1/8", "1/16", "8"], 1, "One day’s work = 1 ÷ 8 = 1/8.", E],
       ["If 6 workers finish a job in 12 days, how many days will 9 workers take at the same rate?", ["6", "8", "9", "18"], 1, "Work = 6 × 12 = 72 worker-days; 72 ÷ 9 = 8 days.", M],
       ["A is twice as efficient as B. If together they finish a job in 12 days, A alone would take:", ["18 days", "24 days", "36 days", "16 days"], 0, "Let B’s rate be 1 and A’s 2: together 3 units/day, total work 36 units; A alone = 36 ÷ 2 = 18 days.", V],
+      ["A can finish a work in 10 days and B in 15 days. Together they finish it in:", ["5 days", "6 days", "8 days", "12 days"], 1, "1/10 + 1/15 = 1/6 ⇒ 6 days.", E, "RRB Group D · SSC CHSL"],
+      ["A and B together finish a job in 12 days; A alone takes 20 days. B alone takes:", ["24 days", "30 days", "32 days", "40 days"], 1, "1/12 − 1/20 = 1/30 ⇒ 30 days.", M, "SSC CGL · IBPS Clerk"],
+      ["A can do a work in 12 days. After working 4 days he leaves and B finishes the rest in 16 days. B alone would take:", ["20 days", "24 days", "28 days", "32 days"], 1, "A did 1/3; B did 2/3 in 16 days ⇒ full work in 24 days.", H, "SSC CGL · RRB NTPC"],
+      ["12 men complete a work in 18 days. After 6 days, 4 more men join. The remaining work is finished in:", ["8 days", "9 days", "10 days", "12 days"], 1, "Remaining = 12 × 12 = 144 man-days; 16 men ⇒ 9 days.", V, "SSC CGL · SSC CPO"],
     ],
   },
   {
@@ -446,6 +523,10 @@ const SEED: TopicSeed[] = [
       ["The average of 5 numbers is 20. Their sum is:", ["4", "25", "100", "120"], 2, "Sum = Average × Count = 20 × 5 = 100.", E],
       ["The average of five consecutive odd numbers is 25. The largest of them is:", ["27", "29", "31", "33"], 1, "For consecutive numbers the average is the middle term, 25; the numbers are 21, 23, 25, 27, 29.", M],
       ["The average weight of 8 people increases by 2.5 kg when a person weighing 65 kg is replaced by a new person. The new person weighs:", ["75 kg", "80 kg", "85 kg", "90 kg"], 2, "Total increase = 8 × 2.5 = 20 kg, so the new person weighs 65 + 20 = 85 kg.", V],
+      ["The average of the first 10 natural numbers is:", ["5", "5.5", "6", "10"], 1, "Sum = 55; 55/10 = 5.5.", E, "RRB Group D · SSC CHSL"],
+      ["The average of 8 numbers is 20. If each number is multiplied by 3, the new average is:", ["23", "40", "60", "160"], 2, "Multiplying every number by 3 multiplies the average by 3 ⇒ 60.", M, "SSC CGL · IBPS Clerk"],
+      ["The average weight of 30 students is 40 kg. When the teacher is included the average rises by 1 kg. The teacher’s weight is:", ["61 kg", "66 kg", "71 kg", "76 kg"], 2, "31 × 41 − 30 × 40 = 1,271 − 1,200 = 71 kg.", H, "SSC CGL · RRB NTPC"],
+      ["The average of 11 results is 50. The average of the first six is 49 and of the last six is 52. The sixth result is:", ["50", "54", "56", "58"], 2, "6 × 49 + 6 × 52 − 11 × 50 = 294 + 312 − 550 = 56.", V, "SSC CGL · SBI Clerk"],
     ],
   },
 
@@ -470,6 +551,12 @@ const SEED: TopicSeed[] = [
       ["Find the wrong number in the series: 2, 6, 12, 20, 30, 42, 58", ["12", "30", "42", "58"], 3, "The pattern is n(n + 1): the seventh term should be 7 × 8 = 56, not 58.", V],
       ["Find the next term: 1, 8, 27, 64, 125, ?", ["196", "216", "225", "256"], 1, "These are perfect cubes: 6³ = 216.", V],
       ["Find the next number: 7, 12, 19, 28, 39, ?", ["50", "52", "51", "54"], 1, "Differences are 5, 7, 9, 11, so the next difference is 13: 39 + 13 = 52.", V],
+      ["Find the next term: 3, 6, 9, 12, ?", ["13", "14", "15", "18"], 2, "Each term increases by 3.", E, "RRB Group D · SSC CHSL"],
+      ["Find the next term: 1, 4, 9, 16, 25, ?", ["30", "35", "36", "49"], 2, "Squares of 1 to 6; next is 6² = 36.", E, "SSC CGL · RRB NTPC"],
+      ["Find the next term: 2, 3, 5, 8, 12, 17, ?", ["21", "22", "23", "24"], 2, "Differences 1, 2, 3, 4, 5, 6 ⇒ 17 + 6 = 23.", M, "SSC CGL · IBPS Clerk"],
+      ["Find the next term: AZ, BY, CX, DW, ?", ["EU", "EV", "FV", "EW"], 1, "First letter moves forward (A, B, C, D, E) and second moves backward (Z, Y, X, W, V).", M, "SSC CGL · SSC CHSL"],
+      ["Find the next term: 5, 11, 23, 47, 95, ?", ["185", "190", "191", "195"], 2, "Each term is doubled and 1 added: 95 × 2 + 1 = 191.", H, "SSC CGL · RRB NTPC"],
+      ["Find the next term: 7, 26, 63, 124, 215, ?", ["342", "343", "344", "350"], 0, "n³ − 1 for n = 2…7: 7³ − 1 = 342.", V, "SSC CGL · SSC CPO"],
     ],
   },
   {
@@ -492,6 +579,12 @@ const SEED: TopicSeed[] = [
       ["In a code language, “sky is blue” is “pa qo ri”, “blue colour” is “ri tu” and “sky high” is “qo ma”. What is the code for “is”?", ["pa", "qo", "ri", "tu"], 0, "“blue” = ri (common to the first two) and “sky” = qo (common to the first and third), so “is” = pa.", V],
       ["In a code, each letter is replaced by the letter opposite it in the alphabet (A↔Z, B↔Y, …). How is BOX written?", ["YLC", "YKC", "XLC", "YLD"], 0, "B↔Y, O↔L, X↔C, giving YLC.", V],
       ["If TABLE is coded as UCEPJ, how is CHAIR coded in the same way?", ["DJDMW", "DJDLW", "DIDMW", "DJCMW"], 0, "Letters move +1, +2, +3, +4, +5 in turn: C→D, H→J, A→D, I→M, R→W.", V],
+      ["If CAT is coded as DBU, then DOG is coded as:", ["EPH", "EPI", "FQI", "CNF"], 0, "Each letter moves one step forward: D→E, O→P, G→H.", E, "RRB Group D · SSC CHSL"],
+      ["If PEN is written as 16-5-14, then INK is written as:", ["9-14-11", "9-13-11", "8-14-11", "9-14-12"], 0, "Letters replaced by their positions: I = 9, N = 14, K = 11.", E, "SSC CGL · RRB NTPC"],
+      ["In a certain code, MANGO is written as OCPIQ. How is APPLE written?", ["CRRNG", "CQRNG", "BRRNG", "CRRMG"], 0, "Each letter moves two steps forward: A→C, P→R, P→R, L→N, E→G.", M, "SSC CGL · IBPS Clerk"],
+      ["If ROAD is coded as URDG, then SWAN is coded as:", ["VZDQ", "VZCQ", "UZDQ", "VYDQ"], 0, "Each letter moves three steps forward: S→V, W→Z, A→D, N→Q.", M, "SSC CGL · SSC CHSL"],
+      ["If TABLE is coded as ELBAT, then CHAIR is coded as:", ["RIAHC", "RAIHC", "RIHAC", "CHIAR"], 0, "The word is simply reversed.", H, "SSC CGL · RRB NTPC"],
+      ["If in a code “1 + 2 = 9”, “3 + 4 = 49” and “5 + 6 = 121”, then “7 + 8” equals:", ["169", "196", "225", "256"], 2, "(a + b)² : (1+2)² = 9, (3+4)² = 49, (5+6)² = 121, so (7+8)² = 225.", V, "SSC CGL · SSC CPO"],
     ],
   },
   {
@@ -514,6 +607,12 @@ const SEED: TopicSeed[] = [
       ["If “A + B” means A is the father of B, “A − B” means A is the sister of B and “A × B” means A is the brother of B, how is P related to S in “P + Q − R × S”?", ["Father", "Uncle", "Grandfather", "Brother"], 0, "P is the father of Q; Q is the sister of R; R is the brother of S. Q, R and S are siblings, so P is S’s father.", V],
       ["Looking at a portrait, Arun said, “His father is the only son of my grandfather, and I have no brothers.” Whose portrait is it?", ["Arun’s own", "Arun’s brother’s", "Arun’s father’s", "Arun’s cousin’s"], 0, "The only son of Arun’s grandfather is Arun’s father, so the man in the portrait is a son of Arun’s father. Arun has no brothers, so it is Arun himself.", V],
       ["A is the son of B. C, who is B’s sister, has a son D and a daughter E. How is A related to D?", ["Cousin", "Brother", "Uncle", "Nephew"], 0, "B and C are siblings, so their children A and D are cousins.", V],
+      ["Pointing to a photograph, Ravi says, “She is the daughter of my grandfather’s only son.” How is the girl related to Ravi?", ["Cousin", "Sister", "Niece", "Aunt"], 1, "Grandfather’s only son is Ravi’s father; his daughter is Ravi’s sister.", E, "RRB Group D · SSC CHSL"],
+      ["A is the brother of B. B is the daughter of C. How is C related to A?", ["Father or mother", "Uncle", "Brother", "Grandfather"], 0, "C is B’s parent, and A is B’s brother, so C is A’s parent too; gender is unknown.", E, "SSC CGL · RRB NTPC"],
+      ["Pointing to a man, a woman said, “His mother is the only daughter of my mother.” How is the woman related to the man?", ["Mother", "Sister", "Aunt", "Daughter"], 0, "The only daughter of her mother is the woman herself, so she is his mother.", M, "SSC CGL · IBPS Clerk"],
+      ["Introducing a boy, Meena said, “He is the son of the daughter of the father of my uncle.” How is the boy related to Meena?", ["Brother", "Nephew", "Cousin", "Son"], 0, "Father of my uncle = grandfather; his daughter = Meena’s mother; her son = Meena’s brother.", M, "SSC CGL · SSC CHSL"],
+      ["P is the father of Q, but Q is not the son of P. R is the husband of Q. How is R related to P?", ["Son", "Son-in-law", "Brother", "Nephew"], 1, "Q is P’s daughter, so her husband R is P’s son-in-law.", H, "SSC CGL · RRB NTPC"],
+      ["If “A $ B” means A is the mother of B and “A # B” means A is the father of B, which expression shows that M is the grandfather of N?", ["M # P $ N", "M $ P # N", "P # M $ N", "N # P $ M"], 0, "M # P: M is father of P; P $ N: P is mother of N; so M is N’s maternal grandfather.", V, "SBI PO · SSC CGL"],
     ],
   },
 
@@ -527,7 +626,6 @@ const SEED: TopicSeed[] = [
     keyPoints: ["Learn words in groups with their roots (bene = good, mal = bad).", "Revise common one-word substitutions."],
     questions: [
       ["Choose the synonym of “Abundant”.", ["Scarce", "Plentiful", "Rare", "Empty"], 1, "Abundant means existing in large quantities, i.e., plentiful.", E],
-      ["Choose the synonym of “Candid”.", ["Frank", "Secretive", "Rude", "Shy"], 0, "Candid means open and honest, i.e., frank.", E],
       ["Choose the antonym of “Ancient”.", ["Old", "Modern", "Antique", "Historic"], 1, "Ancient means very old; its opposite is modern.", E],
       ["Choose the antonym of “Benevolent”.", ["Kind", "Generous", "Malevolent", "Charitable"], 2, "Benevolent means well-meaning; malevolent means wishing harm.", M],
       ["One who knows everything is called:", ["Omnipotent", "Omnipresent", "Omniscient", "Omnivorous"], 2, "Omniscient = all-knowing; omnipotent = all-powerful; omnipresent = present everywhere.", M],
@@ -538,6 +636,12 @@ const SEED: TopicSeed[] = [
       ["Choose the synonym of “Obsequious”.", ["Arrogant", "Servile", "Honest", "Lazy"], 1, "Obsequious means excessively eager to please or obey, i.e., servile.", V],
       ["A government by the wealthy is called:", ["Oligarchy", "Plutocracy", "Theocracy", "Autocracy"], 1, "Plutocracy = rule by the rich; oligarchy = rule by a few; theocracy = rule by religious leaders.", V],
       ["Choose the antonym of “Garrulous”.", ["Talkative", "Taciturn", "Friendly", "Angry"], 1, "Garrulous means excessively talkative; taciturn means reserved and saying little.", V],
+      ["Choose the antonym of “Abundant”.", ["Plentiful", "Scarce", "Ample", "Rich"], 1, "Abundant means plentiful; scarce is its opposite.", E, "SSC CHSL · RRB NTPC"],
+      ["Choose the synonym of “Candid”.", ["Secretive", "Frank", "Clever", "Rude"], 1, "Candid means frank and honest.", E, "SSC CGL · SSC CHSL"],
+      ["One word for “a person who can speak many languages”:", ["Linguist", "Polyglot", "Orator", "Bilingual"], 1, "A polyglot knows several languages; a linguist studies language.", M, "SSC CGL · IBPS PO"],
+      ["The idiom “to beat around the bush” means:", ["To hunt in a forest", "To avoid the main point", "To work very hard", "To lose one’s way"], 1, "It means to talk indirectly and avoid the real issue.", M, "SSC CGL · SSC CHSL"],
+      ["Choose the antonym of “Ephemeral”.", ["Brief", "Eternal", "Fleeting", "Momentary"], 1, "Ephemeral means short-lived; eternal is its opposite.", H, "SSC CGL · SBI PO"],
+      ["One word for “a government by the rich”:", ["Oligarchy", "Plutocracy", "Autocracy", "Theocracy"], 1, "Plutocracy is rule by the wealthy; oligarchy is rule by a few.", V, "SSC CGL · SSC CPO"],
     ],
   },
   {
@@ -560,6 +664,12 @@ const SEED: TopicSeed[] = [
       ["Choose the correct sentence.", ["I have seen him yesterday.", "I saw him yesterday.", "I had seen him yesterday.", "I have been seeing him yesterday."], 1, "A definite past time (“yesterday”) takes the simple past, not the present perfect.", V],
       ["Hardly had he left the house ___ it started raining.", ["than", "when", "then", "that"], 1, "“Hardly … when” and “No sooner … than” are the correct pairs.", V],
       ["Which of the following words is spelt correctly?", ["Occurence", "Occurrence", "Ocurrence", "Occurrance"], 1, "Occurrence has double c and double r.", V],
+      ["Fill in the blank: She has been working here ____ 2015.", ["for", "since", "from", "by"], 1, "“Since” marks a point of time; “for” marks a duration.", E, "SSC CHSL · RRB NTPC"],
+      ["Spot the error: One of my friends (a) / are going (b) / to Delhi tomorrow. (c) / No error (d)", ["a", "b", "c", "d"], 1, "“One of my friends” is singular: “is going”.", E, "SSC CGL · SSC CHSL"],
+      ["Choose the correct passive form: “They are building a new bridge.”", ["A new bridge is built by them.", "A new bridge is being built by them.", "A new bridge was built by them.", "A new bridge has been built by them."], 1, "Present continuous active → “is/are being + past participle” in the passive.", M, "SSC CGL · IBPS PO"],
+      ["Spot the error: Neither of the two boys (a) / have submitted (b) / their homework. (c) / No error (d)", ["a", "b", "c", "d"], 1, "“Neither of” takes a singular verb: “has submitted his homework”.", M, "SSC CGL · SSC CHSL"],
+      ["Choose the correct indirect speech: He said, “I am going to the market now.”", ["He said that he is going to the market now.", "He said that he was going to the market then.", "He said that he was going to the market now.", "He told that he is going to the market then."], 1, "Tense shifts back (am → was) and “now” becomes “then”.", H, "SSC CGL · SBI PO"],
+      ["Spot the error: The number of accidents (a) / on this road (b) / have increased sharply. (c) / No error (d)", ["a", "b", "c", "d"], 2, "“The number of” is singular: “has increased”. (“A number of” would take a plural verb.)", V, "SSC CGL · SSC CPO"],
     ],
   },
 
@@ -590,6 +700,12 @@ const SEED: TopicSeed[] = [
       ["In which year were 14 major commercial banks nationalised?", ["1955", "1969", "1980", "1991"], 1, "14 banks were nationalised on 19 July 1969; six more followed in 1980.", V],
       ["Bank deposits in India are insured by the DICGC up to:", ["₹1 lakh", "₹2 lakh", "₹5 lakh", "₹10 lakh"], 2, "Since February 2020, deposit insurance cover is ₹5 lakh per depositor per bank.", V],
       ["NPCI, which operates UPI and RuPay, was set up in:", ["2005", "2008", "2012", "2016"], 1, "The National Payments Corporation of India was incorporated in December 2008.", V],
+      ["The headquarters of the Reserve Bank of India is in:", ["New Delhi", "Mumbai", "Kolkata", "Chennai"], 1, "The RBI’s central office moved from Kolkata to Mumbai in 1937.", E, "IBPS Clerk · SBI Clerk"],
+      ["NEFT stands for:", ["National Electronic Funds Transfer", "National Equity Fund Transfer", "New Electronic Fund Transaction", "National E-Finance Transfer"], 0, "NEFT settles transfers in half-hourly batches; RTGS is real-time for large amounts.", E, "IBPS PO · SBI Clerk"],
+      ["The minimum amount that can be transferred through RTGS is:", ["₹10,000", "₹1 lakh", "₹2 lakh", "₹5 lakh"], 2, "RTGS is meant for high-value transfers of ₹2 lakh and above, with no upper limit.", M, "IBPS PO · SBI PO"],
+      ["The Cash Reserve Ratio (CRR) is the share of a bank’s deposits that must be kept with the:", ["SEBI", "Government of India", "RBI as cash", "Other banks"], 2, "CRR is held as cash with the RBI; SLR is kept by the bank itself in liquid assets.", M, "IBPS Clerk · SBI Clerk"],
+      ["Under the Deposit Insurance scheme (DICGC), bank deposits are insured up to:", ["₹1 lakh", "₹2 lakh", "₹5 lakh", "₹10 lakh"], 2, "The cover was raised from ₹1 lakh to ₹5 lakh per depositor per bank in February 2020.", H, "IBPS PO · SBI PO"],
+      ["A loan on which interest or principal has remained overdue for more than 90 days is classified as a:", ["Standard asset", "Non-performing asset", "Priority-sector loan", "Restructured asset"], 1, "The 90-day overdue norm defines an NPA.", V, "IBPS PO · RBI Grade B"],
     ],
   },
   {
@@ -612,6 +728,12 @@ const SEED: TopicSeed[] = [
       ["The binary equivalent of the decimal number 10 is:", ["1001", "1010", "1100", "1011"], 1, "10 = 8 + 2 = 1×2³ + 0×2² + 1×2¹ + 0×2⁰ = 1010.", V],
       ["Which protocol is used to send email?", ["HTTP", "FTP", "SMTP", "POP3"], 2, "SMTP (Simple Mail Transfer Protocol) sends mail; POP3 and IMAP retrieve it.", V],
       ["Which number system uses base 16?", ["Binary", "Octal", "Decimal", "Hexadecimal"], 3, "Hexadecimal uses 16 symbols, 0–9 and A–F.", V],
+      ["The “brain” of the computer is the:", ["RAM", "CPU", "Hard disk", "Monitor"], 1, "The Central Processing Unit executes instructions.", E, "IBPS Clerk · RRB NTPC"],
+      ["Which of these is an output device?", ["Keyboard", "Mouse", "Printer", "Scanner"], 2, "A printer outputs; keyboard, mouse and scanner are input devices.", E, "SSC CHSL · IBPS Clerk"],
+      ["1 gigabyte (GB) equals:", ["1,024 KB", "1,024 MB", "1,024 TB", "1,000 bytes"], 1, "KB → MB → GB → TB, each 1,024 times the previous.", M, "IBPS PO · SBI Clerk"],
+      ["In MS Excel, the shortcut key to save a workbook is:", ["Ctrl + P", "Ctrl + S", "Ctrl + V", "Ctrl + N"], 1, "Ctrl + S saves; Ctrl + P prints; Ctrl + N opens a new file.", M, "IBPS Clerk · SBI Clerk"],
+      ["Which memory is volatile, losing its contents when power is switched off?", ["ROM", "RAM", "Hard disk", "Flash drive"], 1, "RAM is volatile; ROM and disks keep data without power.", H, "IBPS PO · SSC CHSL"],
+      ["The protocol used to send e-mail from a client to a mail server is:", ["HTTP", "FTP", "SMTP", "POP3"], 2, "SMTP sends mail; POP3/IMAP retrieve it.", V, "IBPS PO · SBI PO"],
     ],
   },
 
@@ -642,6 +764,12 @@ const SEED: TopicSeed[] = [
       ["Operant conditioning was proposed by:", ["Ivan Pavlov", "B. F. Skinner", "Edward Thorndike", "Albert Bandura"], 1, "Skinner showed that behaviour is shaped by reinforcement and punishment; Pavlov’s is classical conditioning.", V],
       ["“Egocentrism” is a characteristic of which Piagetian stage?", ["Sensorimotor", "Pre-operational", "Concrete operational", "Formal operational"], 1, "Pre-operational children (2–7) find it hard to see things from another person’s point of view.", V],
       ["Erik Erikson’s stage of “Industry vs Inferiority” corresponds to the age group:", ["0–1 years", "3–6 years", "6–12 years", "12–18 years"], 2, "Industry vs Inferiority covers the school years, about 6 to 12.", V],
+      ["According to Piaget, the stage of development from birth to about 2 years is the:", ["Pre-operational stage", "Sensorimotor stage", "Concrete operational stage", "Formal operational stage"], 1, "Infants learn through senses and movement in the sensorimotor stage.", E, "CTET · UPTET"],
+      ["The Right to Education Act, 2009 makes education free and compulsory for children aged:", ["3–6 years", "6–14 years", "5–15 years", "6–18 years"], 1, "The RTE Act covers children from 6 to 14 years.", E, "CTET · SUPER TET"],
+      ["Vygotsky’s “Zone of Proximal Development” refers to the gap between what a child can do:", ["Alone and with the help of a more capable person", "At home and at school", "In the morning and the evening", "Verbally and in writing"], 0, "ZPD is the range of tasks a learner can do with guidance but not yet alone.", M, "CTET · UPTET"],
+      ["Howard Gardner is known for the theory of:", ["Moral development", "Multiple intelligences", "Classical conditioning", "Psychosocial development"], 1, "Gardner proposed several independent intelligences: linguistic, logical, spatial, musical and more.", M, "CTET · KVS"],
+      ["Classical conditioning was demonstrated by Pavlov using:", ["Rats in a box", "Dogs and a bell", "Pigeons", "Children and a doll"], 1, "Pavlov paired a bell with food until the bell alone made dogs salivate.", H, "CTET · UPTET"],
+      ["A child who learns to read a word and then reads it again correctly a week later is showing which process of memory?", ["Encoding", "Storage", "Retrieval", "Forgetting"], 2, "Recalling stored information when needed is retrieval.", V, "CTET · DSSSB"],
     ],
   },
 ];
@@ -651,5 +779,5 @@ export const TOPICS: Topic[] = SEED.map(({ questions, ...t }) => t);
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
 
 export const QUESTION_BANK: MCQ[] = SEED.flatMap((t) =>
-  t.questions.map(([question, options, answer, explanation, difficulty], i) => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty })),
+  t.questions.map(([question, options, answer, explanation, difficulty, source], i) => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source })),
 );
