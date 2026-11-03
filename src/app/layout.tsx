@@ -91,7 +91,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <div className="border-t border-slate-200">
             <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500">
-              <span>© {new Date().getFullYear()} StudyClip. Videos play in YouTube’s official player.</span>
+              <span>
+                © {new Date().getFullYear()} StudyClip. Videos play in YouTube’s official player. <span className="text-slate-400">·</span> Powered by{" "}
+                <span className="font-medium text-slate-700">Reasonateai Private Limited</span>
+              </span>
               <span>
                 Press <kbd className="rounded border border-slate-200 px-1 font-mono">Ctrl K</kbd> to search
               </span>
