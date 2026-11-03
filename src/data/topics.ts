@@ -1,5 +1,6 @@
 import type { Difficulty, MCQ, Topic } from "@/lib/types";
 import { TOUGH_QUESTIONS } from "./tough-questions";
+import { YOUR_PYQS } from "./your-pyqs";
 
 /**
  * Study content. Each topic mixes general practice questions with "exam favourites": original
@@ -782,6 +783,9 @@ export const TOPICS: Topic[] = SEED.map(({ questions, ...t }) => t);
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
 
-export const QUESTION_BANK: MCQ[] = SEED.flatMap((t) =>
-  [...t.questions, ...(TOUGH_QUESTIONS[t.id] ?? [])].map(([question, options, answer, explanation, difficulty, source], i) => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source })),
-);
+export const QUESTION_BANK: MCQ[] = SEED.flatMap((t) => {
+  const own = [...t.questions, ...(TOUGH_QUESTIONS[t.id] ?? [])].map(([question, options, answer, explanation, difficulty, source], i): MCQ => ({ id: `${t.id}-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source }));
+  // Your own previous-year questions get stable ids of their own and the PYQ flag.
+  const pyqs = (YOUR_PYQS[t.id] ?? []).map(([question, options, answer, explanation, difficulty, source], i): MCQ => ({ id: `${t.id}-pyq-${i + 1}`, question, options, answer, explanation, topicId: t.id, difficulty, source, pyq: true }));
+  return [...own, ...pyqs];
+});

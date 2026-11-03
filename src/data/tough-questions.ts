@@ -10,6 +10,9 @@ import type { Q } from "./topics";
 const H: Difficulty = "hard";
 const V: Difficulty = "very-hard";
 
+const COUNT4 = ["Only one", "Only two", "Only three", "All four"];
+const COUNT3 = ["Only one", "Only two", "All three", "None"];
+
 const AR = [
   "Both A and R are true, and R is the correct explanation of A",
   "Both A and R are true, but R is not the correct explanation of A",
@@ -24,24 +27,32 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Assertion (A): The Preamble cannot be enforced in a court of law. Reason (R): The Preamble is neither a source of power to the legislature nor a limit on its powers.", AR, 0, "The Preamble is non-justiciable precisely because it neither grants nor restricts legislative power.", H],
     ["The ideal of “Justice — social, economic and political” in the Preamble is drawn from the:", ["French Revolution", "Russian Revolution", "American Declaration of Independence", "Irish Constitution"], 1, "The ideal of justice comes from the Russian Revolution (1917); Liberty, Equality and Fraternity from the French Revolution.", V],
     ["Which of these is NOT among the liberties promised in the Preamble?", ["Thought", "Expression", "Faith", "Association"], 3, "The Preamble promises “liberty of thought, expression, belief, faith and worship”. Association is a right under Article 19, not a word in the Preamble.", V],
+    ["How many of these statements are correct? I. The Preamble was adopted after the rest of the Constitution was finalised. II. The Preamble has been amended under Article 368. III. Courts use the Preamble to interpret ambiguous provisions. IV. The Preamble calls India a “Union of States”.", COUNT4, 2, "I, II and III are correct. “Union of States” is from Article 1, not the Preamble.", V],
+    ["How many of these statements are correct? I. “Socialist” in the Preamble refers to democratic socialism. II. The words “unity” and “integrity” were both added in 1976. III. The Preamble mentions the dignity of the individual.", COUNT3, 1, "Only I and III. “Unity” was in the original text; only “and integrity” was added by the 42nd Amendment.", V],
   ],
   "polity-fundamental-rights": [
     ["Consider: 1. Article 15 is available only to citizens. 2. Article 21 is available to citizens and foreigners. 3. Article 19 is suspended automatically during an emergency declared on the ground of war or external aggression. Which are correct?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 3, "All three are correct. Since the 44th Amendment, Article 358 suspends Article 19 only for war or external aggression, not armed rebellion.", H],
     ["Employment of children below 14 years in factories, mines or other hazardous work is prohibited by:", ["Article 21A", "Article 23", "Article 24", "Article 39"], 2, "Article 24 bans child labour in hazardous jobs; Article 23 bans forced labour and trafficking.", H],
     ["During a National Emergency, the President cannot suspend the right to move courts for the enforcement of:", ["Articles 14 and 19", "Articles 19 and 21", "Articles 20 and 21", "Articles 21 and 32"], 2, "The 44th Amendment (1978) made Articles 20 and 21 non-suspendable under Article 359.", V],
     ["The right to privacy was held to be a fundamental right by a nine-judge bench in:", ["Maneka Gandhi v Union of India (1978)", "Justice K. S. Puttaswamy v Union of India (2017)", "A. K. Gopalan v State of Madras (1950)", "Kharak Singh v State of UP (1962)"], 1, "Puttaswamy (2017) held privacy to be intrinsic to Article 21, overruling the earlier view in M. P. Sharma and Kharak Singh.", V],
+    ["How many of these statements are correct? I. Article 14 applies to all persons, including foreigners. II. Article 16 deals with equality of opportunity in public employment. III. Article 18 bars titles but allows military and academic distinctions. IV. Article 17 can be enforced only against the State.", COUNT4, 2, "I, II and III are correct. Article 17 (untouchability) applies against private persons too.", V],
+    ["How many of these statements are correct? I. Habeas corpus can be issued against private individuals. II. Mandamus can be issued against the President. III. Prohibition can be issued against purely administrative authorities.", COUNT3, 0, "Only I. Mandamus does not lie against the President or a Governor, and prohibition lies only against judicial or quasi-judicial bodies.", V],
   ],
   "polity-dpsp-duties": [
     ["Article 44 directs the State to endeavour to secure:", ["Free legal aid", "A Uniform Civil Code", "Separation of judiciary from executive", "Protection of national monuments"], 1, "Article 44: Uniform Civil Code. Free legal aid is 39A, separation of judiciary is 50 and monuments is 49.", H],
     ["Consider the pairs: 1. Article 39A — equal justice and free legal aid 2. Article 48A — protection of environment and wildlife 3. Article 50 — village panchayats. Which are correctly matched?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 0, "Article 50 is separation of the judiciary from the executive; village panchayats are Article 40.", H],
     ["In which case did the Supreme Court hold that the balance between Fundamental Rights and Directive Principles is part of the basic structure?", ["Golaknath (1967)", "Kesavananda Bharati (1973)", "Minerva Mills (1980)", "Champakam Dorairajan (1951)"], 2, "Minerva Mills (1980) struck down the part of the 42nd Amendment that gave all DPSP primacy over Articles 14 and 19.", V],
     ["Which of these is NOT a Fundamental Duty under Article 51A?", ["To protect the natural environment", "To develop the scientific temper", "To vote in public elections", "To safeguard public property"], 2, "Voting is not listed among the eleven Fundamental Duties.", V],
+    ["How many of these statements are correct? I. The idea of Directive Principles was borrowed from the Irish Constitution. II. Article 45 now provides for early childhood care and education below six years. III. Directive Principles are enforceable by courts. IV. Article 43 deals with a living wage for workers.", COUNT4, 2, "I, II and IV are correct. DPSP are non-justiciable (Article 37).", V],
+    ["How many of these statements are correct? I. Fundamental Duties apply only to citizens. II. There are eleven Fundamental Duties. III. Fundamental Duties can be enforced through writs.", COUNT3, 1, "Only I and II. Fundamental Duties are not enforceable through writs.", V],
   ],
   "polity-parliament": [
     ["Consider: 1. The Rajya Sabha can withhold a Money Bill for at most 14 days. 2. A Money Bill can be introduced in either House. 3. The Speaker’s decision on whether a bill is a Money Bill is final. Which are correct?", ["1 and 2 only", "1 and 3 only", "2 and 3 only", "1, 2 and 3"], 1, "A Money Bill can be introduced only in the Lok Sabha (Article 109); statements 1 and 3 are correct.", H],
     ["To let Parliament legislate on a State List subject in the national interest (Article 249), the Rajya Sabha must pass a resolution by:", ["A simple majority", "An absolute majority", "Two-thirds of members present and voting", "Two-thirds of its total membership"], 2, "Article 249 needs two-thirds of the members present and voting in the Rajya Sabha.", H],
     ["A joint sitting of the two Houses can NOT be held on a:", ["Ordinary bill", "Financial bill under Article 117(3)", "Constitution Amendment bill", "Bill rejected by the Rajya Sabha"], 2, "Joint sittings (Article 108) do not apply to Money Bills or Constitution Amendment bills.", V],
     ["“Zero Hour” in Parliament is:", ["Laid down in the Rules of Procedure", "An Indian innovation, not in the rules, that follows Question Hour", "The first hour of every sitting, reserved for questions", "A period in which no business is transacted"], 1, "Zero Hour began informally in 1962 and is not mentioned in the Rules of Procedure.", V],
+    ["How many of these statements are correct? I. The Rajya Sabha is a permanent House and cannot be dissolved. II. One-third of its members retire every second year. III. The Vice-President is the ex officio Chairman of the Rajya Sabha. IV. A resolution to remove the Vice-President can be moved only in the Rajya Sabha.", COUNT4, 3, "All four are correct (Articles 83, 64 and 67(b)).", V],
+    ["How many of these statements are correct? I. A bill pending in the Lok Sabha lapses when the Lok Sabha is dissolved. II. A bill pending in the Rajya Sabha that the Lok Sabha has not passed does not lapse on dissolution. III. A bill passed by both Houses and awaiting the President’s assent lapses on dissolution.", COUNT3, 1, "Only I and II. A bill awaiting assent does not lapse.", V],
   ],
 
   // ---------------- History ----------------
@@ -50,12 +61,16 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["The Swaraj Party was founded in 1923 by Motilal Nehru and:", ["C. R. Das", "Bal Gangadhar Tilak", "Lala Lajpat Rai", "Bipin Chandra Pal"], 0, "C. R. Das and Motilal Nehru formed the Swaraj Party to contest council elections.", H],
     ["The “August Offer” of 1940 was made by Viceroy:", ["Lord Linlithgow", "Lord Wavell", "Lord Irwin", "Lord Mountbatten"], 0, "Linlithgow offered dominion status as the objective and an expanded Executive Council; Congress rejected it.", V],
     ["Consider: 1. The Poona Pact (1932) came after Gandhi’s fast in Yerwada jail. 2. It replaced separate electorates for the Depressed Classes with reserved seats in joint electorates. 3. It followed Ramsay MacDonald’s Communal Award. Which are correct?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 3, "All three are correct; the pact was signed by B. R. Ambedkar and Madan Mohan Malaviya.", V],
+    ["How many of these statements are correct? I. The Congress split at Surat in 1907. II. The All-India Muslim League was founded at Dhaka in 1906. III. The Lucknow Pact of 1916 was between the Congress and the Muslim League. IV. The Partition of Bengal was annulled in 1905.", COUNT4, 2, "I, II and III are correct. The partition of 1905 was annulled in 1911.", V],
+    ["How many of these statements are correct? I. The Non-Cooperation Movement was withdrawn after Chauri Chaura. II. The Simon Commission had no Indian member. III. The Congress attended the First Round Table Conference.", COUNT3, 1, "Only I and II. The Congress boycotted the First Round Table Conference (1930–31) and attended only the second.", V],
   ],
   "history-mughal": [
     ["The Second Battle of Panipat (1556) was fought between Akbar’s army, led by Bairam Khan, and:", ["Ibrahim Lodi", "Hemu", "Sher Shah Suri", "Rana Sanga"], 1, "Hemu was defeated and killed; Akbar’s rule was secured.", H],
     ["Babur’s memoir, the Baburnama, was originally written in:", ["Persian", "Arabic", "Chagatai Turkish", "Urdu"], 2, "Babur wrote in his mother tongue, Chagatai Turkish; it was translated into Persian under Akbar.", H],
     ["The Zabti (Dahsala) land revenue system under Akbar was developed by:", ["Birbal", "Raja Todar Mal", "Abul Fazl", "Man Singh"], 1, "Raja Todar Mal measured land and fixed revenue on the average produce of ten years.", V],
     ["Consider: 1. The Buland Darwaza at Fatehpur Sikri commemorates Akbar’s Gujarat campaign. 2. Akbar’s Ibadat Khana was at Fatehpur Sikri. 3. Akbar abolished the pilgrimage tax. Which are correct?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 3, "All three are correct; the pilgrimage tax went in 1563 and the jizya in 1564.", V],
+    ["How many of these statements are correct? I. Sher Shah defeated Humayun at Chausa (1539) and Kannauj (1540). II. Sher Shah issued the silver coin called the rupiya. III. Sher Shah rebuilt and extended the road later called the Grand Trunk Road. IV. Humayun’s tomb was built by Shah Jahan.", COUNT4, 2, "I, II and III are correct. Humayun’s tomb was built in Akbar’s reign, commissioned by Bega Begum.", V],
+    ["How many of these statements are correct? I. The Peacock Throne was made for Shah Jahan. II. Nadir Shah carried it away in 1739. III. Aurangzeb died in 1707.", COUNT3, 2, "All three are correct.", V],
   ],
 
   // ---------------- Geography ----------------
@@ -64,12 +79,16 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Which river rises at Amarkantak and flows westward into the Arabian Sea?", ["Narmada", "Son", "Mahanadi", "Tapi"], 0, "The Narmada rises at Amarkantak and flows west through a rift valley; the Tapi rises near Multai.", H],
     ["Arrange these east-flowing rivers from north to south:", ["Mahanadi, Godavari, Krishna, Kaveri", "Godavari, Mahanadi, Krishna, Kaveri", "Mahanadi, Krishna, Godavari, Kaveri", "Godavari, Krishna, Mahanadi, Kaveri"], 0, "Mahanadi (Odisha), Godavari (Andhra/Telangana), Krishna, then Kaveri (Tamil Nadu).", V],
     ["The Tehri dam stands near the confluence of:", ["Alaknanda and Bhagirathi", "Bhagirathi and Bhilangana", "Yamuna and Tons", "Ganga and Ramganga"], 1, "Tehri dam is on the Bhagirathi, near its confluence with the Bhilangana. Alaknanda and Bhagirathi meet at Devprayag.", V],
+    ["How many of these statements are correct? I. The Godavari is called the “Dakshin Ganga”. II. The Krishna rises near Mahabaleshwar. III. The Kaveri rises at Talakaveri in the Brahmagiri hills. IV. The Mahanadi rises in the Western Ghats.", COUNT4, 2, "I, II and III are correct. The Mahanadi rises near Sihawa in Chhattisgarh.", V],
+    ["How many of these statements are correct? I. The Indus rises in Tibet near Lake Mansarovar. II. The Sutlej enters India through the Shipki La pass. III. The Chenab is formed by the Chandra and the Bhaga.", COUNT3, 2, "All three are correct.", V],
   ],
   "geo-solar-system": [
     ["Which planets have no natural satellite?", ["Mercury only", "Venus only", "Both Mercury and Venus", "Mars and Venus"], 2, "Mercury and Venus have no moons; Mars has two, Phobos and Deimos.", H],
     ["The main asteroid belt lies between the orbits of:", ["Earth and Mars", "Mars and Jupiter", "Jupiter and Saturn", "Neptune and Pluto"], 1, "The asteroid belt is between Mars and Jupiter; the Kuiper belt is beyond Neptune.", H],
     ["Consider: 1. Venus rotates from east to west. 2. A day on Venus is longer than its year. 3. Venus has the highest surface temperature of any planet. Which are correct?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 3, "Venus rotates backwards; it takes about 243 Earth days to rotate and 225 to orbit; its CO₂ atmosphere makes it the hottest.", V],
     ["By Kepler’s third law, a planet 4 times as far from the Sun as Earth takes how many Earth years to orbit?", ["4", "8", "16", "64"], 1, "T² ∝ a³, so T = 4^(3/2) = 8 years.", V],
+    ["How many of these statements are correct? I. Jupiter is the largest planet. II. Saturn’s average density is less than that of water. III. Mercury has the most eccentric orbit of the eight planets. IV. Neptune was the first planet found by mathematical prediction.", COUNT4, 3, "All four are correct; Neptune was predicted by Le Verrier and Adams before it was seen in 1846.", V],
+    ["How many of these statements are correct? I. Earth is closest to the Sun in early January. II. Seasons are caused mainly by the change in the Earth–Sun distance. III. Earth’s axis is tilted about 23.5° from the perpendicular to its orbit.", COUNT3, 1, "Only I and III. Seasons come from the tilt of the axis, not the distance.", V],
   ],
 
   // ---------------- Economy ----------------
@@ -78,6 +97,8 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["GDP at market price minus depreciation equals:", ["GNP at market price", "NDP at market price", "NNP at factor cost", "GDP at factor cost"], 1, "Subtracting depreciation turns “gross” into “net”: NDP at market price.", H],
     ["If net factor income from abroad is negative, then:", ["GNP > GDP", "GNP < GDP", "GNP = GDP", "NNP > GNP"], 1, "GNP = GDP + net factor income from abroad, so a negative NFIA makes GNP smaller.", V],
     ["Fiscal deficit minus interest payments is called the:", ["Revenue deficit", "Primary deficit", "Effective revenue deficit", "Budget deficit"], 1, "Primary deficit shows borrowing needed for current spending other than interest.", V],
+    ["How many of these statements are correct? I. GST came into force on 1 July 2017. II. The GST Council is chaired by the Union Finance Minister. III. Alcohol for human consumption is outside GST. IV. Crude petroleum is currently taxed under GST.", COUNT4, 2, "I, II and III are correct. Crude, diesel, petrol, natural gas and ATF are not yet taxed under GST.", V],
+    ["How many of these statements are correct? I. Stagflation means high inflation with stagnant growth. II. Deflation is a fall in the general price level. III. Disinflation means the general price level is falling.", COUNT3, 1, "Only I and II. Disinflation is a fall in the rate of inflation; prices still rise, just more slowly.", V],
   ],
 
   // ---------------- Science ----------------
@@ -86,18 +107,24 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Resistors of 4 Ω and 12 Ω are connected in parallel. The equivalent resistance is:", ["3 Ω", "8 Ω", "16 Ω", "48 Ω"], 0, "1/R = 1/4 + 1/12 = 4/12, so R = 3 Ω.", H],
     ["A convex lens of focal length 20 cm forms a real image the same size as the object. The object is at:", ["10 cm", "20 cm", "40 cm", "80 cm"], 2, "A real image of equal size forms when the object is at 2F, i.e. 40 cm.", V],
     ["If each of two masses is doubled and the distance between them is also doubled, the gravitational force:", ["Stays the same", "Doubles", "Halves", "Becomes four times"], 0, "F ∝ m₁m₂/r²: (2 × 2)/2² = 1, so the force is unchanged.", V],
+    ["How many of these statements are correct? I. Sound cannot travel through a vacuum. II. Light travels faster in glass than in air. III. An echo needs a reflecting surface at least about 17 m away. IV. Ultrasound has a frequency above 20 kHz.", COUNT4, 2, "I, III and IV are correct. Light slows down in glass (refractive index about 1.5).", V],
+    ["How many of these statements are correct? I. No work is done when the force is perpendicular to the displacement. II. A body in uniform circular motion has constant velocity. III. Momentum is a vector quantity.", COUNT3, 1, "Only I and III. In circular motion the speed is constant but the direction, and so the velocity, keeps changing.", V],
   ],
   "sci-biology": [
     ["Which vessel carries oxygenated blood from the lungs to the heart?", ["Pulmonary artery", "Pulmonary vein", "Aorta", "Vena cava"], 1, "Pulmonary veins are the only veins that carry oxygenated blood.", H],
     ["Which of these is NOT a function of the liver?", ["Making bile", "Storing glycogen", "Detoxifying drugs", "Producing insulin"], 3, "Insulin comes from the beta cells of the pancreas.", H],
     ["Consider: 1. Mature mammalian red blood cells have no nucleus. 2. Haemoglobin contains iron. 3. Platelets help blood to clot. Which are correct?", ["1 and 2 only", "2 and 3 only", "1 and 3 only", "1, 2 and 3"], 3, "All three are correct.", V],
     ["A colour-blind man marries a woman with normal vision who is not a carrier. What is the chance that their son is colour-blind?", ["0%", "25%", "50%", "100%"], 0, "Colour blindness is X-linked; a son gets his X from his mother, who has two normal X chromosomes.", V],
+    ["How many of these statements are correct? I. Vitamin K helps blood clot. II. Rickets is caused by a lack of vitamin D. III. Night blindness is caused by a lack of vitamin B1. IV. Beriberi is caused by a lack of vitamin B1.", COUNT4, 2, "I, II and IV are correct. Night blindness comes from a lack of vitamin A.", V],
+    ["How many of these statements are correct? I. Mitochondria are called the powerhouse of the cell. II. Ribosomes are the site of protein synthesis. III. Plant cells have no cell wall.", COUNT3, 1, "Only I and II. Plant cells have a cellulose cell wall.", V],
   ],
   "sci-chemistry": [
     ["Which of these are chemical changes? 1. Rusting of iron 2. Melting of wax 3. Curdling of milk 4. Sublimation of camphor", ["1 and 3 only", "2 and 4 only", "1, 2 and 3", "All four"], 0, "Rusting and curdling form new substances; melting and sublimation only change state.", H],
     ["How many moles are there in 22 g of carbon dioxide?", ["0.5", "1", "2", "22"], 0, "Molar mass of CO₂ = 44 g/mol, so 22 ÷ 44 = 0.5 mol.", H],
     ["Which of these has the highest pH?", ["Lemon juice", "Pure water", "Milk of magnesia", "Vinegar"], 2, "Milk of magnesia (Mg(OH)₂) is basic, pH about 10.5; the others are acidic or neutral.", V],
     ["What volume of oxygen at STP is needed to burn 1 mole of methane completely?", ["11.2 L", "22.4 L", "44.8 L", "67.2 L"], 2, "CH₄ + 2O₂ → CO₂ + 2H₂O; 2 mol O₂ × 22.4 L = 44.8 L.", V],
+    ["How many of these statements are correct? I. Diamond and graphite are allotropes of carbon. II. Graphite conducts electricity. III. Diamond conducts electricity well. IV. Fullerene (C₆₀) is an allotrope of carbon.", COUNT4, 2, "I, II and IV are correct. Diamond has no free electrons and does not conduct.", V],
+    ["How many of these statements are correct? I. Noble gases have completely filled outer shells. II. Helium has eight electrons in its outer shell. III. Argon is the most abundant noble gas in the atmosphere.", COUNT3, 1, "Only I and III. Helium has just two electrons, which fill its only shell.", V],
   ],
 
   // ---------------- Reasoning ----------------
@@ -106,18 +133,24 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Find the next term: B2, E5, H8, K11, ?", ["M13", "N14", "N13", "O15"], 1, "Letters move 3 steps and the number is the letter’s position: N = 14.", H],
     ["Find the next term: 4, 9, 25, 49, 121, ?", ["144", "169", "196", "225"], 1, "Squares of primes 2, 3, 5, 7, 11, 13; 13² = 169.", V],
     ["Find the next term: 3, 7, 16, 35, 74, ?", ["148", "151", "153", "155"], 2, "×2 + 1, ×2 + 2, ×2 + 3, ×2 + 4, so 74 × 2 + 5 = 153.", V],
+    ["Find the next term: 6, 11, 21, 36, 56, ?", ["76", "81", "86", "91"], 1, "Differences grow by 5: +5, +10, +15, +20, +25, so 56 + 25 = 81.", V],
+    ["Find the next term: 120, 99, 80, 63, 48, ?", ["35", "33", "36", "39"], 0, "Each term is n² − 1 for n = 11, 10, 9, 8, 7, so the next is 6² − 1 = 35.", V],
   ],
   "reason-coding": [
     ["If MONKEY is written as XDJMNL, how is TIGER written?", ["QDFHS", "SHFDQ", "QDFGS", "UJHFS"], 0, "Reverse the word (REGIT) and move each letter one step back: QDFHS.", H],
     ["If FRIEND is coded as HUMJTK, how is CANDLE coded?", ["EDRIRL", "EDRJRL", "DCQHQK", "EDSIRL"], 0, "Letters move +2, +3, +4, +5, +6, +7: C→E, A→D, N→R, D→I, L→R, E→L.", H],
     ["If PAPER is coded as QCSIW, how is PENCIL coded?", ["QGQGNR", "QGQGMR", "QFQGNR", "QGPGNR"], 0, "Letters move +1, +2, +3, +4, +5, +6: P→Q, E→G, N→Q, C→G, I→N, L→R.", V],
     ["“pit dar na” means “you are good”, “dar tok pa” means “good and bad” and “tok da pit” means “they are bad”. What does “na” mean?", ["you", "are", "good", "they"], 0, "dar = good (sentences 1 and 2), tok = bad (2 and 3), pit = are (1 and 3), so na = you.", V],
+    ["If EARTH is coded as FCUXM, how is PLANT coded?", ["QNDRY", "QNDRZ", "QMDRY", "RNDRY"], 0, "Letters move +1, +2, +3, +4, +5: P→Q, L→N, A→D, N→R, T→Y.", V],
+    ["If COMPUTER is written as RFUVQNPC, how is MEDICINE written?", ["EOJDJEFM", "EOJDJFEM", "MFEJDJOE", "EOJDKEFM"], 0, "Reverse the word (ENICIDEM), keep the first and last letters, and move the six middle letters one step forward: E OJDJEF M.", V],
   ],
   "reason-blood-relations": [
     ["A is B’s sister. C is B’s mother. D is C’s father. E is D’s mother. How is A related to D?", ["Granddaughter", "Daughter", "Grandmother", "Niece"], 0, "A is C’s daughter, and C is D’s child, so A is D’s granddaughter.", H],
     ["Pointing to a woman, Rahul said, “Her mother’s only son is my father.” How is the woman related to Rahul?", ["Aunt", "Mother", "Sister", "Grandmother"], 0, "Her mother’s only son is her brother, who is Rahul’s father, so she is Rahul’s father’s sister.", H],
     ["P × Q means P is the brother of Q; P + Q means P is the mother of Q; P ÷ Q means P is the father of Q. Which shows that M is the maternal uncle of R?", ["M × N + R", "M + N × R", "M ÷ N × R", "M × N ÷ R"], 0, "M is the brother of N, and N is the mother of R, so M is R’s maternal uncle. M × N ÷ R would make him the paternal uncle.", V],
     ["A family of six (A–F) has two married couples. D is A’s grandmother and B’s mother. C is B’s wife and F’s mother. F is E’s granddaughter. How is E related to D?", ["Husband", "Son", "Father", "Brother"], 0, "B and C are one couple; E is F’s grandparent, which makes E and D the other couple.", V],
+    ["A + B means A is the father of B; A − B means A is the wife of B; A × B means A is the brother of B; A ÷ B means A is the daughter of B. If P ÷ R + S + Q, how is P related to Q?", ["Aunt", "Mother", "Sister", "Grandmother"], 0, "P is R’s daughter and R is S’s father, so P is S’s sister; S is Q’s father, so P is Q’s paternal aunt.", V],
+    ["Q’s mother is the sister of P, and Y is the daughter of P. How is Q related to Y?", ["Cousin", "Sister", "Niece", "Aunt"], 0, "Q’s mother and P are siblings, so their children Q and Y are cousins.", V],
   ],
 
   // ---------------- English ----------------
@@ -126,12 +159,16 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Choose the antonym of “Laconic”.", ["Brief", "Verbose", "Terse", "Curt"], 1, "Laconic means using very few words; verbose is the opposite.", H],
     ["One word for “a person who bears pain or hardship without showing feelings”:", ["Stoic", "Hedonist", "Cynic", "Sceptic"], 0, "A stoic endures without complaint; a hedonist seeks pleasure.", V],
     ["The idiom “to cut the Gordian knot” means:", ["To break a promise", "To solve a hard problem by a bold, direct action", "To end a friendship", "To waste time on small details"], 1, "From the legend of Alexander slicing through a knot nobody could untie.", V],
+    ["Choose the synonym of “Obfuscate”.", ["Clarify", "Obscure", "Illuminate", "Simplify"], 1, "To obfuscate is to make something unclear on purpose.", V],
+    ["Choose the antonym of “Recalcitrant”.", ["Obstinate", "Compliant", "Defiant", "Unruly"], 1, "Recalcitrant means stubbornly disobedient; compliant is the opposite.", V],
   ],
   "eng-grammar": [
     ["Spot the error: Scarcely had he reached the station (a) / than the train (b) / started moving. (c) / No error (d)", ["a", "b", "c", "d"], 1, "“Scarcely” and “hardly” pair with “when”, not “than”.", H],
     ["Choose the correct option: “If I ___ a bird, I would fly to you.”", ["was", "were", "am", "had been"], 1, "An imaginary present condition takes the subjunctive “were” for all subjects.", H],
     ["Spot the error: He is one of those writers (a) / who has won (b) / several awards this year. (c) / No error (d)", ["a", "b", "c", "d"], 1, "“Who” refers to “writers” (plural), so it should be “who have won”.", V],
     ["Choose the correct passive form of: “Who taught you this trick?”", ["By whom were you taught this trick?", "By whom you were taught this trick?", "Who was taught this trick by you?", "This trick was taught by whom to you?"], 0, "Questions keep the question order in the passive: By whom + auxiliary + subject + past participle.", V],
+    ["Spot the error: No sooner did the bell ring (a) / when the students (b) / rushed out of the class. (c) / No error (d)", ["a", "b", "c", "d"], 1, "“No sooner” pairs with “than”, not “when”.", V],
+    ["Choose the correct option: “The committee ___ divided in their opinions.”", ["was", "were", "has been", "is being"], 1, "When members act as individuals (“their opinions”), a collective noun takes a plural verb.", V],
   ],
 
   // ---------------- Banking and Computer ----------------
@@ -140,12 +177,16 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Which of these is NOT a function of the RBI?", ["Issuing currency notes", "Banker to the government", "Lender of last resort", "Accepting deposits from the general public"], 3, "The RBI is a banker to banks and governments, not to the public.", H],
     ["In banking, MCLR stands for:", ["Marginal Cost of Funds based Lending Rate", "Minimum Credit Lending Rate", "Monetary Cost of Liquidity Ratio", "Marginal Credit and Loan Rate"], 0, "MCLR replaced the base rate in April 2016 as the benchmark for loans.", V],
     ["A cheque is valid for how long from the date written on it?", ["1 month", "3 months", "6 months", "1 year"], 1, "The RBI cut cheque validity from six months to three months from 1 April 2012.", V],
+    ["How many of these statements are correct? I. NABARD was set up in 1982. II. SIDBI was set up in 1990. III. EXIM Bank was set up in 1982. IV. NABARD has its headquarters in New Delhi.", COUNT4, 2, "I, II and III are correct. NABARD is headquartered in Mumbai.", V],
+    ["How many of these statements are correct? I. The Banking Regulation Act was passed in 1949. II. Regional Rural Banks were set up in 1975. III. Punjab National Bank is regarded as the first bank fully managed by Indians.", COUNT3, 2, "All three are correct.", V],
   ],
   "comp-awareness": [
     ["Which of these is NOT an operating system?", ["Linux", "Windows", "Oracle Database", "macOS"], 2, "Oracle Database is a database management system.", H],
     ["The hexadecimal number 1F equals which decimal number?", ["15", "31", "30", "16"], 1, "1F = 1 × 16 + 15 = 31.", H],
     ["Which layer of the OSI model handles routing of packets between networks?", ["Data link", "Network", "Transport", "Session"], 1, "The network layer (layer 3) routes packets using IP addresses.", V],
     ["Which order lists memory from fastest to slowest?", ["Registers, cache, RAM, hard disk", "Cache, registers, RAM, hard disk", "RAM, cache, registers, hard disk", "Registers, RAM, cache, hard disk"], 0, "Registers sit inside the CPU, then cache, then main memory, then storage.", V],
+    ["How many of these statements are correct? I. One byte is eight bits. II. A nibble is four bits. III. ROM is volatile memory. IV. Cache memory sits between the CPU and the main memory.", COUNT4, 2, "I, II and IV are correct. ROM keeps its contents without power.", V],
+    ["How many of these statements are correct? I. HTTP uses port 80 by default. II. HTTPS uses port 443 by default. III. FTP is the protocol used to send e-mail.", COUNT3, 1, "Only I and II. E-mail is sent with SMTP; FTP transfers files.", V],
   ],
 
   // ---------------- Teaching (CTET) ----------------
@@ -154,5 +195,7 @@ export const TOUGH_QUESTIONS: Record<string, Q[]> = {
     ["Which of these is an example of formative assessment?", ["The board exam at the end of the year", "Short quizzes with feedback during teaching", "An entrance test", "The final term exam"], 1, "Formative assessment happens during learning and is used to improve it.", H],
     ["Bruner’s three modes of representation are:", ["Enactive, iconic, symbolic", "Sensory, motor, verbal", "Concrete, abstract, formal", "Visual, auditory, kinaesthetic"], 0, "Enactive (action), iconic (images) and symbolic (language).", V],
     ["Wolfgang Köhler demonstrated “learning by insight” in experiments with:", ["Cats", "Dogs", "Chimpanzees", "Pigeons"], 2, "His chimpanzee Sultan joined sticks to reach a banana, showing sudden insight.", V],
+    ["How many of these statements are correct? I. Piaget’s concrete operational stage covers roughly 7 to 11 years. II. Conservation develops in the concrete operational stage. III. Object permanence develops in the sensorimotor stage. IV. Abstract reasoning begins in the pre-operational stage.", COUNT4, 2, "I, II and III are correct. Abstract reasoning belongs to the formal operational stage.", V],
+    ["How many of these statements are correct? I. The RTE Act, 2009 came into force on 1 April 2010. II. It reserves 25% of entry-level seats in private unaided schools for disadvantaged children. III. It lets schools hold screening tests for admission.", COUNT3, 1, "Only I and II. The Act bans screening procedures and capitation fees.", V],
   ],
 };
