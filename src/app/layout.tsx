@@ -7,7 +7,8 @@ import { Logo } from "@/components/Logo";
 import { HeaderStats, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
-import { EXAMS, FEATURED_EXAMS } from "@/data/exams";
+import { EXAM_BY_ID, EXAMS } from "@/data/exams";
+import { COMPANY } from "@/data/site";
 import { AccountProvider } from "@/lib/account";
 import "./globals.css";
 
@@ -23,24 +24,45 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#18181b" };
 
-const FOOTER = [
+const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
   {
-    title: "Product",
+    title: "Study",
     links: [
-      ["Video breakdown", "/video"],
-      ["Flashcards", "/review"],
       ["Daily plan", "/today"],
-      ["Learn", "/learn"],
+      ["Video breakdown", "/video"],
+      ["Learn topics", "/learn"],
+      ["Flashcards", "/review"],
       ["Exam tomorrow", "/last-minute"],
+    ],
+  },
+  // One popular exam from each family: SSC, banking, railways, UPSC, teaching.
+  {
+    title: "Exams",
+    links: [
+      ...["ssc-cgl", "ibps-po", "rrb-ntpc", "upsc-prelims", "ctet"].flatMap((id): [string, string][] => {
+        const e = EXAM_BY_ID.get(id);
+        return e ? [[e.name, `/exams/${e.id}`]] : [];
+      }),
+      [`All ${EXAMS.length} exams →`, "/exams"],
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      ["Log in", "/login"],
+      ["Create account", "/login?tab=signup"],
+      ["My progress", "/progress"],
       ["Pricing", "/pricing"],
     ],
   },
-  { title: "Exams", links: [...FEATURED_EXAMS.slice(0, 6).map((e) => [e.name, `/exams/${e.id}`]), [`All ${EXAMS.length} exams`, "/exams"]] },
   {
-    title: "Your account",
+    title: "Company",
     links: [
-      ["Progress", "/progress"],
-      ["Mock tests", "/exams"],
+      ["About us", "/about"],
+      ["Contact", "/contact"],
+      ["Privacy policy", "/privacy"],
+      ["Terms of use", "/terms"],
+      ["Refund policy", "/refund"],
     ],
   },
 ];
@@ -69,35 +91,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">{children}</main>
         <footer className="border-t border-slate-200 bg-surface">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-            <div className="max-w-xs space-y-3">
-              <Logo />
-              <p className="text-sm text-slate-500">Study from YouTube lectures in less time, and prepare for one-day exams with practice that adapts to you.</p>
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.3fr_3fr] lg:gap-16">
+            <div className="max-w-sm space-y-4">
+              <Logo showName />
+              <p className="text-sm leading-relaxed text-slate-500">Study from YouTube lectures in less time, and prepare for one-day exams with practice that adapts to you.</p>
+              <p className="text-xs leading-relaxed text-slate-500">SSC · Banking · Railways · UPSC &amp; State PSC · Teaching · Defence</p>
             </div>
-            {FOOTER.map((col) => (
-              <div key={col.title}>
-                <h3 className="text-sm font-medium">{col.title}</h3>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {col.links.map(([label, href]) => (
-                    <li key={label}>
-                      <Link href={href} className="text-slate-500 hover:text-slate-900">
-                        {label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+              {FOOTER.map((col) => (
+                <div key={col.title}>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">{col.title}</h3>
+                  <ul className="mt-4 space-y-2.5 text-sm">
+                    {col.links.map(([label, href]) => (
+                      <li key={label}>
+                        <Link href={href} className="text-slate-500 transition-colors hover:text-slate-900">
+                          {label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
           </div>
           <div className="border-t border-slate-200">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500">
-              <span>
-                © {new Date().getFullYear()} StudyClip. Videos play in YouTube’s official player. <span className="text-slate-400">·</span> Powered by{" "}
-                <span className="font-medium text-slate-700">Reasonateai Private Limited</span>
-              </span>
-              <span>
-                Press <kbd className="rounded border border-slate-200 px-1 font-mono">Ctrl K</kbd> to search
-              </span>
+            <div className="mx-auto flex max-w-6xl flex-col gap-1.5 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+              <p>© {new Date().getFullYear()} StudyClip. Videos play in YouTube’s official player.</p>
+              <p>
+                Powered by <span className="font-medium text-slate-700">{COMPANY}</span>
+              </p>
             </div>
           </div>
         </footer>

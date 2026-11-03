@@ -13,11 +13,12 @@ export function LogoMark({ className = "h-7 w-7" }: { className?: string }) {
   );
 }
 
-export function Logo() {
+/** Mark plus name. The header hides the name on phones to save space; `showName` keeps it (footer). */
+export function Logo({ showName = false }: { showName?: boolean }) {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="StudyClip home">
+    <Link href="/" className="flex w-fit shrink-0 items-center gap-2.5" aria-label="StudyClip home">
       <LogoMark />
-      <span className="hidden text-[15px] font-semibold tracking-tight text-slate-900 sm:inline">StudyClip</span>
+      <span className={`${showName ? "inline" : "hidden sm:inline"} text-[15px] font-semibold tracking-tight text-slate-900`}>StudyClip</span>
     </Link>
   );
 }
