@@ -2,8 +2,8 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { Results, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -22,9 +22,17 @@ interface Attempt {
   submittedAt: number | null;
 }
 
-/** Full analysis of a submitted test: score, time, sections, topics and every answer. */
+/** Full analysis of a submitted test (/tests?id=…): score, time, sections, topics and every answer. */
 export default function TestAnalysisPage() {
-  const { id } = useParams<{ id: string }>();
+  return (
+    <Suspense>
+      <TestAnalysis />
+    </Suspense>
+  );
+}
+
+function TestAnalysis() {
+  const id = useSearchParams().get("id") ?? "";
   const account = useAccount();
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [error, setError] = useState("");
@@ -32,6 +40,7 @@ export default function TestAnalysisPage() {
   useEffect(() => {
     if (!account.ready) return;
     if (!account.user) return setError("Log in to see this test.");
+    if (!id) return setError("Test not found.");
     fetch(`/api/tests/${id}`, { cache: "no-store" })
       .then(async (r) => (r.ok ? setAttempt(await r.json()) : setError((await r.json()).error ?? "Test not found.")))
       .catch(() => setError("Could not load this test."));

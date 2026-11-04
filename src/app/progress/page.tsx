@@ -131,7 +131,7 @@ export default function ProgressPage() {
                       <span className="font-semibold">
                         {+(a.score * a.marks).toFixed(2)} / {a.total * a.marks}
                       </span>
-                      <Link href={`/tests/${a.id}`} className="text-xs font-medium text-brand-700 hover:underline">
+                      <Link href={`/tests?id=${a.id}`} className="text-xs font-medium text-brand-700 hover:underline">
                         Analysis
                       </Link>
                     </span>

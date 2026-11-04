@@ -306,7 +306,7 @@ interface ResultsProps {
   onRestart?: () => void;
 }
 
-/** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests/[id]. */
+/** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
 export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const correct = results.filter((r) => r.correct).length;
