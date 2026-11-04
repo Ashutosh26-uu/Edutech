@@ -8,7 +8,7 @@ import type { AIProvider } from "./provider";
 import { analyzeVideo } from "./local-video";
 
 /** Shuffles options while keeping the answer index pointing at the right option. */
-function shuffleOptions(q: MCQ): MCQ {
+export function shuffleOptions(q: MCQ): MCQ {
   const order = shuffle(q.options.map((_, i) => i));
   return { ...q, options: order.map((i) => q.options[i]), answer: order.indexOf(q.answer) };
 }

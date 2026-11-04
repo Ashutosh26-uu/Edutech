@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
+import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
@@ -28,6 +29,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
   const exam = EXAM_BY_ID.get(id);
   if (!exam) notFound();
   const hasPractice = examTopicIds(exam).length > 0;
+  const plan = mockPlan(exam);
 
   return (
     <div className="space-y-8">
@@ -53,7 +55,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 <Sparkles className="h-4 w-4" /> Smart practice
               </Link>
               <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
-                Take a mock test
+                {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
               </Link>
             </div>
           )}
@@ -80,6 +82,34 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             </dd>
           </div>
         </dl>
+        {plan && (
+          <div className="card">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold">
+                {plan.pattern.paper} mock: {totalQuestions(plan.sections)} questions · {totalMinutes(plan.sections)} minutes{plan.pattern.sectional ? " · sectional timing" : ""}
+              </h2>
+              <span className="text-xs text-slate-500">
+                +{plan.pattern.marks} per correct · −{+((plan.pattern.negative ?? exam.negativeMarking ?? 0) * plan.pattern.marks).toFixed(2)} per wrong
+              </span>
+            </div>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {plan.sections.map((s) => (
+                <li key={s.subject} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                  <span>
+                    <span className="font-medium text-slate-800">{s.subject}</span>
+                    <span className="block text-xs text-slate-500">
+                      {s.questions} questions · {s.minutes} min
+                    </span>
+                  </span>
+                  <Link href={`/practice?exam=${exam.id}&mock=1&section=${encodeURIComponent(s.subject)}`} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
+                    Section test
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {plan.pattern.sectional && <p className="mt-2 text-xs text-slate-500">In the full mock each section has its own timer and closes when it ends, as in the real paper.</p>}
+          </div>
+        )}
         <p className="text-xs text-slate-500">Exam patterns change. Always confirm dates, eligibility and the current pattern in the latest official notification.</p>
       </div>
 
