@@ -13,9 +13,11 @@ Turn long YouTube lectures into short chapters, crisp notes and quizzes, and pre
 | **Smart play and live transcript** | ⚡ Smart play skips everything except High-importance chapters. Speed control from 1× to 2×. A searchable transcript follows the video and jumps on click. |
 | **Notes and quiz** | One-line summary, keywords, key points and facts (each linked to its timestamp), your own timestamped notes, read-aloud, export to **Markdown** or **PDF**, and an auto-generated quiz you can save as flashcards. |
 | **Flashcards** (`/review`) | Spaced repetition with the **FSRS** scheduler (the algorithm modern Anki offers). Add topic decks, video quiz cards or your own cards, then review with Space and keys 1–4. |
-| **Exam prep** (`/exams`) | Pick an exam to see its syllabus, practise any topic with instant explanations, use **🧠 Smart practice** (adaptive and interleaved), or take a timed **mock test** with the exam's negative marking. |
+| **Exam prep** (`/exams`) | Pick an exam to see its syllabus, practise any topic with instant explanations, use **🧠 Smart practice** (adaptive and interleaved), or take a timed **mock test** with the exam's negative marking. 20 exams (SSC CGL, IBPS PO, SBI PO, RRB NTPC, UPSC Prelims and more) have **full mocks on the real paper pattern** (`src/data/patterns.ts`): the paper's sections, question counts, minutes and marks, with **sectional timing** where the exam has it (SSC CGL 2026, IBPS prelims), plus single **section tests**. |
+| **Test analysis** | After every timed test: marks, accuracy, time on correct / wrong / skipped answers, slowest questions, section-wise and topic-wise breakdown with strong / weak labels, difficulty breakdown, and the change from your last test. Every test stays on your account with its full analysis (`/tests?id=…`). |
+| **Mistake notebook** (`/mistakes`) | Every bank question you get wrong, in practice or a test, until you get it right again. Practise all of them or one topic at a time, or turn them into flashcards. |
 | **Learn** (`/learn`) | Search any topic, by typing or by **voice (English or Hindi)**, for notes, practice questions and the exams it appears in, or ask a question to get its answer. |
-| **My progress** (`/progress`) | Accuracy per topic, weak topics, mock-test history and recently studied videos. |
+| **My progress** (`/progress`) | Accuracy per topic, weak topics, test history with analysis, open mistakes and recently studied videos. Signed in, all of it follows your account across devices; signed out, it stays in the browser. |
 | **Everywhere** | **Ctrl + K** command palette (or press `/`), dark mode, and an installable app (PWA) with offline support for pages you've visited. |
 
 ### The learning science behind it
@@ -29,7 +31,7 @@ Videos without captions can still be analysed: paste the transcript from YouTube
 
 ## Exams covered
 
-91 Indian government and competitive exams in 13 categories: SSC, banking, insurance, railways, UPSC, defence, 22 state PSCs, police, teaching (CTET, UGC NET, state TETs, KVS, DSSSB), engineering and medical entrance (JEE, NEET, GATE), law and management (CLAT, CAT), CUET and other central exams. Each exam lists its conducting body, syllabus areas, negative marking (only where it is fixed; otherwise the page points to the official notification) and official website. Subjects linked to the question bank have topic practice, smart practice and mock tests.
+142 Indian government and competitive exams in 16 categories: SSC, banking, insurance, railways, UPSC, defence, 22 state PSCs, police, teaching (CTET, UGC NET, state TETs, KVS, DSSSB), engineering and medical entrance (JEE, NEET, GATE), law and management (CLAT, CAT), CUET and other central exams. Each exam lists its conducting body, syllabus areas, negative marking (only where it is fixed; otherwise the page points to the official notification) and official website. Subjects linked to the question bank have topic practice, smart practice and mock tests.
 
 ## Live site (GitHub Pages)
 
@@ -111,6 +113,6 @@ The pages and API routes don't need to change.
 
 - Rule-based chapters and quizzes are useful but rougher than an LLM's output; titles are keyword-based.
 - The question bank is a small sample of practice questions written in exam style. They are not official previous-year questions.
-- Progress is saved in the browser (localStorage), not in an account.
+- Flashcards, XP, streaks and video history are saved in the browser (localStorage); topic accuracy, tests and mistakes follow the account once signed in.
 - The video cache is in memory and resets when the server restarts.
 - Transcript fetching depends on YouTube's public caption endpoints, which can change.

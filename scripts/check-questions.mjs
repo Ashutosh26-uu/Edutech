@@ -2,7 +2,8 @@
 // Fails (exit 1) if any topic is thin, a tier is missing, a question is duplicated or malformed,
 // a practice set breaks its rules, or a generated answer does not match its question.
 import { QUESTION_BANK, TOPICS } from "@/data/topics";
-import { EXAMS, examTopicIds } from "@/data/exams";
+import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
+import { PATTERNS, mockPlan } from "@/data/patterns";
 import { localProvider } from "@/lib/ai/local";
 import { generateQuestions, hasGenerator } from "@/lib/generators";
 import { DIFFICULTIES, MIN_SET_SIZE, tierQuota } from "@/lib/difficulty";
@@ -56,6 +57,29 @@ for (const e of EXAMS) {
   const qs = await localProvider.practiceQuestions({ topicIds, count: 25 });
   const k = tiers(qs);
   if (qs.length < MIN_SET_SIZE || DIFFICULTIES.some((d) => k[d] < 1) || new Set(qs.map((q) => q.question)).size !== qs.length) fail(`mock ${e.id}`, `${qs.length} q, ${JSON.stringify(k)}`);
+}
+
+// 4b. Paper patterns: every section names a real subject with topics, and the bank can fill it
+for (const [examId, pattern] of Object.entries(PATTERNS)) {
+  const exam = EXAM_BY_ID.get(examId);
+  if (!exam) {
+    fail(`pattern ${examId}: unknown exam`);
+    continue;
+  }
+  for (const s of pattern.sections) {
+    const subject = exam.subjects.find((x) => x.name === s.subject);
+    if (!subject) fail(`pattern ${examId}: no subject "${s.subject}"`, exam.subjects.map((x) => x.name).join(" | "));
+    else if (!subject.topicIds.length) fail(`pattern ${examId}: "${s.subject}" has no topics`);
+  }
+  const plan = mockPlan(exam);
+  if (!plan) {
+    fail(`pattern ${examId}: no usable sections`);
+    continue;
+  }
+  for (const s of plan.sections) {
+    const qs = await localProvider.practiceQuestions({ topicIds: s.topicIds, count: s.questions });
+    if (qs.length < Math.min(s.questions, MIN_SET_SIZE)) fail(`pattern ${examId}/${s.subject}: only ${qs.length} questions for ${s.questions}`);
+  }
 }
 
 // 5. Generators: valid MCQs, and every answer re-derived from the question text

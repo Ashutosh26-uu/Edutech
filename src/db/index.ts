@@ -29,3 +29,4 @@ globalForDb.sql = sql;
 
 export const db = drizzle(sql, { schema });
 export { schema };
+export type { AttemptSection } from "./schema";

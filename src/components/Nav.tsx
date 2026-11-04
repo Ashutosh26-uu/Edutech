@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/last-minute", label: "Exam tomorrow" },
   { href: "/review", label: "Flashcards" },
   { href: "/learn", label: "Learn" },
+  { href: "/mistakes", label: "Mistakes" },
   { href: "/progress", label: "Progress" },
 ];
 

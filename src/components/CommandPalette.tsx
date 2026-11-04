@@ -58,6 +58,7 @@ export function CommandPalette() {
     return [
       { label: "Today’s plan", hint: "Daily goal, streak and tasks", group: "Pages", run: go("/today") },
       { label: "Review flashcards", hint: "Spaced repetition", group: "Pages", run: go("/review") },
+      { label: "Mistake notebook", hint: "Questions you got wrong", group: "Pages", run: go("/mistakes") },
       { label: "Break down a video", hint: "Paste a YouTube link", group: "Pages", run: go("/video") },
       { label: "My progress", hint: "Accuracy and weak topics", group: "Pages", run: go("/progress") },
       ...(examId ? [{ label: "Start smart practice", hint: "Adaptive questions for your exam", group: "Actions", run: go(`/practice?exam=${examId}&smart=1`) }] : []),

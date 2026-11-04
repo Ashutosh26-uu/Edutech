@@ -1,6 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { MCQ } from "@/lib/types";
+
+/** A section of a full mock: questions [from, from + count) of the attempt, with its own minutes. */
+export interface AttemptSection {
+  name: string;
+  from: number;
+  count: number;
+  minutes: number;
+}
 
 export const users = pgTable(
   "users",
@@ -70,14 +78,20 @@ export const testAttempts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     examId: text("exam_id").notNull(),
-    kind: text("kind", { enum: ["full", "topic"] }).notNull(),
+    kind: text("kind", { enum: ["full", "topic", "section"] }).notNull(),
     topicIds: text("topic_ids").array().notNull(),
     questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    /** Paper sections of a full mock on an exam pattern; null for the generic mock and topic tests. */
+    sections: jsonb("sections").$type<AttemptSection[]>(),
+    /** Whether each section is locked to its own timer. */
+    sectional: boolean("sectional").notNull().default(false),
     paidWith: text("paid_with", { enum: ["free", "credit"] }).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     answers: jsonb("answers").$type<(number | null)[]>(),
+    /** Seconds spent on each question, as reported by the browser. */
+    times: jsonb("times").$type<number[]>(),
     correct: integer("correct"),
     wrong: integer("wrong"),
     skipped: integer("skipped"),
@@ -117,4 +131,23 @@ export const topicStats = pgTable(
     lastPracticed: timestamp("last_practiced", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.topicId] })],
+);
+
+/**
+ * The mistake notebook: every bank question a user has got wrong, until they get it right again
+ * in a mistakes set. Generated Quant questions are not kept, since they cannot be replayed.
+ */
+export const mistakes = pgTable(
+  "mistakes",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    questionId: text("question_id").notNull(),
+    topicId: text("topic_id").notNull(),
+    timesWrong: integer("times_wrong").notNull().default(1),
+    lastWrongAt: timestamp("last_wrong_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.questionId] }), index("mistakes_user_idx").on(t.userId, t.resolvedAt)],
 );

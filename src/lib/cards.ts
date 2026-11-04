@@ -17,6 +17,19 @@ export function cardsForTopic(topicId: string): NewCard[] {
   }));
 }
 
+/** Specific bank questions (a test's wrong answers, say) as question → answer cards. */
+export function cardsForQuestions(questions: MCQ[]): NewCard[] {
+  return questions.map((q) => ({
+    id: `q:${q.id}`,
+    front: q.question,
+    back: `${q.options[q.answer]}
+
+${q.explanation}`,
+    topicId: q.topicId,
+    source: (q.topicId && TOPIC_BY_ID.get(q.topicId)?.name) || "Mistakes",
+  }));
+}
+
 /** Fill-in-the-blank video quiz questions become cloze cards linked back to their timestamp. */
 export function cardsForVideo(videoId: string, title: string, quiz: MCQ[]): NewCard[] {
   return quiz.map((q) => ({

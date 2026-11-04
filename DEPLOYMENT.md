@@ -47,7 +47,7 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
 
 ## Contact messages
 
-The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Read new messages in the Neon console's SQL editor:
+The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Set `ADMIN_EMAILS` (comma-separated account emails) and the listed accounts can read and mark messages at `/admin/messages`. Without it, read them in the Neon console's SQL editor:
 
 ```sql
 select created_at, topic, name, email, message, left(id::text, 8) as reference
