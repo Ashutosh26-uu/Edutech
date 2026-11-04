@@ -98,7 +98,7 @@ export const ELITE_QUESTIONS: Record<string, Q[]> = {
     ["Find the wrong term: 5, 10, 17, 26, 37, 50, 64", ["37", "50", "64", "26"], 2, "The terms are n² + 1 for n = 2 to 8. The last should be 8² + 1 = 65, not 64.", V],
   ],
   "reason-coding": [
-    ["In a code, MONKEY is written as XDJMNL. How is TIGER written in that code?", ["QDFHS", "SHFDQ", "UJHFS", "QDFHT"], 0, "Reverse the word and move each letter one step back: MONKEY → YEKNOM → XDJMNL. TIGER → REGIT → QDFHS.", V],
+    ["In a code, every letter is replaced by its position counted from the end of the alphabet (Z = 1, A = 26), and the numbers are added. What is the code for GOD?", ["55", "52", "57", "26"], 0, "A letter’s reverse position is 27 minus its position: G = 27 − 7 = 20, O = 27 − 15 = 12, D = 27 − 4 = 23. Total = 55.", V],
     ["“sky is blue” is “tie pa ro”, “blue is good” is “pa ro la” and “good and sky” is “la ki tie”. What is the code for “and”?", ["ki", "la", "tie", "pa"], 0, "“blue is” = “pa ro” (first two), “sky” = “tie” (first and third), “good” = “la” (second and third), so “and” = “ki”.", V],
     ["In a code, FRIEND is written as HUMJTK. How is CANDLE written?", ["EDRIRL", "DCQHQK", "EDRJRL", "ESJKTL"], 0, "The letters move forward by +2, +3, +4, +5, +6, +7: C→E, A→D, N→R, D→I, L→R, E→L.", V],
   ],
