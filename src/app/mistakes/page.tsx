@@ -62,7 +62,10 @@ export default function MistakesPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Mistake notebook</h1>
-          <p className="mt-1 text-sm text-slate-600">Questions you got wrong, saved to your account. Answer one correctly in a mistakes set and it leaves the notebook.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Questions you got wrong, saved to your account. Answer one correctly in a mistakes set and it leaves the notebook. Questions you starred are in{" "}
+            <Link href="/saved" className="font-medium text-brand-700">Saved questions</Link>.
+          </p>
         </div>
         {mistakes.length > 0 && (
           <div className="flex flex-wrap gap-2">

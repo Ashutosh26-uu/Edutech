@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { AccountMenu } from "@/components/AccountMenu";
+import { AccountSync } from "@/components/AccountSync";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, Nav } from "@/components/Nav";
@@ -125,6 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </footer>
         <CommandPalette />
         <RegisterSW />
+        <AccountSync />
         </AccountProvider>
       </body>
     </html>

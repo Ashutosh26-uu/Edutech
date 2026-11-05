@@ -10,7 +10,7 @@ import { analyzeVideo } from "./local-video";
 /** Shuffles options while keeping the answer index pointing at the right option. */
 export function shuffleOptions(q: MCQ): MCQ {
   const order = shuffle(q.options.map((_, i) => i));
-  return { ...q, options: order.map((i) => q.options[i]), answer: order.indexOf(q.answer) };
+  return { ...q, options: order.map((i) => q.options[i]), optionsHi: q.optionsHi && order.map((i) => q.optionsHi![i]), answer: order.indexOf(q.answer) };
 }
 
 function topicText(t: Topic) {
