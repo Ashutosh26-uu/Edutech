@@ -1,0 +1,67 @@
+# Deploys main to Netlify after every push, running database migrations first.
+# Does nothing until these repository secrets are set (Settings → Secrets and variables → Actions):
+#   NETLIFY_AUTH_TOKEN  personal access token (Netlify → User settings → Applications)
+#   NETLIFY_SITE_ID     the site's Project ID (Project configuration → General)
+#   DATABASE_URL        production database (pooled or direct; DATABASE_URL_UNPOOLED is used when set)
+#   DATABASE_URL_UNPOOLED  optional, direct connection for migrations
+# The build reads the site's own environment variables from Netlify, as a manual deploy does.
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: netlify-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check secrets
+        id: gate
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ] || [ -z "$DATABASE_URL" ]; then
+            echo "Netlify or database secrets are not set; skipping deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - if: steps.gate.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - if: steps.gate.outputs.ready == 'true'
+        run: npm ci
+
+      # Migrations only add tables and columns, so running them before the new code goes live is safe.
+      - if: steps.gate.outputs.ready == 'true'
+        name: Apply database migrations
+        run: npm run db:migrate
+
+      # Blob uploads to Netlify sometimes fail with "fetch failed"; try up to three times.
+      - if: steps.gate.outputs.ready == 'true'
+        name: Build and deploy
+        run: |
+          for i in 1 2 3; do
+            npx --yes netlify-cli deploy --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}" && exit 0
+            echo "Deploy attempt $i failed; retrying in 20 s"; sleep 20
+          done
+          exit 1

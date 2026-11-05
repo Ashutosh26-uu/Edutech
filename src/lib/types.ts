@@ -24,6 +24,11 @@ export interface MCQ {
   options: string[];
   answer: number; // index into options
   explanation: string;
+  /** Hindi version of the question, shown when the learner picks Hindi. Options that are numbers need no translation. */
+  questionHi?: string;
+  /** Hindi options, when the options are words; same order as `options`. */
+  optionsHi?: string[];
+  explanationHi?: string;
   topicId?: string;
   /** Set on exam-practice questions; video quizzes have none. */
   difficulty?: Difficulty;

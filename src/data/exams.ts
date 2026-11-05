@@ -7,11 +7,11 @@ import type { Exam, ExamCategory } from "@/lib/types";
  */
 
 const POLITY = ["polity-preamble", "polity-fundamental-rights", "polity-dpsp-duties", "polity-parliament"];
-const HISTORY = ["history-national-movement", "history-mughal"];
-const GEO = ["geo-indian-rivers", "geo-solar-system"];
+const HISTORY = ["history-ancient", "history-national-movement", "history-mughal"];
+const GEO = ["geo-physical-india", "geo-indian-rivers", "geo-solar-system"];
 const SCIENCE = ["sci-physics", "sci-biology", "sci-chemistry"];
-const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-ci", "quant-time-work", "quant-tsd", "quant-average", "quant-ratio"];
-const REASONING = ["reason-series", "reason-coding", "reason-blood-relations", "reason-syllogism", "reason-direction"];
+const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-ci", "quant-time-work", "quant-tsd", "quant-average", "quant-ratio", "quant-number-system", "quant-mensuration"];
+const REASONING = ["reason-series", "reason-coding", "reason-blood-relations", "reason-syllogism", "reason-direction", "reason-analogy"];
 const ENGLISH = ["eng-vocabulary", "eng-grammar"];
 const GA = [...POLITY, ...HISTORY, ...GEO, "eco-basics", ...SCIENCE];
 
@@ -25,13 +25,13 @@ const maths = s("Mathematics", QUANT);
 const english = s("English Language", ENGLISH);
 const ga = s("General Awareness", GA);
 const science = s("General Science", SCIENCE);
-const hindi = s("Hindi Language");
+const hindi = s("Hindi Language", ["hindi-vyakaran"]);
 const computer = s("Computer Knowledge", ["comp-awareness"]);
 const bankingGa = s("General, Economy & Banking Awareness", ["bank-awareness", "eco-basics"]);
 const cdp = s("Child Development & Pedagogy", ["cdp-child-development"]);
 const evs = s("Environmental Studies", ["sci-biology", "geo-solar-system", "geo-indian-rivers"]);
 const stateGk = s("State-specific GK (history, geography, culture)");
-const csat = s("CSAT / Aptitude", ["quant-percentage", "quant-average", "quant-ratio", "quant-tsd", ...REASONING]);
+const csat = s("CSAT / Aptitude", ["quant-percentage", "quant-average", "quant-ratio", "quant-tsd", "quant-number-system", ...REASONING]);
 const gsBlocks = [s("Indian Polity", POLITY), s("History", HISTORY), s("Geography", GEO), s("Economy", ["eco-basics"]), s("General Science", SCIENCE)];
 
 type Def = Omit<Exam, "category" | "level" | "conductedBy" | "website"> & Partial<Pick<Exam, "level" | "conductedBy" | "website">>;
@@ -45,7 +45,7 @@ export const EXAMS: Exam[] = [
     { id: "ssc-cgl", name: "SSC CGL", fullName: "Combined Graduate Level Examination", negativeMarking: 0.25, featured: true, subjects: [reasoning, ga, quant, english] },
     { id: "ssc-chsl", name: "SSC CHSL", fullName: "Combined Higher Secondary (10+2) Level Examination", negativeMarking: 0.25, subjects: [reasoning, ga, quant, english] },
     { id: "ssc-mts", name: "SSC MTS", fullName: "Multi-Tasking (Non-Technical) Staff and Havaldar", negativeMarking: null, subjects: [reasoning, s("Numerical & Mathematical Ability", QUANT), ga, english] },
-    { id: "ssc-gd", name: "SSC GD Constable", fullName: "Constable (General Duty) in CAPFs, SSF, Rifleman in Assam Rifles", negativeMarking: null, subjects: [reasoning, ga, s("Elementary Mathematics", QUANT), s("English / Hindi", ENGLISH)] },
+    { id: "ssc-gd", name: "SSC GD Constable", fullName: "Constable (General Duty) in CAPFs, SSF, Rifleman in Assam Rifles", negativeMarking: null, subjects: [reasoning, ga, s("Elementary Mathematics", QUANT), s("English / Hindi", [...ENGLISH, "hindi-vyakaran"])] },
     { id: "ssc-cpo", name: "SSC CPO", fullName: "Sub-Inspector in Delhi Police and CAPFs", negativeMarking: 0.25, subjects: [reasoning, ga, quant, s("English Comprehension", ENGLISH)] },
     { id: "ssc-je", name: "SSC JE", fullName: "Junior Engineer (Civil, Mechanical, Electrical)", negativeMarking: 0.25, subjects: [reasoning, ga, s("General Engineering")] },
     { id: "ssc-steno", name: "SSC Stenographer", fullName: "Stenographer Grade C and Grade D", negativeMarking: 0.25, subjects: [reasoning, ga, s("English Language & Comprehension", ENGLISH)] },
@@ -56,8 +56,8 @@ export const EXAMS: Exam[] = [
   ...group("Banking", {}, [
     { id: "ibps-po", name: "IBPS PO", fullName: "Probationary Officer / Management Trainee (CRP PO/MT)", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, featured: true, subjects: [s("Reasoning Ability", REASONING), quant, english, bankingGa, computer] },
     { id: "ibps-clerk", name: "IBPS Clerk", fullName: "Clerical Cadre (CRP Clerks)", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning Ability", REASONING), s("Numerical Ability", QUANT), english, bankingGa, computer] },
-    { id: "ibps-rrb-po", name: "IBPS RRB PO", fullName: "Officer Scale I in Regional Rural Banks", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, s("English / Hindi", ENGLISH), bankingGa, computer] },
-    { id: "ibps-rrb-clerk", name: "IBPS RRB Clerk", fullName: "Office Assistant (Multipurpose) in Regional Rural Banks", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), s("Numerical Ability", QUANT), s("English / Hindi", ENGLISH), bankingGa, computer] },
+    { id: "ibps-rrb-po", name: "IBPS RRB PO", fullName: "Officer Scale I in Regional Rural Banks", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, s("English / Hindi", [...ENGLISH, "hindi-vyakaran"]), bankingGa, computer] },
+    { id: "ibps-rrb-clerk", name: "IBPS RRB Clerk", fullName: "Office Assistant (Multipurpose) in Regional Rural Banks", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), s("Numerical Ability", QUANT), s("English / Hindi", [...ENGLISH, "hindi-vyakaran"]), bankingGa, computer] },
     { id: "ibps-so", name: "IBPS SO", fullName: "Specialist Officer (IT, Agriculture, Law, HR, Marketing, Rajbhasha)", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, english, s("Professional Knowledge")] },
     { id: "sbi-po", name: "SBI PO", fullName: "Probationary Officer, State Bank of India", conductedBy: "State Bank of India", website: "https://sbi.co.in/web/careers", negativeMarking: 0.25, featured: true, subjects: [s("Reasoning & Computer Aptitude", [...REASONING, "comp-awareness"]), s("Data Analysis & Interpretation", QUANT), english, bankingGa] },
     { id: "sbi-clerk", name: "SBI Clerk", fullName: "Junior Associate (Customer Support & Sales), State Bank of India", conductedBy: "State Bank of India", website: "https://sbi.co.in/web/careers", negativeMarking: 0.25, subjects: [s("Reasoning & Computer Aptitude", [...REASONING, "comp-awareness"]), s("Numerical Ability", QUANT), english, bankingGa] },
@@ -132,15 +132,15 @@ export const EXAMS: Exam[] = [
   ]),
 
   ...group("Teaching", {}, [
-    { id: "ctet", name: "CTET", fullName: "Central Teacher Eligibility Test", conductedBy: "Central Board of Secondary Education", website: "https://ctet.nic.in", negativeMarking: 0, featured: true, subjects: [cdp, s("Mathematics", ["quant-percentage", "quant-average", "quant-profit-loss"]), evs, s("Language I & II (English)", ENGLISH)] },
+    { id: "ctet", name: "CTET", fullName: "Central Teacher Eligibility Test", conductedBy: "Central Board of Secondary Education", website: "https://ctet.nic.in", negativeMarking: 0, featured: true, subjects: [cdp, s("Mathematics", ["quant-number-system", "quant-percentage", "quant-average", "quant-profit-loss", "quant-mensuration"]), evs, s("Language I & II (English)", ENGLISH)] },
     { id: "ugc-net", name: "UGC NET", fullName: "National Eligibility Test for Assistant Professor and JRF", conductedBy: "National Testing Agency", website: "https://ugcnet.nta.ac.in", negativeMarking: 0, subjects: [s("Paper 1: Teaching & Research Aptitude", ["cdp-child-development", ...REASONING, "quant-percentage", "quant-average", "comp-awareness"]), s("Paper 2: Subject")] },
     { id: "csir-net", name: "CSIR NET", fullName: "Joint CSIR-UGC NET (Sciences)", conductedBy: "National Testing Agency", negativeMarking: null, subjects: [s("Part A: General Aptitude", [...REASONING, ...QUANT]), s("Parts B & C: Subject")] },
     { id: "kvs-teachers", name: "KVS Teachers", fullName: "PRT, TGT and PGT recruitment, Kendriya Vidyalaya Sangathan", conductedBy: "Kendriya Vidyalaya Sangathan", website: "https://kvsangathan.nic.in", negativeMarking: null, subjects: [cdp, s("General Awareness", GA), s("Reasoning", REASONING), english, hindi, computer] },
     { id: "nvs-teachers", name: "NVS Teachers", fullName: "Teacher recruitment, Navodaya Vidyalaya Samiti", conductedBy: "Navodaya Vidyalaya Samiti", website: "https://navodaya.gov.in", negativeMarking: null, subjects: [cdp, s("General Awareness", GA), s("Reasoning", REASONING), english, hindi] },
     { id: "dsssb", name: "DSSSB", fullName: "TGT, PGT, PRT and other posts, Delhi Subordinate Services Selection Board", conductedBy: "Delhi Subordinate Services Selection Board", website: "https://dsssb.delhi.gov.in", negativeMarking: 0.25, subjects: [s("General Awareness", GA), reasoning, s("Arithmetical & Numerical Ability", QUANT), english, hindi, cdp] },
-    { id: "uptet", name: "UPTET", fullName: "Uttar Pradesh Teacher Eligibility Test", conductedBy: "Government of Uttar Pradesh", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", ENGLISH)] },
-    { id: "reet", name: "REET", fullName: "Rajasthan Eligibility Examination for Teachers", conductedBy: "Board of Secondary Education, Rajasthan", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", ENGLISH)] },
-    { id: "htet", name: "HTET", fullName: "Haryana Teacher Eligibility Test", conductedBy: "Board of School Education, Haryana", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", ENGLISH), s("General Studies", [...REASONING, ...QUANT, ...GA])] },
+    { id: "uptet", name: "UPTET", fullName: "Uttar Pradesh Teacher Eligibility Test", conductedBy: "Government of Uttar Pradesh", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", [...ENGLISH, "hindi-vyakaran"])] },
+    { id: "reet", name: "REET", fullName: "Rajasthan Eligibility Examination for Teachers", conductedBy: "Board of Secondary Education, Rajasthan", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", [...ENGLISH, "hindi-vyakaran"])] },
+    { id: "htet", name: "HTET", fullName: "Haryana Teacher Eligibility Test", conductedBy: "Board of School Education, Haryana", level: "State", negativeMarking: 0, subjects: [cdp, s("Mathematics", QUANT), evs, s("Language (English / Hindi)", [...ENGLISH, "hindi-vyakaran"]), s("General Studies", [...REASONING, ...QUANT, ...GA])] },
   ]),
 
   ...group("Engineering & Medical", {}, [
@@ -188,10 +188,10 @@ export const EXAMS: Exam[] = [
   ]),
 
   ...group("State Subordinate", { level: "State" }, [
-    { id: "upsssc-pet", name: "UPSSSC PET", fullName: "Preliminary Eligibility Test for Group C posts", conductedBy: "Uttar Pradesh Subordinate Services Selection Commission", negativeMarking: null, featured: true, subjects: [s("Indian History, Polity & Geography", [...HISTORY, ...POLITY, ...GEO]), s("Indian Economy", ["eco-basics"]), s("General Science", SCIENCE), s("Elementary Arithmetic", QUANT), s("General Hindi"), s("General English", ENGLISH), s("Reasoning", REASONING), s("Data Interpretation", QUANT)] },
+    { id: "upsssc-pet", name: "UPSSSC PET", fullName: "Preliminary Eligibility Test for Group C posts", conductedBy: "Uttar Pradesh Subordinate Services Selection Commission", negativeMarking: null, featured: true, subjects: [s("Indian History, Polity & Geography", [...HISTORY, ...POLITY, ...GEO]), s("Indian Economy", ["eco-basics"]), s("General Science", SCIENCE), s("Elementary Arithmetic", QUANT), s("General Hindi", ["hindi-vyakaran"]), s("General English", ENGLISH), s("Reasoning", REASONING), s("Data Interpretation", QUANT)] },
     { id: "bssc-cgl", name: "BSSC CGL", fullName: "Inter Level / Graduate Level Combined Competitive Examination", conductedBy: "Bihar Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, s("Mathematics", QUANT), s("Mental Ability", REASONING)] },
     { id: "hssc-cet", name: "HSSC CET", fullName: "Common Eligibility Test for Group C and D posts", conductedBy: "Haryana Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english, hindi] },
-    { id: "rsmssb-patwari", name: "Rajasthan Patwari", fullName: "Patwari Direct Recruitment", conductedBy: "Rajasthan Staff Selection Board", negativeMarking: null, subjects: [s("General Science, History, Polity & Geography", [...SCIENCE, ...HISTORY, ...POLITY, ...GEO]), stateGk, s("General English & Hindi", ENGLISH), s("Mental Ability & Reasoning", REASONING), s("Basic Computer", ["comp-awareness"])] },
+    { id: "rsmssb-patwari", name: "Rajasthan Patwari", fullName: "Patwari Direct Recruitment", conductedBy: "Rajasthan Staff Selection Board", negativeMarking: null, subjects: [s("General Science, History, Polity & Geography", [...SCIENCE, ...HISTORY, ...POLITY, ...GEO]), stateGk, s("General English & Hindi", [...ENGLISH, "hindi-vyakaran"]), s("Mental Ability & Reasoning", REASONING), s("Basic Computer", ["comp-awareness"])] },
     { id: "mp-patwari", name: "MP Patwari", fullName: "Patwari Recruitment Examination", conductedBy: "Employee Selection Board, Madhya Pradesh", negativeMarking: null, subjects: [s("General Knowledge", GA), stateGk, s("Mathematics & Reasoning", [...QUANT, ...REASONING]), computer, hindi, english] },
     { id: "ossc-cgl", name: "OSSC CGL", fullName: "Combined Graduate Level Recruitment Examination", conductedBy: "Odisha Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english, computer] },
     { id: "gsssb", name: "GSSSB", fullName: "Class III recruitment examinations", conductedBy: "Gujarat Subordinate Service Selection Board", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english] },

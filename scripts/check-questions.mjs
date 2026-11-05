@@ -126,27 +126,112 @@ const CHECKS = [
   [/holds (\d+) litres of pure milk\. (\d+) litres are taken out and replaced with water, and this is done (twice|three times)/, (m) => +m[1] * (1 - +m[2] / +m[1]) ** (m[3] === "twice" ? 2 : 3)],
   [/spotted by a policeman (\d+) m away\. The thief runs at (\d+) km\/h and the policeman chases at (\d+) km\/h/, (m) => (+m[1] * +m[2]) / (+m[3] - +m[2])],
   [/difference between compound interest and simple interest on ₹([\d,]+) for 3 years at (\d+)%/, (m) => n(m[1]) * (+m[2] / 100) ** 2 * (3 + +m[2] / 100)],
+  // Number system
+  [/What is the LCM of (\d+) and (\d+)\?/, (m) => (+m[1] * +m[2]) / g(+m[1], +m[2])],
+  [/What is the HCF of (\d+), (\d+) and (\d+)\?/, (m) => g(g(+m[1], +m[2]), +m[3])],
+  [/What is the unit digit of (\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\?/, (m) => {
+    const exp = Number([...m[2]].map((c) => "⁰¹²³⁴⁵⁶⁷⁸⁹".indexOf(c)).join(""));
+    return Number(BigInt(m[1]) ** BigInt(exp) % 10n);
+  }],
+  [/smallest digit that can replace \* in (\d*)\*(\d*) so that the number is divisible by (\d+)/, (m) => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((x) => Number(`${m[1]}${x}${m[2]}`) % +m[3] === 0)],
+  [/divided by (\d+), the remainder is (\d+)\. What will the remainder be when the same number is divided by (\d+)/, (m) => {
+    // Try several numbers that leave the stated remainder; they must all agree.
+    const rs = new Set([1, 2, 3, 7, 11].map((k) => (+m[1] * k + +m[2]) % +m[3]));
+    return rs.size === 1 ? [...rs][0] : NaN;
+  }],
+  [/How many numbers from 1 to (\d+) are divisible by (?:neither (\d+) nor (\d+)|(\d+) or (\d+))\?/, (m) => {
+    const neither = m[2] !== undefined;
+    const [a, b] = neither ? [+m[2], +m[3]] : [+m[4], +m[5]];
+    let c = 0;
+    for (let i = 1; i <= +m[1]; i++) if ((i % a === 0 || i % b === 0) !== neither) c++;
+    return c;
+  }],
+  [/HCF of two numbers is (\d+) and their LCM is ([\d,]+)\. If one of the numbers is (\d+)/, (m) => {
+    const [h, L, x] = [+m[1], n(m[2]), +m[3]];
+    const y = (h * L) / x;
+    return g(x, y) === h && (x * y) / g(x, y) === L ? y : NaN;
+  }],
+  [/largest number that divides (\d+), (\d+) and (\d+) leaving remainders (\d+), (\d+) and (\d+) respectively/, (m) => {
+    for (let d = +m[1]; d > 1; d--) if (d > Math.max(+m[4], +m[5], +m[6]) && [1, 2, 3].every((i) => +m[i] % d === +m[i + 3])) return d;
+    return NaN;
+  }],
+  // Mensuration (π = 22/7)
+  [/The area of a square is (\d+) (?:cm|m)²\. What is its perimeter/, (m) => 4 * Math.sqrt(+m[1])],
+  [/A rectangle is (\d+) (?:cm|m) long and (\d+) (?:cm|m) wide\. What is its (area|perimeter)/, (m) => (m[3] === "area" ? +m[1] * +m[2] : 2 * (+m[1] + +m[2]))],
+  [/What is the (area|circumference) of a circle of radius (\d+) cm/, (m) => (m[1] === "area" ? (22 / 7) * Number(m[2]) ** 2 : 2 * (22 / 7) * +m[2])],
+  [/solid cylinder has radius (\d+) cm and height (\d+) cm\. What is its (volume|curved surface area|total surface area)/, (m) => {
+    const [r, h] = [+m[1], +m[2]];
+    return { volume: (22 / 7) * r * r * h, "curved surface area": 2 * (22 / 7) * r * h, "total surface area": 2 * (22 / 7) * r * (r + h) }[m[3]];
+  }],
+  [/cone has base radius (\d+) cm and height (\d+) cm\. What is its (volume|curved surface area)/, (m) => {
+    const [r, h] = [+m[1], +m[2]];
+    return m[3] === "volume" ? ((22 / 7) * r * r * h) / 3 : (22 / 7) * r * Math.hypot(r, h);
+  }],
+  [/length of a rectangle is increased by (\d+)% and its breadth is decreased by (\d+)%/, (m) => Math.abs((1 + +m[1] / 100) * (1 - +m[2] / 100) - 1) * 100],
+  [/radius of a circle is (increased|decreased) by (\d+)%/, (m) => Math.abs((1 + (m[1] === "increased" ? 1 : -1) * (+m[2] / 100)) ** 2 - 1) * 100],
+  [/field is (\d+) m long and (\d+) m wide\. A path ([\d.]+) m wide runs all around it (outside|inside)/, (m) => {
+    const [L, B, w] = [+m[1], +m[2], +m[3]];
+    const k = m[4] === "outside" ? 2 * w : -2 * w;
+    return Math.abs((L + k) * (B + k) - L * B);
+  }],
+  [/sphere of radius (\d+) cm is melted and recast into small solid spheres, each of radius (\d+) cm/, (m) => ((4 / 3) * Math.PI * Number(m[1]) ** 3) / ((4 / 3) * Math.PI * Number(m[2]) ** 3)],
+  [/sphere of radius (\d+) cm is melted and recast into a solid cylinder of radius (\d+) cm/, (m) => ((4 / 3) * Math.PI * Number(m[1]) ** 3) / (Math.PI * Number(m[2]) ** 2)],
+  [/cost of fencing a circular field at ₹(\d+) per metre is ₹([\d,]+)\. What is the area/, (m) => {
+    const r = n(m[2]) / +m[1] / (2 * (22 / 7));
+    return (22 / 7) * r * r;
+  }],
+  [/rectangular park are in the ratio (\d+) : (\d+) and its area is ([\d,]+) m²\. What is the cost of fencing it at ₹(\d+)/, (m) => {
+    const x = Math.sqrt(n(m[3]) / (+m[1] * +m[2]));
+    return 2 * (+m[1] + +m[2]) * x * +m[4];
+  }],
 ];
 let derived = 0;
-for (const t of TOPICS.filter((x) => hasGenerator(x.id))) {
+const NEW_TOPICS = ["quant-number-system", "quant-mensuration"];
+for (const id of NEW_TOPICS) if (!hasGenerator(id)) fail(`generator ${id}: missing`);
+// The new topics are checked directly, whether or not topics.ts lists them yet.
+const genTopics = [...new Set([...TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id), ...NEW_TOPICS])];
+const hits = CHECKS.map(() => 0);
+const DEVANAGARI = /[ऀ-ॿ]/;
+const numbers = (s) => (s.match(/\d[\d,.]*/g) ?? []).map((x) => x.replace(/[.,]+$/, ""));
+let hindi = 0;
+for (const id of genTopics) {
   for (const d of DIFFICULTIES) {
-    const qs = generateQuestions(t.id, 120, Math.random, d);
-    if (qs.length < 5) fail(`generator ${t.id}/${d}: too few distinct questions`, `${qs.length}`);
+    const qs = generateQuestions(id, 120, Math.random, d);
+    if (qs.length < 5) fail(`generator ${id}/${d}: too few distinct questions`, `${qs.length}`);
     for (const q of qs) {
-      if (q.difficulty !== d || q.options.length !== 4 || new Set(q.options).size !== 4 || !(q.answer >= 0 && q.answer < 4)) fail(`generator ${t.id}/${d}: malformed`, q.question);
-      for (const [re, f] of CHECKS) {
+      if (q.difficulty !== d || q.options.length !== 4 || new Set(q.options).size !== 4 || !(q.answer >= 0 && q.answer < 4)) fail(`generator ${id}/${d}: malformed`, q.question);
+      let matched = false;
+      CHECKS.forEach(([re, f], i) => {
         const m = q.question.match(re);
-        if (!m) continue;
+        if (!m) return;
+        matched = true;
         derived++;
+        hits[i]++;
         const want = f(m);
         const got = q.options[q.answer];
         const ok = typeof want === "string" ? got === want : Math.abs(num(got) - want) <= 0.011;
-        if (!ok) fail(`generator ${t.id}/${d}: wrong answer`, `${q.question} → ${got}, expected ${want}`);
+        if (!ok) fail(`generator ${id}/${d}: wrong answer`, `${q.question} → ${got}, expected ${want}`);
+      });
+      if (!matched && NEW_TOPICS.includes(id)) fail(`generator ${id}/${d}: no answer check for`, q.question);
+
+      // Hindi: question and explanation in Devanagari, with the same numbers as the English;
+      // Hindi options (when present) line up one-to-one with the English ones.
+      hindi++;
+      if (!q.questionHi?.trim() || !DEVANAGARI.test(q.questionHi)) fail(`generator ${id}/${d}: no Hindi question`, q.question);
+      if (!q.explanationHi?.trim() || !DEVANAGARI.test(q.explanationHi)) fail(`generator ${id}/${d}: no Hindi explanation`, q.question);
+      const missing = numbers(q.question).filter((x) => !numbers(q.questionHi ?? "").includes(x));
+      if (missing.length) fail(`generator ${id}/${d}: Hindi question lacks ${missing.join(", ")}`, `${q.question} | ${q.questionHi}`);
+      if (q.optionsHi) {
+        if (q.optionsHi.length !== q.options.length) fail(`generator ${id}/${d}: optionsHi length`, q.question);
+        else if (q.optionsHi.some((o, i) => !o.trim() || o.replace(/[^\d.]/g, "") !== q.options[i].replace(/[^\d.]/g, ""))) fail(`generator ${id}/${d}: optionsHi out of order`, `${q.options} | ${q.optionsHi}`);
       }
     }
   }
 }
+CHECKS.forEach(([re], i) => {
+  if (!hits[i]) fail("answer check never matched a generated question", String(re));
+});
 
-console.log(`Checked ${QUESTION_BANK.length} bank questions, ${TOPICS.length} topics, ${EXAMS.length} exams, ${derived} generated answers.`);
+console.log(`Checked ${QUESTION_BANK.length} bank questions, ${TOPICS.length} topics, ${EXAMS.length} exams, ${derived} generated answers, ${hindi} Hindi versions.`);
 console.log(fails ? `\n${fails} check(s) failed` : "All checks passed");
 process.exit(fails ? 1 : 0);

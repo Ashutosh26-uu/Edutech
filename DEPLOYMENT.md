@@ -33,7 +33,8 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
    ```bash
    netlify deploy --prod --build
    ```
-   Or connect the GitHub repo in the Netlify UI so every push to `main` deploys.
+   Or let GitHub deploy every push to `main`: `.github/workflows/deploy-netlify.yml` runs `npm run db:migrate` and then `netlify deploy --prod` (with retries). It stays switched off until you add the repository secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` and `DATABASE_URL` (plus `DATABASE_URL_UNPOOLED`) under Settings → Secrets and variables → Actions.
+   Deploying by hand, run `npm run db:migrate` first whenever `drizzle/` has a new migration.
 2. Set the environment variables from `.env.example` (`netlify env:set KEY value --context production`, or Project configuration → Environment variables):
    `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DB_POOL_MAX=3`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, `NEON_AUTH_COOKIE_SECRET` (a new random value, not the local one), `RAZORPAY_*`, `UPSTASH_*`. **Do not** set `PAYMENTS_DEMO` or `NEXT_PUBLIC_STATIC`.
 3. Check `https://<your-app>/api/health` returns `{"ok":true,"db":"up"}`. In Project configuration → Functions, set the region to Singapore (next to the Neon database) if it is not already.
@@ -43,7 +44,8 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
    ```
 5. Email verification is on: sign-up emails a 6-digit code (`neon neon-auth config email-password get` shows the settings), and the login page asks for it before the first session. Codes go out through Neon's shared SMTP, which is fine to start with; for production, set up your own SMTP (`neon neon-auth config email-provider`) so the emails carry your domain.
 6. Before launch, follow Neon's [Auth production checklist](https://neon.com/docs/auth/production-checklist): your own SMTP for auth emails, the application name, and turning off "Allow Localhost".
-7. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL` (your support address). The Contact, Privacy, Terms and Refund pages then show it next to the contact form.
+7. Optionally set `ANTHROPIC_API_KEY` to turn on the AI doubt solver on `/learn` (signed-in users, `DOUBT_DAILY_LIMIT` per day, default 10). Every answer is a paid API call; set a monthly spend limit in the Anthropic Console.
+8. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL` (your support address). The Contact, Privacy, Terms and Refund pages then show it next to the contact form.
 
 ## Contact messages
 

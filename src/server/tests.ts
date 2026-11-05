@@ -14,7 +14,7 @@ const TOPIC_SIZE = 15;
 /** Late submissions within this window still count (slow networks, auto-submit at 0:00). */
 const GRACE_MS = 2 * 60_000;
 
-export type PublicQuestion = Pick<MCQ, "id" | "question" | "options" | "topicId" | "difficulty" | "source" | "pyq">;
+export type PublicQuestion = Pick<MCQ, "id" | "question" | "options" | "questionHi" | "optionsHi" | "topicId" | "difficulty" | "source" | "pyq">;
 
 export interface StartOptions {
   topicIds?: string[];
@@ -120,7 +120,7 @@ export async function startTest(user: SessionUser, examId: string, opts: StartOp
       marks,
       sections: paper.sections,
       sectional: paper.sectional,
-      questions: paper.questions.map(({ id, question, options, topicId, difficulty, source, pyq }): PublicQuestion => ({ id, question, options, topicId, difficulty, source, pyq })),
+      questions: paper.questions.map(({ id, question, options, questionHi, optionsHi, topicId, difficulty, source, pyq }): PublicQuestion => ({ id, question, options, questionHi, optionsHi, topicId, difficulty, source, pyq })),
     };
   });
 }
