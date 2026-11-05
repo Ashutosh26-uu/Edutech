@@ -14,6 +14,8 @@ import { topicWeights } from "@/lib/adaptive";
 import { api, IS_STATIC } from "@/lib/api";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
+import { shuffleOptions } from "@/lib/ai/local";
+import { shuffle } from "@/lib/nlp";
 
 export default function PracticePage() {
   return (
@@ -54,6 +56,7 @@ function PracticeView() {
   const isTimed = params.get("mock") === "1";
   const isSmart = params.get("smart") === "1";
   const isMistakes = params.get("mistakes") === "1";
+  const isSaved = params.get("saved") === "1";
   const section = params.get("section") ?? "";
   const requestedTopics = (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
   const plan = exam ? mockPlan(exam) : null;
@@ -88,6 +91,13 @@ function PracticeView() {
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
+    if (isSaved) {
+      const saved = Object.values(load().bookmarks)
+        .map((b) => b.question)
+        .filter((q) => !requestedTopics.length || (q.topicId && requestedTopics.includes(q.topicId)));
+      if (!saved.length) return setError("No saved questions yet. Tap ☆ Save on any question after answering it.");
+      return setQuestions(shuffle(saved).slice(0, 20).map(shuffleOptions));
+    }
     if (isMistakes) {
       if (!server) return setError("The mistake notebook needs an account. Log in on the full site to use it.");
       if (!account.user) return router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
@@ -119,12 +129,12 @@ function PracticeView() {
     if (!ok) setError(json.error);
     else setQuestions(json.questions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, isSmart, isMistakes, isFullMock, server, account.user, account.ready]);
+  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready]);
 
   useEffect(() => {
     if (!account.ready) return;
-    if ((key || isMistakes) && phase === "running" && !(isTimed && server)) loadQuestions();
-  }, [key, isMistakes, loadQuestions, round, phase, isTimed, server, account.ready]);
+    if ((key || isMistakes || isSaved) && phase === "running" && !(isTimed && server)) loadQuestions();
+  }, [key, isMistakes, isSaved, loadQuestions, round, phase, isTimed, server, account.ready]);
 
   const loginFirst = () => router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
 
@@ -183,7 +193,7 @@ function PracticeView() {
     }
   };
 
-  if (!topicIds.length && !isMistakes) {
+  if (!topicIds.length && !isMistakes && !isSaved) {
     return (
       <div className="card text-sm">
         Nothing to practise here yet.{" "}
@@ -199,7 +209,9 @@ function PracticeView() {
   }
 
   const topicName = requestedTopics.length === 1 ? TOPIC_BY_ID.get(requestedTopics[0])!.name : `${requestedTopics.length} topics`;
-  const title = isMistakes
+  const title = isSaved
+    ? "My saved questions"
+    : isMistakes
     ? `My mistakes${requestedTopics.length === 1 ? `: ${topicName}` : ""}`
     : isSectionTest
       ? `${exam?.name} · ${section} section test`
@@ -220,7 +232,9 @@ function PracticeView() {
   const sections = serverTest?.sections ?? localSections ?? undefined;
   const sectional = serverTest?.sectional ?? (!!localSections && !!plan?.pattern.sectional);
 
-  const description = isMistakes
+  const description = isSaved
+    ? "Questions you starred to revise, up to 20 at a time in a new order."
+    : isMistakes
     ? "Questions you got wrong before. Answer one correctly and it leaves your notebook."
     : isSectionTest
       ? `${planSection!.questions} questions · ${planSection!.minutes} minutes, as in the ${plan!.pattern.paper} paper${marking} · answers revealed after you submit`
@@ -238,6 +252,10 @@ function PracticeView() {
         {exam ? (
           <Link href={`/exams/${exam.id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" /> {exam.name} syllabus
+          </Link>
+        ) : isSaved ? (
+          <Link href="/saved" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> Saved questions
           </Link>
         ) : isMistakes ? (
           <Link href="/mistakes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">

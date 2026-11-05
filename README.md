@@ -2,7 +2,7 @@
 
 Turn long YouTube lectures into short chapters, crisp notes and quizzes, and prepare for one-day exams (SSC, Banking, Railway, UPSC, CTET) in one place.
 
-> **Status:** working prototype. All "AI" features currently run on a built-in, rule-based engine, so the app works with no API key. An LLM provider (e.g. Claude) can be plugged in later without changing the UI.
+> **Status:** working prototype. The "AI" features run on a built-in, rule-based engine, so the app works with no API key. One optional feature, the AI doubt solver, calls Claude when `ANTHROPIC_API_KEY` is set.
 
 ## Features
 
@@ -15,9 +15,11 @@ Turn long YouTube lectures into short chapters, crisp notes and quizzes, and pre
 | **Flashcards** (`/review`) | Spaced repetition with the **FSRS** scheduler (the algorithm modern Anki offers). Add topic decks, video quiz cards or your own cards, then review with Space and keys 1–4. |
 | **Exam prep** (`/exams`) | Pick an exam to see its syllabus, practise any topic with instant explanations, use **🧠 Smart practice** (adaptive and interleaved), or take a timed **mock test** with the exam's negative marking. 20 exams (SSC CGL, IBPS PO, SBI PO, RRB NTPC, UPSC Prelims and more) have **full mocks on the real paper pattern** (`src/data/patterns.ts`): the paper's sections, question counts, minutes and marks, with **sectional timing** where the exam has it (SSC CGL 2026, IBPS prelims), plus single **section tests**. |
 | **Test analysis** | After every timed test: marks, accuracy, time on correct / wrong / skipped answers, slowest questions, section-wise and topic-wise breakdown with strong / weak labels, difficulty breakdown, and the change from your last test. Every test stays on your account with its full analysis (`/tests?id=…`). |
+| **Saved questions** (`/saved`) | Star (☆ Save) any answered question in practice or a test review to revise it later, practise the saved set, or turn it into flashcards. |
+| **Hindi questions** | Quant questions come in English and Hindi, with an **English / हिंदी** switch in every practice set and test; Hindi grammar (हिंदी व्याकरण) is a topic of its own for Hindi-language papers. |
 | **Mistake notebook** (`/mistakes`) | Every bank question you get wrong, in practice or a test, until you get it right again. Practise all of them or one topic at a time, or turn them into flashcards. |
-| **Learn** (`/learn`) | Search any topic, by typing or by **voice (English or Hindi)**, for notes, practice questions and the exams it appears in, or ask a question to get its answer. |
-| **My progress** (`/progress`) | Accuracy per topic, weak topics, test history with analysis, open mistakes and recently studied videos. Signed in, all of it follows your account across devices; signed out, it stays in the browser. |
+| **Learn** (`/learn`) | Search any topic, by typing or by **voice (English or Hindi)**, for notes, practice questions and the exams it appears in, or ask a question to get its answer. With the AI solver switched on, signed-in users also get a **step-by-step solution from Claude** for any pasted question (a few per day). |
+| **My progress** (`/progress`) | Accuracy per topic, weak topics, test history with analysis, open mistakes and recently studied videos. Signed in, all of it follows your account across devices, and so do flashcards and saved questions; signed out, it stays in the browser. |
 | **Everywhere** | **Ctrl + K** command palette (or press `/`), dark mode, and an installable app (PWA) with offline support for pages you've visited. |
 
 ### The learning science behind it
@@ -99,9 +101,11 @@ src/
   lib/                 YouTube captions, text analysis, generators, browser storage
 ```
 
-## Adding an AI model later
+## AI
 
-All AI work goes through the `AIProvider` interface in `src/lib/ai/provider.ts`:
+The AI doubt solver (`src/server/doubt.ts`, `POST /api/doubt`) calls Claude with structured JSON output. It is off until `ANTHROPIC_API_KEY` is set, needs a signed-in account, and allows `DOUBT_DAILY_LIMIT` questions per account per day (default 10), counted in the `user_data` table. `CLAUDE_MODEL` picks the model (default `claude-opus-5-5`).
+
+Everything else goes through the `AIProvider` interface in `src/lib/ai/provider.ts`, which today has only the rule-based provider. To move more features onto an LLM:
 
 1. Create `src/lib/ai/claude.ts` that implements `AIProvider` (video breakdown, practice questions, topic notes, question solving).
 2. Return it from `getProvider()` in `src/lib/ai/index.ts`, for example when `AI_PROVIDER=claude`.
@@ -113,6 +117,8 @@ The pages and API routes don't need to change.
 
 - Rule-based chapters and quizzes are useful but rougher than an LLM's output; titles are keyword-based.
 - The question bank is a small sample of practice questions written in exam style. They are not official previous-year questions.
-- Flashcards, XP, streaks and video history are saved in the browser (localStorage); topic accuracy, tests and mistakes follow the account once signed in.
+- XP, streaks and video history are saved in the browser (localStorage); topic accuracy, tests, mistakes, flashcards and saved questions follow the account once signed in.
+- Hindi versions exist for the generated Quant questions and the Hindi grammar topic; the rest of the bank is in English.
+- State-specific GK and school/JEE-level Mathematics have no practice topics yet.
 - The video cache is in memory and resets when the server restarts.
 - Transcript fetching depends on YouTube's public caption endpoints, which can change.

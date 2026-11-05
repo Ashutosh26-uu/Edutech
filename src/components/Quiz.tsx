@@ -1,12 +1,14 @@
 "use client";
 
-import { AlertTriangle, BookmarkPlus, Play, Timer } from "lucide-react";
+import { AlertTriangle, BookmarkPlus, Languages, Play, Star, Timer } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { cardsForQuestions } from "@/lib/cards";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
-import { addCards } from "@/lib/storage";
+import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
+import { addCards, toggleBookmark } from "@/lib/storage";
+import { useStore } from "@/lib/useStore";
 import type { Difficulty, MCQ } from "@/lib/types";
 import { formatTime } from "@/lib/youtube";
 
@@ -63,6 +65,38 @@ export function DifficultyChip({ difficulty }: { difficulty?: Difficulty }) {
   return <span className={`chip ${DIFFICULTY_TONE[difficulty]}`}>{DIFFICULTY_LABEL[difficulty]}</span>;
 }
 
+/** Saves a question (with its answer) to come back to; saved questions live at /saved. */
+export function BookmarkButton({ question }: { question: MCQ }) {
+  const store = useStore();
+  if (!store || question.answer < 0) return null;
+  const on = !!store.bookmarks[question.id];
+  return (
+    <button
+      type="button"
+      onClick={() => toggleBookmark(question)}
+      className={`chip ${on ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600 hover:bg-amber-50"}`}
+      title={on ? "Remove from saved questions" : "Save this question to revise later"}
+      aria-pressed={on}
+    >
+      <Star className={`h-3.5 w-3.5 ${on ? "fill-current" : ""}`} /> {on ? "Saved" : "Save"}
+    </button>
+  );
+}
+
+/** English / Hindi switch, shown when some questions have a Hindi version. */
+export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs" role="group" aria-label="Question language">
+      <Languages className="ml-1 h-3.5 w-3.5 text-slate-500" />
+      {(["en", "hi"] as const).map((l) => (
+        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium ${lang === l ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>
+          {l === "en" ? "English" : "हिंदी"}
+        </button>
+      ))}
+    </span>
+  );
+}
+
 /** Marks a question on a point that previous-year papers of the named exams keep testing. */
 export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) {
   if (!source) return null;
@@ -80,6 +114,8 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const [submitError, setSubmitError] = useState("");
   // Sectional papers: the open section, and the deadline of each (set when it opens).
   const [section, setSection] = useState(0);
+  const [lang, setLang] = useLang();
+  const bilingual = useMemo(() => hasHindi(questions), [questions]);
   const sectionEnds = useRef<number[]>(sectional && sections?.length ? [Date.now() + sections[0].minutes * 60_000] : []);
   const [now, setNow] = useState(() => Date.now());
   const endsAt = useRef(timeLimitSec ? Date.now() + timeLimitSec * 1000 : 0);
@@ -163,6 +199,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} />;
 
   const q = questions[idx];
+  const text = inLang(q, lang);
   const isRevealed = mode === "practice" && revealed[idx];
   const answeredCount = chosen.filter((c) => c !== null).length;
   const sectionAnswered = cur ? chosen.slice(first, last + 1).filter((c) => c !== null).length : 0;
@@ -188,6 +225,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
           <span className="ml-2 inline-flex gap-1"><DifficultyChip difficulty={q.difficulty} /><SourceChip source={q.source} pyq={q.pyq} /></span>
         </span>
+        {bilingual && <LangToggle lang={lang} setLang={setLang} />}
         {timed && (
           <span className="flex items-center gap-2">
             {cur && sectionLeft !== null && (
@@ -204,9 +242,9 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         <div className="h-full bg-brand-500 transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
-      <h3 className="text-lg font-semibold leading-snug text-slate-900">{q.question}</h3>
+      <h3 className="text-lg font-semibold leading-snug text-slate-900" lang={lang === "hi" && q.questionHi ? "hi" : undefined}>{text.question}</h3>
       <div className="grid gap-2">
-        {q.options.map((opt, i) => {
+        {text.options.map((opt, i) => {
           const picked = chosen[idx] === i;
           let cls = "border-slate-200 hover:border-brand-300 hover:bg-brand-50";
           if (isRevealed && i === q.answer) cls = "border-emerald-400 bg-emerald-50";
@@ -223,8 +261,11 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
       {isRevealed && (
         <div className={`rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
-          <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${q.options[q.answer]}.`}</p>
-          <p className="mt-1">{q.explanation}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
+            <BookmarkButton question={q} />
+          </div>
+          <p className="mt-1">{text.explanation}</p>
           {q.timestamp !== undefined && onTimestamp && (
             <button className="mt-2 font-medium text-brand-700 underline" onClick={() => onTimestamp(q.timestamp!)}>
               <Play className="mr-1 inline h-3 w-3" />Watch this part ({formatTime(q.timestamp)})
@@ -309,6 +350,8 @@ interface ResultsProps {
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
 export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
+  const [lang, setLang] = useLang();
+  const bilingual = useMemo(() => hasHindi(results.map((r) => r.question)), [results]);
   const correct = results.filter((r) => r.correct).length;
   const wrong = results.filter((r) => r.chosen !== null && !r.correct).length;
   const skipped = results.length - correct - wrong;
@@ -475,35 +518,38 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="font-semibold">Review answers</h4>
+          <h4 className="flex items-center gap-2 font-semibold">Review answers {bilingual && <LangToggle lang={lang} setLang={setLang} />}</h4>
           {wrongBank.length > 0 && (
             <button className="btn-ghost text-xs" onClick={saveMistakes} disabled={saved !== null}>
               <BookmarkPlus className="h-3.5 w-3.5" /> {saved === null ? `Add ${wrongBank.length} wrong answer${wrongBank.length === 1 ? "" : "s"} to flashcards` : saved ? `${saved} added to flashcards` : "Already in your flashcards"}
             </button>
           )}
         </div>
-        {results.map((r, i) => (
+        {results.map((r, i) => {
+          const t = inLang(r.question, lang);
+          return (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <p className="font-medium text-slate-900">
-              {i + 1}. {r.question.question} <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} />
+              {i + 1}. {t.question} <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} />
             </p>
             <p className="mt-1">
-              Your answer: <b>{r.chosen === null ? "Skipped" : r.question.options[r.chosen]}</b>
+              Your answer: <b>{r.chosen === null ? "Skipped" : t.options[r.chosen]}</b>
               {!r.correct && (
                 <>
-                  {" "}· Correct: <b className="text-emerald-700">{r.question.options[r.question.answer]}</b>
+                  {" "}· Correct: <b className="text-emerald-700">{t.options[r.question.answer]}</b>
                 </>
               )}
               {r.seconds !== undefined && <span className="text-slate-500"> · {r.seconds}s</span>}
             </p>
-            <p className="mt-1 text-slate-600">{r.question.explanation}</p>
+            <p className="mt-1 text-slate-600">{t.explanation}</p>
             {r.question.timestamp !== undefined && onTimestamp && (
               <button className="mt-1 font-medium text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
                 <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}
               </button>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="flex flex-wrap gap-2">
         {onRestart && (

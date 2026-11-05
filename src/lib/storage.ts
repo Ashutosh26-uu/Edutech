@@ -1,6 +1,8 @@
 "use client";
 
 import { newMemory, review as fsrsReview, type Grade, type Memory } from "./fsrs";
+import { mergeSync, type Bookmark, type SyncDoc } from "./sync";
+import type { MCQ } from "./types";
 
 /**
  * Per-browser progress storage. Prototype only: a real deployment would keep this in a
@@ -70,6 +72,10 @@ interface Store {
   /** Exams whose one free mock test has been used */
   freeMockUsed: Record<string, boolean>;
   purchases: Purchase[];
+  /** Questions saved to come back to, keyed by question id. */
+  bookmarks: Record<string, Bookmark>;
+  /** Deleted cards and bookmarks, so a sync does not bring them back (see lib/sync.ts). */
+  deleted: Record<string, number>;
 }
 
 export interface Purchase {
@@ -91,7 +97,7 @@ export interface DayCounts {
 }
 
 const KEY = "studyclip:v1";
-const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [] };
+const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [], bookmarks: {}, deleted: {} };
 export const UPDATE_EVENT = "studyclip:update";
 
 export const XP = { correct: 10, wrong: 2, review: 5, video: 20, mock: 50 } as const;
@@ -103,7 +109,7 @@ export function dayKey(d = new Date()): string {
 export function load(): Store {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...EMPTY, ...JSON.parse(raw) } : structuredClone(EMPTY);
+    return raw ? { ...structuredClone(EMPTY), ...JSON.parse(raw) } : structuredClone(EMPTY);
   } catch {
     return structuredClone(EMPTY);
   }
@@ -194,6 +200,7 @@ export function addCards(cards: Omit<Flashcard, keyof Memory | "created">[]): nu
 export function deleteCard(id: string) {
   const s = load();
   delete s.cards[id];
+  s.deleted[`card:${id}`] = Date.now();
   save(s);
 }
 
@@ -210,6 +217,52 @@ export function dueCards(s = load(), now = Date.now()): Flashcard[] {
   return Object.values(s.cards)
     .filter((c) => c.due <= now)
     .sort((a, b) => (a.reps === 0 ? 1 : 0) - (b.reps === 0 ? 1 : 0) || a.due - b.due);
+}
+
+// ---------- Saved questions ----------
+
+export function isBookmarked(id: string, s = load()): boolean {
+  return !!s.bookmarks[id];
+}
+
+/** Saves the question (with its answer) or removes it if already saved. Returns whether it is now saved. */
+export function toggleBookmark(question: MCQ): boolean {
+  const s = load();
+  const on = !s.bookmarks[question.id];
+  if (on) {
+    s.bookmarks[question.id] = { id: question.id, question, savedAt: Date.now() };
+    delete s.deleted[`bm:${question.id}`];
+  } else {
+    delete s.bookmarks[question.id];
+    s.deleted[`bm:${question.id}`] = Date.now();
+  }
+  save(s);
+  return on;
+}
+
+// ---------- Account sync ----------
+
+export function syncDoc(s = load()): SyncDoc {
+  return { cards: s.cards, bookmarks: s.bookmarks, deleted: s.deleted };
+}
+
+/** Takes in the account's copy, merged with anything this browser changed meanwhile. */
+export function applySyncDoc(remote: SyncDoc) {
+  const s = load();
+  const merged = mergeSync(syncDoc(s), remote);
+  s.cards = merged.cards;
+  s.bookmarks = merged.bookmarks;
+  s.deleted = merged.deleted;
+  save(s);
+}
+
+/** Replaces this browser's cards and saved questions with the account's (a different person signed in). */
+export function replaceSyncDoc(remote: SyncDoc) {
+  const s = load();
+  s.cards = remote.cards ?? {};
+  s.bookmarks = remote.bookmarks ?? {};
+  s.deleted = remote.deleted ?? {};
+  save(s);
 }
 
 // ---------- Video notes ----------

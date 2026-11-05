@@ -151,3 +151,20 @@ export const mistakes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.questionId] }), index("mistakes_user_idx").on(t.userId, t.resolvedAt)],
 );
+
+/**
+ * Per-user documents synced from the browser, one row per key. "sync" holds the flashcard deck,
+ * saved questions and deletions (see lib/sync.ts), merged on every write.
+ */
+export const userData = pgTable(
+  "user_data",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    value: jsonb("value").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
+);

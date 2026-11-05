@@ -1,13 +1,14 @@
 "use client";
 
-import { Check, Layers } from "lucide-react";
+import { Check, Layers, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
 import { MicButton, SpeakButton } from "@/components/Speak";
 import { TOPICS } from "@/data/topics";
-import { api } from "@/lib/api";
+import { useAccount } from "@/lib/account";
+import { api, IS_STATIC } from "@/lib/api";
 import { cardsForTopic } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
@@ -21,8 +22,9 @@ export default function LearnPage() {
 }
 
 function LearnView() {
-  const initialTopic = useSearchParams().get("topic") ?? "";
-  const [tab, setTab] = useState<"topic" | "question">("topic");
+  const params = useSearchParams();
+  const initialTopic = params.get("topic") ?? "";
+  const [tab, setTab] = useState<"topic" | "question">(params.get("tab") === "question" ? "question" : "topic");
 
   return (
     <div className="space-y-6">
@@ -191,11 +193,13 @@ function QuestionSolver() {
   const [question, setQuestion] = useState("");
   const [data, setData] = useState<SolveResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [asked, setAsked] = useState("");
 
   const solve = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim()) return;
     setLoading(true);
+    setAsked(question);
     setData((await api("solve", { question })).json);
     setLoading(false);
   };
@@ -219,6 +223,7 @@ function QuestionSolver() {
           ) : (
             <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{data.message}</div>
           )}
+          <AiDoubt key={asked} question={asked} prominent={!data.matched} />
           {data.relatedTopics.length > 0 && (
             <div className="card">
               <h3 className="font-semibold text-slate-900">Study the concept</h3>
@@ -266,6 +271,89 @@ function AnswerCard({ q, compact = false }: { q: MCQ; compact?: boolean }) {
         <button className="mt-2 text-sm font-medium text-brand-700" onClick={() => setOpen(true)}>
           Show answer
         </button>
+      )}
+    </div>
+  );
+}
+
+interface Doubt {
+  answer: string;
+  steps: string[];
+  concept: string;
+  tip: string;
+  confident: boolean;
+}
+
+/** Step-by-step answer from Claude, when the site has the AI solver switched on. */
+function AiDoubt({ question, prominent }: { question: string; prominent: boolean }) {
+  const account = useAccount();
+  const [enabled, setEnabled] = useState(false);
+  const [state, setState] = useState<{ loading?: boolean; error?: string; result?: Doubt; left?: number }>({});
+
+  useEffect(() => {
+    if (IS_STATIC) return;
+    fetch("/api/doubt", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setEnabled(!!d.enabled))
+      .catch(() => setEnabled(false));
+  }, []);
+
+  if (!enabled) return null;
+  const ask = async () => {
+    setState({ loading: true });
+    const res = await fetch("/api/doubt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) }).catch(() => null);
+    const d = await res?.json().catch(() => null);
+    if (!res?.ok || !d) return setState({ error: d?.error ?? "Could not reach the doubt solver. Check your connection." });
+    setState({ result: d.result, left: d.left });
+  };
+
+  const r = state.result;
+  return (
+    <div className={`card space-y-3 ${prominent ? "border-brand-200" : ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1.5 font-semibold text-slate-900">
+          <Sparkles className="h-4 w-4 text-brand-600" /> AI step-by-step solution
+        </h3>
+        {!r &&
+          (account.user ? (
+            <button className={prominent ? "btn-primary" : "btn-ghost"} onClick={ask} disabled={state.loading}>
+              {state.loading ? "Thinking…" : "Solve with AI"}
+            </button>
+          ) : (
+            <Link href={`/login?next=${encodeURIComponent("/learn?tab=question")}`} className="btn-ghost">
+              Log in to ask AI
+            </Link>
+          ))}
+      </div>
+      {!r && !state.error && <p className="text-sm text-slate-600">For questions that are not in the bank, or when you want the full working. A few free AI doubts every day.</p>}
+      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {r && (
+        <div className="space-y-3 text-sm">
+          <p className="rounded-xl bg-emerald-50 p-3 text-emerald-900">
+            <b>Answer:</b> {r.answer}
+          </p>
+          {r.steps.length > 0 && (
+            <ol className="list-decimal space-y-1 pl-5 text-slate-800">
+              {r.steps.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+          )}
+          {r.concept && (
+            <p className="text-slate-700">
+              <b>Concept:</b> {r.concept}
+            </p>
+          )}
+          {r.tip && (
+            <p className="text-slate-700">
+              <b>Exam tip:</b> {r.tip}
+            </p>
+          )}
+          <p className="text-xs text-slate-500">
+            {r.confident ? "AI answers can be wrong; check with your book when it matters." : "The AI was not fully sure about this one. Check it against your book or a teacher."}
+            {state.left !== undefined && ` · ${state.left} AI doubt${state.left === 1 ? "" : "s"} left today`}
+          </p>
+        </div>
       )}
     </div>
   );
