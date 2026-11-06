@@ -89,7 +89,7 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
     <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs" role="group" aria-label="Question language">
       <Languages className="ml-1 h-3.5 w-3.5 text-slate-500" />
       {(["en", "hi"] as const).map((l) => (
-        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium ${lang === l ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>
+        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium ${lang === l ? "bg-surface text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500"}`}>
           {l === "en" ? "English" : "हिंदी"}
         </button>
       ))}
@@ -219,7 +219,8 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+      {/* On timed tests the counter and clock stay in view while the question scrolls. */}
+      <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm ${timed ? "sticky top-14 z-10 -mx-4 -mt-4 rounded-t-xl bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5" : ""}`}>
         <span className="font-medium text-slate-600">
           Question {idx + 1} of {questions.length}
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}

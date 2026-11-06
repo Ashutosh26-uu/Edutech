@@ -79,6 +79,14 @@ html.dark {
   --color-amber-600: #fbbf24;
   --color-amber-800: #fcd34d;
   --color-amber-900: #fde68a;
+  --color-sky-50: #0b2533;
+  --color-sky-700: #7dd3fc;
+  --color-violet-50: #1e1536;
+  --color-violet-100: #2a1d4a;
+  --color-violet-700: #c4b5fd;
+  --color-violet-800: #ddd6fe;
+  --color-orange-50: #331a0a;
+  --color-orange-600: #fb923c;
 }
 
 /* Base styles sit in the base layer so utility classes (e.g. text-on-ink) can override them. */
@@ -96,7 +104,7 @@ html.dark {
 }
 
 @utility card {
-  @apply rounded-xl border border-slate-200 bg-surface p-5;
+  @apply rounded-xl border border-slate-200 bg-surface p-4 sm:p-5;
 }
 @utility btn {
   @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;

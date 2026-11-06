@@ -61,11 +61,11 @@ export function ExamBrowser() {
       {groups.map(({ c, exams }) => (
         <section key={c}>
           <h2 className="mb-3 text-base font-semibold">{c}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {exams.map((e) => {
               const topics = examTopicIds(e).length;
               return (
-                <Link key={e.id} href={`/exams/${e.id}`} className="group card flex flex-col p-4 transition-colors hover:border-slate-300">
+                <Link key={e.id} href={`/exams/${e.id}`} className="group card flex min-w-0 flex-col p-4 transition-colors hover:border-slate-300">
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-medium text-slate-900">{e.name}</span>
                     {e.level === "State" && <span className="chip shrink-0 bg-slate-100 text-slate-500">State</span>}
