@@ -1350,6 +1350,8 @@ const ordinal = (n: number) => `${n}${["th", "st", "nd", "rd"][n % 10 > 3 || Mat
 
 export const hasGenerator = (topicId: string) => topicId in GENERATORS;
 
+let seq = 0;
+
 /** Generates `count` distinct questions for a topic, from one tier or (by default) a rotation of all four. */
 export function generateQuestions(topicId: string, count: number, r: Rand = Math.random, difficulty?: Difficulty): MCQ[] {
   const gens = GENERATORS[topicId];
@@ -1358,7 +1360,8 @@ export function generateQuestions(topicId: string, count: number, r: Rand = Math
   const seen = new Set<string>();
   for (let i = 0; out.length < count && i < count * 10; i++) {
     const tier = difficulty ?? DIFFICULTIES[i % DIFFICULTIES.length];
-    const q = gens[tier](`${topicId}-g${Date.now().toString(36)}${i}`, r);
+    // Time plus a running counter, so two sets made in the same millisecond never share an id.
+    const q = gens[tier](`${topicId}-g${Date.now().toString(36)}${(seq++).toString(36)}`, r);
     if (!seen.has(q.question)) {
       seen.add(q.question);
       out.push(q);

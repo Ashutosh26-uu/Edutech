@@ -5,7 +5,7 @@ import { AccountMenu } from "@/components/AccountMenu";
 import { AccountSync } from "@/components/AccountSync";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
 import { Logo } from "@/components/Logo";
-import { HeaderStats, Nav } from "@/components/Nav";
+import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { EXAM_BY_ID, EXAMS } from "@/data/exams";
@@ -77,20 +77,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col">
         <AccountProvider>
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/80 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 lg:gap-6">
             <Logo />
             <div className="min-w-0 flex-1">
               <Nav />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               <PaletteButton />
               <HeaderStats />
               <ThemeToggle />
               <AccountMenu />
+              <MobileNav />
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">{children}</main>
+        <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-10">{children}</main>
         <footer className="border-t border-slate-200 bg-surface">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.3fr_3fr] lg:gap-16">
             <div className="max-w-sm space-y-4">
