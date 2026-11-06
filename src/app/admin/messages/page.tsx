@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PageSkeleton } from "@/components/Skeleton";
 import { CONTACT_TOPICS, type ContactTopic } from "@/data/site";
 import { useAccount } from "@/lib/account";
 
@@ -47,7 +48,7 @@ export default function AdminMessagesPage() {
     if (res.ok) setMessages((ms) => ms?.map((m) => (m.id === id ? { ...m, status } : m)) ?? null);
   };
 
-  if (!account.ready) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (!account.ready) return <PageSkeleton tiles={0} />;
   if (!account.user || admin === false) return <div className="card text-sm">This page is for StudyClip admins. Log in with an admin account.</div>;
   if (admin === null) return <p className="text-sm text-slate-500">Checking…</p>;
 
