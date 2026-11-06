@@ -184,6 +184,56 @@ const CHECKS = [
     const x = Math.sqrt(n(m[3]) / (+m[1] * +m[2]));
     return 2 * (+m[1] + +m[2]) * x * +m[4];
   }],
+  // Very-hard additions, one per topic
+  [/^(\d+)% of A is equal to (\d+)% of B\. If A \+ B = ([\d,]+), what is the value of A\?/, (m) => {
+    // x·A = y·B and A + B = S ⇒ A = S·y/(x + y)
+    return (n(m[3]) * +m[2]) / (+m[1] + +m[2]);
+  }],
+  [/dishonest dealer marks his goods (\d+)% above the cost price, allows a discount of (\d+)% and also uses a weight of (\d+) g in place of 1 kg/, (m) => {
+    // Charges for 1000 g at MP×(1−d), hands over w g: gain on cost w.
+    const charged = (1 + +m[1] / 100) * (1 - +m[2] / 100) * 1000;
+    return ((charged - +m[3]) / +m[3]) * 100;
+  }],
+  [/A sum of ₹([\d,]+) is lent in two parts: the first at (\d+)% per annum for (\d+) years and the second at (\d+)% per annum for (\d+) years\. If both parts earn equal simple interest, what is the first part/, (m) => {
+    // P1·r1·t1 = (S − P1)·r2·t2 ⇒ P1 = S·r2·t2/(r1·t1 + r2·t2)
+    const [S, r1, t1, r2, t2] = [n(m[1]), +m[2], +m[3], +m[4], +m[5]];
+    return (S * r2 * t2) / (r1 * t1 + r2 * t2);
+  }],
+  [/A can complete a work in (\d+) days\. He works alone for (\d+) days, after which B joins him and the two finish the remaining work in (\d+) days\. In how many days can B alone/, (m) => {
+    const [a, d, t] = [+m[1], +m[2], +m[3]];
+    const bRate = (1 - d / a) / t - 1 / a;
+    return 1 / bRate;
+  }],
+  [/The average of (\d+) numbers was calculated as (\d+)\. It was later found that one number had been read as (\d+) instead of (\d+)\. What is the correct average/, (m) => {
+    const [cnt, avg, wrong, right] = [+m[1], +m[2], +m[3], +m[4]];
+    return (cnt * avg - wrong + right) / cnt;
+  }],
+  [/A, B and C invest ₹([\d,]+), ₹([\d,]+) and ₹([\d,]+) in a business for (\d+), (\d+) and (\d+) months respectively\. If the total profit is ₹([\d,]+), what is (A|B|C)’s share/, (m) => {
+    const w = [n(m[1]) * +m[4], n(m[2]) * +m[5], n(m[3]) * +m[6]];
+    return (n(m[7]) * w["ABC".indexOf(m[8])]) / (w[0] + w[1] + w[2]);
+  }],
+  [/A (\d+) m long train crosses a pole in (\d+) seconds and crosses a (\d+) m long train coming from the opposite direction in (\d+) seconds\. What is the speed of the second train/, (m) => {
+    const [L1, t1, L2, t2] = [+m[1], +m[2], +m[3], +m[4]];
+    return ((L1 + L2) / t2 - L1 / t1) * 3.6;
+  }],
+  [/A loan of ₹([\d,]+) at (\d+)% per annum compound interest is to be repaid in two equal annual instalments\. What is the value of each instalment/, (m) => {
+    // Solve P = x/q + x/q² by searching x, independent of the closed form.
+    const [P, q] = [n(m[1]), 1 + +m[2] / 100];
+    let lo = 0, hi = P;
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (mid / q + mid / (q * q) < P) lo = mid; else hi = mid;
+    }
+    return lo;
+  }],
+  [/What is the remainder when (\d+)([⁰¹²³⁴⁵⁶⁷⁸⁹]+) is divided by (\d+)\?/, (m) => {
+    const exp = Number([...m[2]].map((c) => "⁰¹²³⁴⁵⁶⁷⁸⁹".indexOf(c)).join(""));
+    return Number(BigInt(m[1]) ** BigInt(exp) % BigInt(m[3]));
+  }],
+  [/A room is (\d+) m long, (\d+) m wide and (\d+) m high\. It has one door measuring 2 m × 1\.5 m and (\d+) windows each measuring 1\.5 m × 1 m\. What is the cost of painting its four walls and the ceiling at ₹(\d+) per m²/, (m) => {
+    const [l, b, h, w, rate] = [+m[1], +m[2], +m[3], +m[4], +m[5]];
+    return (2 * l * h + 2 * b * h + l * b - 2 * 1.5 - w * 1.5 * 1) * rate;
+  }],
 ];
 let derived = 0;
 const NEW_TOPICS = ["quant-number-system", "quant-mensuration"];
