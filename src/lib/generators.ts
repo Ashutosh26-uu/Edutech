@@ -196,6 +196,24 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         },
         r,
       );
+    }, (id, r) => {
+      // x% of A = y% of B ⇒ A : B = y : x (the trap: the bigger percent belongs to the smaller number).
+      const [x, y] = pick([[20, 30], [25, 40], [30, 45], [40, 60], [15, 25], [12, 18], [35, 50], [50, 75], [24, 36], [45, 30], [60, 40], [75, 25]], r);
+      const k = pick([20, 25, 40, 50, 100], r);
+      const [A, B] = [y * k, x * k];
+      const S = A + B;
+      const gg = gcd(x, y);
+      return numeric(
+        id, "quant-percentage", "very-hard",
+        `${x}% of A is equal to ${y}% of B. If A + B = ${fmt(S)}, what is the value of A?`,
+        A,
+        `${x}% × A = ${y}% × B ⇒ A : B = ${y} : ${x} = ${y / gg} : ${x / gg}. A = ${fmt(S)} × ${y / gg}/${(x + y) / gg} = ${fmt(A)}.`,
+        {
+          q: `A का ${x}%, B के ${y}% के बराबर है। यदि A + B = ${fmt(S)} है, तो A का मान क्या है?`,
+          e: `${x}% × A = ${y}% × B ⇒ A : B = ${y} : ${x} = ${y / gg} : ${x / gg}। A = ${fmt(S)} × ${y / gg}/${(x + y) / gg} = ${fmt(A)}।`,
+        },
+        r,
+      );
     }),
   },
 
@@ -314,6 +332,22 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         {
           q: `${n} वस्तुएँ बेचने पर एक व्यापारी को ${g} वस्तुओं के विक्रय मूल्य के बराबर लाभ होता है। उसका लाभ प्रतिशत कितना है?`,
           e: `${n} वस्तुओं का क्रय मूल्य = ${n - g} वस्तुओं का विक्रय मूल्य। लाभ % = ${g} ÷ ${n - g} × 100 = ${fmt(ans)}%।`,
+        },
+        r, "", "%",
+      );
+    }, (id, r) => {
+      // Three tricks at once: mark-up, discount and a false weight.
+      const [w, x, d, ans] = pick([[900, 20, 10, 20], [800, 20, 10, 35], [960, 25, 4, 25], [800, 30, 20, 30], [900, 35, 20, 20], [950, 40, 5, 40], [750, 20, 10, 44], [900, 40, 10, 40], [800, 25, 12, 37.5], [800, 40, 25, 31.25]], r);
+      const sp = ((100 + x) * (100 - d)) / 100;
+      const cp = w / 10;
+      return numeric(
+        id, "quant-profit-loss", "very-hard",
+        `A dishonest dealer marks his goods ${x}% above the cost price, allows a discount of ${d}% and also uses a weight of ${w} g in place of 1 kg. What is his overall gain percentage?`,
+        ans,
+        `Take CP of 1 kg = ₹100. SP = ${100 + x} × ${100 - d}/100 = ₹${fmt(sp)}, but he gives only ${w} g, whose CP is ₹${fmt(cp)}. Gain % = (${fmt(sp)} − ${fmt(cp)}) ÷ ${fmt(cp)} × 100 = ${fmt(ans)}%.`,
+        {
+          q: `एक बेईमान व्यापारी अपनी वस्तुओं पर क्रय मूल्य से ${x}% अधिक मूल्य अंकित करता है, ${d}% की छूट देता है और 1 किग्रा के स्थान पर ${w} ग्राम के बाट का प्रयोग करता है। उसका कुल लाभ प्रतिशत कितना है?`,
+          e: `माना 1 किग्रा का क्रय मूल्य = ₹100। विक्रय मूल्य = ${100 + x} × ${100 - d}/100 = ₹${fmt(sp)}, परंतु वह केवल ${w} ग्राम देता है, जिसका क्रय मूल्य ₹${fmt(cp)} है। लाभ % = (${fmt(sp)} − ${fmt(cp)}) ÷ ${fmt(cp)} × 100 = ${fmt(ans)}%।`,
         },
         r, "", "%",
       );
@@ -441,6 +475,26 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         },
         r, "₹",
       );
+    }, (id, r) => {
+      // Two parts earning equal SI: P1 × r1 × t1 = P2 × r2 × t2, so P1 : P2 = r2t2 : r1t1.
+      const [r1, t1, r2, t2] = pick([[10, 5, 9, 6], [8, 3, 12, 5], [5, 4, 10, 3], [8, 5, 10, 3], [4, 6, 9, 2], [10, 4, 6, 5], [12, 5, 8, 6], [5, 6, 9, 4], [10, 3, 8, 5], [6, 4, 10, 3]], r);
+      const [p1, p2] = [r1 * t1, r2 * t2];
+      const gg = gcd(p1, p2);
+      const [a, b] = [p2 / gg, p1 / gg];
+      const k = pick([200, 300, 500, 1000], r);
+      const S = (a + b) * k;
+      const ans = a * k;
+      return numeric(
+        id, "quant-simple-interest", "very-hard",
+        `A sum of ₹${fmt(S)} is lent in two parts: the first at ${r1}% per annum for ${t1} years and the second at ${r2}% per annum for ${t2} years. If both parts earn equal simple interest, what is the first part?`,
+        ans,
+        `Equal interest: P₁ × ${r1} × ${t1} = P₂ × ${r2} × ${t2}, so P₁ : P₂ = ${p2} : ${p1} = ${a} : ${b}. First part = ${fmt(S)} × ${a}/${a + b} = ₹${fmt(ans)}.`,
+        {
+          q: `₹${fmt(S)} की राशि दो भागों में उधार दी जाती है: पहला भाग ${r1}% वार्षिक दर पर ${t1} वर्ष के लिए और दूसरा ${r2}% वार्षिक दर पर ${t2} वर्ष के लिए। यदि दोनों भागों पर साधारण ब्याज बराबर मिलता है, तो पहला भाग कितना है?`,
+          e: `ब्याज बराबर है: P₁ × ${r1} × ${t1} = P₂ × ${r2} × ${t2}, अतः P₁ : P₂ = ${p2} : ${p1} = ${a} : ${b}। पहला भाग = ${fmt(S)} × ${a}/${a + b} = ₹${fmt(ans)}।`,
+        },
+        r, "₹",
+      );
     }),
   },
 
@@ -562,6 +616,25 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         },
         r, "", " days",
       );
+    }, (id, r) => {
+      // A works alone for a third of his time, then B joins: back out B's rate from the finishing time.
+      const [a, b] = pick([[18, 9], [15, 10], [30, 20], [36, 12], [36, 18], [18, 36], [45, 30], [27, 54], [24, 24], [30, 30]], r);
+      const n = a / 3;
+      const m = (2 * a * b) / (3 * (a + b));
+      if (!Number.isInteger(m)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
+      const lcm = (a * b) / gcd(a, b);
+      const left = lcm - n * (lcm / a);
+      return numeric(
+        id, "quant-time-work", "very-hard",
+        `A can complete a work in ${a} days. He works alone for ${n} days, after which B joins him and the two finish the remaining work in ${m} days. In how many days can B alone complete the whole work?`,
+        b,
+        `Take the work as ${lcm} units: A does ${lcm / a}/day, so after ${n} days ${left} units remain. In ${m} days A and B do ${left} units, i.e. ${left / m}/day together; B = ${left / m} − ${lcm / a} = ${lcm / b}/day, so B alone takes ${lcm} ÷ ${lcm / b} = ${b} days.`,
+        {
+          q: `A किसी काम को ${a} दिन में पूरा कर सकता है। वह ${n} दिन अकेले काम करता है, फिर B उसके साथ जुड़ जाता है और दोनों मिलकर शेष काम ${m} दिन में पूरा कर देते हैं। B अकेले पूरे काम को कितने दिन में कर सकता है?`,
+          e: `माना कुल काम = ${lcm} इकाई: A प्रतिदिन ${lcm / a} इकाई करता है, अतः ${n} दिन बाद ${left} इकाई शेष रहती है। ${m} दिन में A और B ${left} इकाई करते हैं, अर्थात् मिलकर ${left / m} इकाई/दिन; B = ${left / m} − ${lcm / a} = ${lcm / b} इकाई/दिन, अतः B अकेले ${lcm} ÷ ${lcm / b} = ${b} दिन लेगा।`,
+        },
+        r, "", " days",
+      );
     }),
   },
 
@@ -669,6 +742,27 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         },
         r,
       );
+    }, (id, r) => {
+      // A misread entry: the correct average moves by (correct − wrong)/n.
+      const n = pick([10, 20, 25, 30, 40, 50], r);
+      const avg = pick([36, 42, 45, 48, 54, 60, 65, 72], r);
+      const wrong = pick([27, 36, 48, 52, 63, 65, 73, 84, 91], r);
+      const k = pick([-2, -1, 1, 2], r);
+      const correct = wrong + n * k;
+      if (correct < 10 || correct > 99 || avg + k <= 0) return GENERATORS["quant-average"]["very-hard"](id, r);
+      const high = wrong > correct;
+      const diff = Math.abs(wrong - correct);
+      return numeric(
+        id, "quant-average", "very-hard",
+        `The average of ${n} numbers was calculated as ${avg}. It was later found that one number had been read as ${wrong} instead of ${correct}. What is the correct average?`,
+        avg + k,
+        `The total was taken ${diff} too ${high ? "high" : "low"} (${high ? `${wrong} − ${correct}` : `${correct} − ${wrong}`} = ${diff}), so the average was ${diff} ÷ ${n} = ${Math.abs(k)} too ${high ? "high" : "low"}. Correct average = ${avg} ${high ? "−" : "+"} ${Math.abs(k)} = ${avg + k}.`,
+        {
+          q: `${n} संख्याओं का औसत ${avg} निकाला गया। बाद में पता चला कि एक संख्या को ${correct} के स्थान पर ${wrong} पढ़ लिया गया था। सही औसत क्या है?`,
+          e: `योग ${diff} ${high ? "अधिक" : "कम"} लिया गया (${high ? `${wrong} − ${correct}` : `${correct} − ${wrong}`} = ${diff}), अतः औसत ${diff} ÷ ${n} = ${Math.abs(k)} ${high ? "अधिक" : "कम"} आया। सही औसत = ${avg} ${high ? "−" : "+"} ${Math.abs(k)} = ${avg + k}।`,
+        },
+        r,
+      );
     }),
   },
 
@@ -757,6 +851,30 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
           e: `दूध = ${milk} लीटर और पानी = ${water} लीटर। दूध की मात्रा नहीं बदलती, अतः आवश्यक पानी = ${milk} × ${w2}/${m2} = ${need} लीटर। मिलाना होगा ${need} − ${water} = ${ans} लीटर।`,
         },
         r, "", " litres",
+      );
+    }, (id, r) => {
+      // Partnership: profit shares are in the ratio of capital × time.
+      const caps = shuffle([10000, 12000, 15000, 16000, 18000, 20000, 24000, 25000, 30000, 36000, 40000], r).slice(0, 3);
+      const months = [pick([6, 8, 9, 10, 12], r), pick([4, 6, 8, 9, 10, 12], r), pick([4, 6, 8, 9, 10, 12], r)];
+      const prod = caps.map((c, i) => c * months[i]);
+      const gg = prod.reduce(gcd);
+      const parts = prod.map((p) => p / gg);
+      const sum = parts.reduce((x, y) => x + y);
+      if (sum > 30 || new Set(parts).size < 3 || new Set(months).size < 2) return GENERATORS["quant-ratio"]["very-hard"](id, r);
+      const P = sum * pick([300, 500, 700, 1000, 1500], r);
+      const who = Math.floor(r() * 3);
+      const name = "ABC"[who];
+      const ans = (P * parts[who]) / sum;
+      return numeric(
+        id, "quant-ratio", "very-hard",
+        `A, B and C invest ₹${fmt(caps[0])}, ₹${fmt(caps[1])} and ₹${fmt(caps[2])} in a business for ${months[0]}, ${months[1]} and ${months[2]} months respectively. If the total profit is ₹${fmt(P)}, what is ${name}’s share?`,
+        ans,
+        `Profit is shared in the ratio of capital × time: ${caps.map((c, i) => `${fmt(c)} × ${months[i]}`).join(" : ")} = ${parts.join(" : ")}. ${name}’s share = ${fmt(P)} × ${parts[who]}/${sum} = ₹${fmt(ans)}.`,
+        {
+          q: `A, B और C एक व्यापार में क्रमशः ₹${fmt(caps[0])}, ₹${fmt(caps[1])} और ₹${fmt(caps[2])} क्रमशः ${months[0]}, ${months[1]} और ${months[2]} महीनों के लिए लगाते हैं। यदि कुल लाभ ₹${fmt(P)} है, तो ${name} का हिस्सा कितना है?`,
+          e: `लाभ पूँजी × समय के अनुपात में बँटता है: ${caps.map((c, i) => `${fmt(c)} × ${months[i]}`).join(" : ")} = ${parts.join(" : ")}। ${name} का हिस्सा = ${fmt(P)} × ${parts[who]}/${sum} = ₹${fmt(ans)}।`,
+        },
+        r, "₹",
       );
     }),
   },
@@ -858,6 +976,27 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         },
         r, "", " km/h",
       );
+    }, (id, r) => {
+      // Pole gives the first train's speed; crossing the second train gives the relative speed.
+      const va = pick([15, 20, 25, 30], r);
+      const t1 = pick([8, 10, 12, 15], r);
+      const L1 = va * t1;
+      const vb = pick([10, 15, 20, 25], r);
+      const t2 = pick([8, 10, 12, 15], r);
+      const L2 = (va + vb) * t2 - L1;
+      if (L2 < 100 || L2 > 600 || vb === va) return GENERATORS["quant-tsd"]["very-hard"](id, r);
+      const ans = (vb * 18) / 5;
+      return numeric(
+        id, "quant-tsd", "very-hard",
+        `A ${L1} m long train crosses a pole in ${t1} seconds and crosses a ${L2} m long train coming from the opposite direction in ${t2} seconds. What is the speed of the second train in km/h?`,
+        ans,
+        `First train’s speed = ${L1} ÷ ${t1} = ${va} m/s. Relative speed = (${L1} + ${L2}) ÷ ${t2} = ${va + vb} m/s, so the second train runs at ${va + vb} − ${va} = ${vb} m/s = ${vb} × 18/5 = ${ans} km/h.`,
+        {
+          q: `एक ${L1} मीटर लंबी रेलगाड़ी एक खंभे को ${t1} सेकंड में पार करती है और विपरीत दिशा से आती हुई ${L2} मीटर लंबी रेलगाड़ी को ${t2} सेकंड में पार करती है। दूसरी रेलगाड़ी की चाल किमी/घंटा में कितनी है?`,
+          e: `पहली रेलगाड़ी की चाल = ${L1} ÷ ${t1} = ${va} मी/से। सापेक्ष चाल = (${L1} + ${L2}) ÷ ${t2} = ${va + vb} मी/से, अतः दूसरी रेलगाड़ी की चाल = ${va + vb} − ${va} = ${vb} मी/से = ${vb} × 18/5 = ${ans} किमी/घंटा।`,
+        },
+        r, "", " km/h",
+      );
     }),
   },
 
@@ -951,6 +1090,26 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         {
           q: `₹${fmt(p)} पर ${rate}% वार्षिक दर से 3 वर्ष के चक्रवृद्धि ब्याज और साधारण ब्याज का अंतर क्या है?`,
           e: `3 वर्ष के लिए, चक्रवृद्धि ब्याज − साधारण ब्याज = मूलधन × (दर/100)² × (3 + दर/100) = ${fmt(p)} × (${rate}/100)² × ${fmt(3 + rate / 100)} = ₹${fmt(ans)}।`,
+        },
+        r, "₹",
+      );
+    }, (id, r) => {
+      // Two equal annual instalments: P = x/q + x/q² with q = 1 + R/100, so x = P × q²/(1 + q).
+      const [p, rate] = pick([[2100, 10], [4200, 10], [6300, 10], [5500, 20], [2200, 20], [3300, 20], [8200, 5], [4100, 5], [3600, 25], [7200, 25], [1800, 25], [5100, 4]], r);
+      const q = 100 + rate;
+      const ans = (p * q * q) / (100 * (100 + q));
+      if (!Number.isInteger(ans)) return GENERATORS["quant-ci"]["very-hard"](id, r);
+      // Exact decimals (1.1025, not 1.1), so the working can be followed.
+      const q1 = String(q / 100);
+      const q2 = String((q * q) / 1e4);
+      return numeric(
+        id, "quant-ci", "very-hard",
+        `A loan of ₹${fmt(p)} at ${rate}% per annum compound interest is to be repaid in two equal annual instalments. What is the value of each instalment?`,
+        ans,
+        `Let each instalment be x. Its present value must equal the loan: x/${q1} + x/${q2} = ${fmt(p)}, so x × (${q1} + 1)/${q2} = ${fmt(p)}. x = ${fmt(p)} × ${q2} ÷ ${String(q / 100 + 1)} = ₹${fmt(ans)}.`,
+        {
+          q: `₹${fmt(p)} का ऋण ${rate}% वार्षिक चक्रवृद्धि ब्याज पर दो समान वार्षिक किस्तों में चुकाना है। प्रत्येक किस्त का मान कितना होगा?`,
+          e: `माना प्रत्येक किस्त x है। किस्तों का वर्तमान मूल्य ऋण के बराबर होगा: x/${q1} + x/${q2} = ${fmt(p)}, अतः x × (${q1} + 1)/${q2} = ${fmt(p)}। x = ${fmt(p)} × ${q2} ÷ ${String(q / 100 + 1)} = ₹${fmt(ans)}।`,
         },
         r, "₹",
       );
@@ -1118,6 +1277,31 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         {
           q: `वह बड़ी से बड़ी संख्या कौन-सी है जिससे ${nums[0]}, ${nums[1]} और ${nums[2]} को भाग देने पर क्रमशः ${rem[0]}, ${rem[1]} और ${rem[2]} शेष बचते हैं?`,
           e: `अभीष्ट संख्या ${subs} को पूर्णतः विभाजित करेगी। ऐसी सबसे बड़ी संख्या इनका महत्तम समापवर्तक (HCF) = ${ans} है।`,
+        },
+        r,
+      );
+    }, (id, r) => {
+      // Remainder of a large power: find the cycle length k with a^k ≡ 1 (mod m), then reduce the exponent.
+      const [a, m] = pick([[2, 5], [3, 5], [7, 5], [2, 7], [3, 7], [4, 7], [2, 9], [7, 9], [3, 11], [2, 13], [8, 13], [12, 13], [5, 7], [9, 11], [6, 7]], r);
+      const n = pick([50, 64, 75, 99, 100, 101, 120, 123, 200, 250, 2023, 2024, 2025], r);
+      let k = 1;
+      for (let pw = a % m; pw !== 1; pw = (pw * a) % m) k++;
+      const s = n % k;
+      const qt = (n - s) / k;
+      const ans = Number(BigInt(a) ** BigInt(s) % BigInt(m));
+      const distractors = shuffle(Array.from({ length: m }, (_, i) => String(i)).filter((x) => x !== String(ans)), r);
+      const split = `${n} = ${k} × ${qt}${s ? ` + ${s}` : ""}`;
+      const tail = s ? `${a}${sup(n)} = (${a}${sup(k)})${sup(qt)} × ${a}${sup(s)} leaves the same remainder as ${a}${sup(s)} = ${a ** s}, i.e. ${ans}` : `${a}${sup(n)} = (${a}${sup(k)})${sup(qt)} leaves remainder 1`;
+      const tailHi = s ? `${a}${sup(n)} = (${a}${sup(k)})${sup(qt)} × ${a}${sup(s)} का शेषफल वही होगा जो ${a}${sup(s)} = ${a ** s} का है, अर्थात् ${ans}` : `${a}${sup(n)} = (${a}${sup(k)})${sup(qt)} का शेषफल 1 होगा`;
+      return choice(
+        id, "quant-number-system", "very-hard",
+        `What is the remainder when ${a}${sup(n)} is divided by ${m}?`,
+        String(ans),
+        distractors,
+        `${a}${sup(k)} = ${a ** k} leaves remainder 1 when divided by ${m}, so the remainders repeat every ${k} powers. ${split}, so ${tail}.`,
+        {
+          q: `${a}${sup(n)} को ${m} से भाग देने पर शेषफल क्या होगा?`,
+          e: `${a}${sup(k)} = ${a ** k} को ${m} से भाग देने पर शेषफल 1 आता है, अतः हर ${k} घातों के बाद शेषफल दोहराते हैं। ${split}, अतः ${tailHi}।`,
         },
         r,
       );
@@ -1338,6 +1522,26 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         {
           q: `एक आयताकार पार्क की भुजाओं का अनुपात ${a} : ${b} है और उसका क्षेत्रफल ${fmt(area)} वर्ग मीटर है। ₹${rate} प्रति मीटर की दर से उसके चारों ओर बाड़ लगाने का व्यय कितना होगा?`,
           e: `माना भुजाएँ ${a}x और ${b === 1 ? "" : b}x हैं। ${a * b}x² = ${fmt(area)}, अतः x = ${x} और भुजाएँ ${a * x} मीटर तथा ${b * x} मीटर हैं। परिमाप = 2 × (${a * x} + ${b * x}) = ${P} मीटर; व्यय = ${P} × ${rate} = ₹${fmt(P * rate)}।`,
+        },
+        r, "₹",
+      );
+    }, (id, r) => {
+      // Four walls plus the ceiling, minus a door and windows.
+      const [l, b, h] = [pick([8, 10, 12, 15], r), pick([6, 7, 8, 9, 10], r), pick([4, 5], r)];
+      const win = pick([2, 4], r);
+      const rate = pick([8, 10, 12, 15, 20, 25], r);
+      if (b >= l) return GENERATORS["quant-mensuration"]["very-hard"](id, r);
+      const walls = 2 * (l + b) * h;
+      const ded = 3 + 1.5 * win;
+      const area = walls + l * b - ded;
+      return numeric(
+        id, "quant-mensuration", "very-hard",
+        `A room is ${l} m long, ${b} m wide and ${h} m high. It has one door measuring 2 m × 1.5 m and ${win} windows each measuring 1.5 m × 1 m. What is the cost of painting its four walls and the ceiling at ₹${rate} per m²?`,
+        area * rate,
+        `Four walls = 2 × (${l} + ${b}) × ${h} = ${walls} m²; ceiling = ${l} × ${b} = ${l * b} m². Deduct the door (3 m²) and ${win} windows (${win} × 1.5 = ${1.5 * win} m²): area = ${walls} + ${l * b} − ${fmt(ded)} = ${fmt(area)} m². Cost = ${fmt(area)} × ${rate} = ₹${fmt(area * rate)}.`,
+        {
+          q: `एक कमरा ${l} मीटर लंबा, ${b} मीटर चौड़ा और ${h} मीटर ऊँचा है। इसमें 2 मीटर × 1.5 मीटर का एक दरवाज़ा और 1.5 मीटर × 1 मीटर की ${win} खिड़कियाँ हैं। ₹${rate} प्रति वर्ग मीटर की दर से इसकी चारों दीवारों और छत पर रंग करने का व्यय कितना होगा?`,
+          e: `चारों दीवारें = 2 × (${l} + ${b}) × ${h} = ${walls} वर्ग मीटर; छत = ${l} × ${b} = ${l * b} वर्ग मीटर। दरवाज़ा (3 वर्ग मीटर) और ${win} खिड़कियाँ (${win} × 1.5 = ${1.5 * win} वर्ग मीटर) घटाने पर क्षेत्रफल = ${walls} + ${l * b} − ${fmt(ded)} = ${fmt(area)} वर्ग मीटर। व्यय = ${fmt(area)} × ${rate} = ₹${fmt(area * rate)}।`,
         },
         r, "₹",
       );
