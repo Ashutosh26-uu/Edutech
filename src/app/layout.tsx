@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icon.svg` },
 };
 
-export const viewport: Viewport = { themeColor: "#18181b" };
+// viewportFit "cover" lets the safe-area padding in globals.css take effect on notched phones.
+export const viewport: Viewport = { themeColor: "#18181b", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
   {

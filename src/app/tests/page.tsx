@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { PageSkeleton } from "@/components/Skeleton";
 import { Results, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -47,7 +48,7 @@ function TestAnalysis() {
   }, [id, account.ready, account.user]);
 
   if (error) return <div className="card text-sm text-red-600">{error}</div>;
-  if (!attempt) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (!attempt) return <PageSkeleton />;
 
   const exam = EXAM_BY_ID.get(attempt.examId);
   const results: AnswerResult[] = attempt.questions.map((q, i) => ({ question: q, chosen: attempt.answers[i] ?? null, correct: attempt.answers[i] === q.answer, seconds: attempt.times?.[i] }));

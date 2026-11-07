@@ -3,6 +3,7 @@
 import { BookmarkPlus, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PageSkeleton } from "@/components/Skeleton";
 import { Stat } from "@/components/Quiz";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { findQuestions } from "@/lib/bank";
@@ -41,7 +42,7 @@ export default function MistakesPage() {
   if (IS_STATIC || (account.ready && account.mode === "local")) {
     return <div className="card text-sm">The mistake notebook needs an account and runs on the full site, not this demo build.</div>;
   }
-  if (!account.ready) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (!account.ready) return <PageSkeleton />;
   if (!account.user) {
     return (
       <div className="card mx-auto max-w-md space-y-3 py-8 text-center">
@@ -54,7 +55,7 @@ export default function MistakesPage() {
       </div>
     );
   }
-  if (!mistakes) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (!mistakes) return <PageSkeleton />;
 
   const byTopic = new Map<string, Mistake[]>();
   for (const m of mistakes) byTopic.set(m.topicId, [...(byTopic.get(m.topicId) ?? []), m]);

@@ -99,6 +99,11 @@ const n = (s) => Number(String(s).replace(/,/g, ""));
 const g = (a, b) => (b ? g(b, a % b) : a);
 const ratioStr = (a, b) => `${a / g(a, b)} : ${b / g(a, b)}`;
 const CHECKS = [
+  [/first increased by (\d+)%, then decreased by (\d+)%, and then increased by (\d+)%\. If the final number is ([\d,]+)/, (m) => (n(m[4]) * 1e6) / ((100 + +m[1]) * (100 - +m[2]) * (100 + +m[3]))],
+  [/sold it at a gain of (\d+)%\. Had he bought it at (\d+)% less and sold it for ₹([\d,]+) less, he would have gained (\d+)%/, (m) => (n(m[3]) * 1e4) / ((100 + +m[1]) * 100 - (100 - +m[2]) * (100 + +m[4]))],
+  [/Pipe A can fill a tank in (\d+) hours and pipe B in (\d+) hours, while pipe C can empty it in (\d+) hours\. All three are opened together, and after (\d+) hours? pipe C is closed/, (m) => (1 - +m[4] * (1 / +m[1] + 1 / +m[2] - 1 / +m[3])) / (1 / +m[1] + 1 / +m[2])],
+  [/Walking at (\d+)\/(\d+) of his usual speed, a man reaches his office (\d+) minutes late/, (m) => (+m[3] * +m[1]) / (+m[2] - +m[1])],
+  [/difference between the compound interest and the simple interest on a sum for 3 years at (\d+)% per annum is ₹([\d,]+)/, (m) => (n(m[2]) * 1e6) / (+m[1] * +m[1] * (300 + +m[1]))],
   [/increased by (\d+)% and then decreased by (\d+)%/, (m) => Math.abs(+m[1] - +m[2] - (+m[1] * +m[2]) / 100)],
   [/(\d+)% of the candidates failed in Hindi, (\d+)% failed in English and (\d+)% failed in both. If ([\d,]+) candidates/, (m) => (n(m[4]) * 100) / (100 - (+m[1] + +m[2] - +m[3]))],
   [/weight of (\d+) g instead of 1 kg and also sells at (\d+)% above/, (m) => ((1000 / +m[1]) * (1 + +m[2] / 100) - 1) * 100],

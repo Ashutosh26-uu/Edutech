@@ -131,7 +131,7 @@ export default function Home() {
         </div>
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURED_EXAMS.map((e) => (
-            <Link key={e.id} href={`/exams/${e.id}`} className="group card flex flex-col p-4 transition-colors hover:border-slate-300">
+            <Link key={e.id} href={`/exams/${e.id}`} className="group card-link flex flex-col p-4">
               <span className="font-medium text-slate-900">{e.name}</span>
               <span className="mt-1 line-clamp-2 text-xs text-slate-500">{e.fullName}</span>
               <span className="mt-4 flex items-center justify-between text-xs text-slate-500">
