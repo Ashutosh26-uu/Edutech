@@ -84,7 +84,7 @@ YouTube link
 - **Titles and keywords:** recurring words and two-word phrases are ranked with TF-IDF.
 - **Importance:** chapters are ranked by keyword density and lecturer cues ("important", "remember", "exam", definitions, dates).
 - **Quizzes:** key sentences become fill-in-the-blank questions; the other options are other keywords from the same video.
-- **Exam questions:** a sample question bank (`src/data/topics.ts`) plus generators that create unlimited Quant questions with computed answers (`src/lib/generators.ts`).
+- **Exam questions:** a question bank with one file per topic (`src/data/bank/<topic>.ts`, loaded only when that topic is practised; run `npm run bank:index` after adding a topic file) plus generators that create unlimited Quant questions with computed answers (`src/lib/generators.ts`).
 
 ## Project structure
 

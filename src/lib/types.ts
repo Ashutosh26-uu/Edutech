@@ -35,7 +35,7 @@ export interface MCQ {
   /** Exams whose previous-year papers keep testing this point, e.g. "SSC CGL · UPSC Prelims";
    * for an actual previous-year question (`pyq`), the paper it came from, e.g. "UPSC Prelims 2021". */
   source?: string;
-  /** An actual previous-year question added in data/your-pyqs.ts. */
+  /** An actual previous-year question (data/bank, with `source` naming the paper). */
   pyq?: boolean;
   /** For video quizzes: where in the video the answer comes from. */
   timestamp?: number;

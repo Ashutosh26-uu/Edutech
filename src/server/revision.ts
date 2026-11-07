@@ -2,7 +2,8 @@ import "server-only";
 import { and, eq, gt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
-import { QUESTION_BANK, TOPIC_BY_ID } from "@/data/topics";
+import { TOPIC_BY_ID } from "@/data/topics";
+import { loadBank } from "@/lib/bank";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
 
@@ -22,6 +23,7 @@ export async function getRevision(user: SessionUser | null, examId: string) {
   const unlocked = expiresAt !== null;
   const topicIds = examTopicIds(exam);
   const preview = topicIds[0];
+  const bank = await loadBank(topicIds);
 
   return {
     unlocked,
@@ -36,11 +38,11 @@ export async function getRevision(user: SessionUser | null, examId: string) {
           return { id, name: t.name, keyPoints: open ? t.keyPoints : [], locked: !open, preview: !unlocked && id === preview };
         }),
       })),
-    flashcards: unlocked ? QUESTION_BANK.filter((q) => q.topicId && topicIds.includes(q.topicId)) : [],
+    flashcards: unlocked ? bank : [],
     totals: {
       topics: topicIds.length,
       keyPoints: topicIds.reduce((n, id) => n + (TOPIC_BY_ID.get(id)?.keyPoints.length ?? 0), 0),
-      flashcards: QUESTION_BANK.filter((q) => q.topicId && topicIds.includes(q.topicId)).length,
+      flashcards: bank.length,
     },
   };
 }

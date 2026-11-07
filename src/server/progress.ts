@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { QUESTION_BANK } from "@/data/topics";
+import { findQuestions } from "@/lib/bank";
 import { shuffleOptions } from "@/lib/ai/local";
 import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
@@ -10,8 +10,6 @@ import type { SessionUser } from "./auth";
  * Account progress: per-topic accuracy and the mistake notebook. Timed tests write here from
  * tests.ts; untimed practice posts its answers to /api/progress.
  */
-
-const BANK = new Map(QUESTION_BANK.map((q) => [q.id, q]));
 
 export interface Outcome {
   questionId: string;
@@ -27,7 +25,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * one-off ids and cannot be replayed.
  */
 export async function recordMistakes(tx: Tx, userId: string, outcomes: Outcome[]) {
-  const bank = outcomes.filter((o) => BANK.has(o.questionId));
+  const known = await findQuestions(outcomes.map((o) => o.questionId));
+  const bank = outcomes.filter((o) => known.has(o.questionId));
   const wrong = bank.filter((o) => !o.correct);
   const right = bank.filter((o) => o.correct).map((o) => o.questionId);
   if (wrong.length) {
@@ -97,8 +96,9 @@ export async function mistakesSet(user: SessionUser, topicId?: string, limit = 2
     .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt), ...(topicId ? [eq(schema.mistakes.topicId, topicId)] : [])))
     .orderBy(desc(schema.mistakes.lastWrongAt))
     .limit(limit);
+  const bank = await findQuestions(rows.map((r) => r.questionId));
   return rows.flatMap((r) => {
-    const q = BANK.get(r.questionId);
+    const q = bank.get(r.questionId);
     return q ? [shuffleOptions(q)] : [];
   });
 }

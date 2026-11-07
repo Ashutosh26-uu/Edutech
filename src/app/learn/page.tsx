@@ -9,7 +9,7 @@ import { MicButton, SpeakButton } from "@/components/Speak";
 import { TOPICS } from "@/data/topics";
 import { useAccount } from "@/lib/account";
 import { api, IS_STATIC } from "@/lib/api";
-import { cardsForTopic } from "@/lib/cards";
+import { cardsForTopic, type NewCard } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
 
@@ -111,7 +111,14 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
   const { topic, exams, questions } = result;
   const [practising, setPractising] = useState(false);
   const [added, setAdded] = useState<number | null>(null);
-  const deck = cardsForTopic(topic.id);
+  const [deck, setDeck] = useState<NewCard[]>([]);
+  useEffect(() => {
+    let on = true;
+    cardsForTopic(topic.id).then((d) => on && setDeck(d));
+    return () => {
+      on = false;
+    };
+  }, [topic.id]);
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <div className="space-y-5">

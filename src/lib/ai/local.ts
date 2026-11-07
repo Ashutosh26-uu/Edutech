@@ -1,8 +1,9 @@
 import { EXAMS, examTopicIds } from "@/data/exams";
-import { QUESTION_BANK, TOPICS } from "@/data/topics";
+import { TOPICS } from "@/data/topics";
 import type { Difficulty, MCQ, Topic } from "../types";
 import { DIFFICULTIES, MIN_SET_SIZE, tierQuota } from "../difficulty";
 import { generateQuestions, hasGenerator } from "../generators";
+import { loadBank, loadTopicBank } from "../bank";
 import { cosine, shuffle, termFreq, tokenize } from "../nlp";
 import type { AIProvider } from "./provider";
 import { analyzeVideo } from "./local-video";
@@ -40,13 +41,14 @@ function rankTopics(query: string): { topic: Topic; score: number }[] {
  * Bank questions come first; Quant topics with a generator never run dry. A tier that runs
  * short borrows from the nearest tiers so the set is always full.
  */
-function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}): MCQ[] {
+async function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}): Promise<MCQ[]> {
   const size = Math.max(MIN_SET_SIZE, count);
   const quota = tierQuota(size);
+  const bank = await loadBank(topicIds);
   // pools[topic][tier]: shuffled bank questions, popped from the end as they are used. Your own
   // previous-year questions go last so they are drawn first, then exam favourites, then the rest.
   const pool = (id: string, d: Difficulty) => {
-    const qs = shuffle(QUESTION_BANK.filter((q) => q.topicId === id && q.difficulty === d));
+    const qs = shuffle(bank.filter((q) => q.topicId === id && q.difficulty === d));
     return [...qs.filter((q) => !q.source), ...qs.filter((q) => q.source && !q.pyq), ...qs.filter((q) => q.pyq)];
   };
   const pools = new Map(topicIds.map((id) => [id, Object.fromEntries(DIFFICULTIES.map((d) => [d, pool(id, d)])) as Record<Difficulty, MCQ[]>]));
@@ -107,14 +109,17 @@ export const localProvider: AIProvider = {
     }
     const topic = ranked[0].topic;
     const exams = EXAMS.filter((e) => examTopicIds(e).includes(topic.id)).map((e) => ({ id: e.id, name: e.name }));
-    const questions = [...QUESTION_BANK.filter((q) => q.topicId === topic.id), ...generateQuestions(topic.id, 4)];
+    const questions = [...(await loadTopicBank(topic.id)), ...generateQuestions(topic.id, 4)];
     return { result: { topic, exams, questions }, suggestions: ranked.slice(1, 5).map((r) => r.topic) };
   },
 
   async solveQuestion(question) {
     const qv = termFreq(tokenize(question));
-    const scored = QUESTION_BANK.map((q) => ({ q, s: cosine(qv, termFreq(tokenize(`${q.question} ${q.options.join(" ")}`))) })).sort((a, b) => b.s - a.s);
-    const relatedTopics = rankTopics(question).slice(0, 3).map((r) => r.topic);
+    const ranked = rankTopics(question);
+    const relatedTopics = ranked.slice(0, 3).map((r) => r.topic);
+    // Only the topics the question sounds like are searched, so the whole bank never has to download.
+    const bank = await loadBank(ranked.slice(0, 8).map((r) => r.topic.id));
+    const scored = bank.map((q) => ({ q, s: cosine(qv, termFreq(tokenize(`${q.question} ${q.options.join(" ")}`))) })).sort((a, b) => b.s - a.s);
     const best = scored[0];
     if (best && best.s >= 0.55) {
       return {

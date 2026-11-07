@@ -7,7 +7,8 @@ import { useSearchParams } from "next/navigation";
 import { BuyButton, DemoNotice } from "@/components/Paywall";
 import { RapidCards } from "@/components/RapidCards";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
-import { QUESTION_BANK, TOPIC_BY_ID } from "@/data/topics";
+import { TOPIC_BY_ID } from "@/data/topics";
+import { loadBank } from "@/lib/bank";
 import { hasPass, testAccessFor, useAccount } from "@/lib/account";
 import { PRODUCTS } from "@/lib/products";
 import { setExam } from "@/lib/storage";
@@ -191,10 +192,18 @@ interface Sheet {
 /** Revision content: from the server (which withholds locked topics) or built locally on the static site. */
 function useRevision(examId: string, unlocked: boolean): Sheet | null {
   const { mode, user } = useAccount();
+  // The exam's bank questions become flashcards; they load in the background for the static site.
+  const [cards, setCards] = useState<MCQ[]>([]);
+  useEffect(() => {
+    let on = true;
+    loadBank(examTopicIds(EXAM_BY_ID.get(examId)!)).then((qs) => on && setCards(qs));
+    return () => {
+      on = false;
+    };
+  }, [examId]);
   const local = useMemo<Sheet>(() => {
     const exam = EXAM_BY_ID.get(examId)!;
     const all = examTopicIds(exam);
-    const cards = QUESTION_BANK.filter((q) => q.topicId && all.includes(q.topicId));
     return {
       unlocked,
       subjects: exam.subjects
@@ -210,7 +219,7 @@ function useRevision(examId: string, unlocked: boolean): Sheet | null {
       flashcards: unlocked ? cards : [],
       totals: { topics: all.length, keyPoints: all.reduce((n, id) => n + (TOPIC_BY_ID.get(id)?.keyPoints.length ?? 0), 0), flashcards: cards.length },
     };
-  }, [examId, unlocked]);
+  }, [examId, unlocked, cards]);
   const [remote, setRemote] = useState<Sheet | null>(null);
   useEffect(() => {
     if (mode !== "server") return;

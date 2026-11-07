@@ -1,0 +1,37 @@
+import type { BankQuestion } from "@/lib/bank";
+
+/** Analogy and Classification (Reasoning): 30 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+const questions: BankQuestion[] = [
+  {"id":"reason-analogy-1","question":"Doctor : Hospital :: Teacher : ?","options":["School","Chalk","Student","Lesson"],"answer":0,"explanation":"A doctor works in a hospital; a teacher works in a school.","difficulty":"easy"},
+  {"id":"reason-analogy-2","question":"Bird : Fly :: Fish : ?","options":["Water","Swim","Fin","Scale"],"answer":1,"explanation":"The characteristic movement of a bird is flying, and of a fish, swimming.","difficulty":"easy"},
+  {"id":"reason-analogy-3","question":"Find the odd one out: Apple, Mango, Banana, Potato","options":["Apple","Mango","Banana","Potato"],"answer":3,"explanation":"Apple, mango and banana are fruits; potato is a vegetable (a tuber).","difficulty":"easy"},
+  {"id":"reason-analogy-4","question":"4 : 64 :: 5 : ?","options":["100","115","125","150"],"answer":2,"explanation":"4³ = 64, so 5³ = 125.","difficulty":"easy","source":"SSC GD · RRB Group D"},
+  {"id":"reason-analogy-5","question":"Find the odd one out: 21, 35, 49, 64","options":["21","35","49","64"],"answer":3,"explanation":"21, 35 and 49 are multiples of 7; 64 is not.","difficulty":"easy"},
+  {"id":"reason-analogy-6","question":"Find the odd letter: A, E, I, K","options":["A","E","I","K"],"answer":3,"explanation":"A, E and I are vowels; K is a consonant.","difficulty":"easy"},
+  {"id":"reason-analogy-7","question":"6 : 35 :: 8 : ?","options":["48","63","64","72"],"answer":1,"explanation":"6² − 1 = 35, so 8² − 1 = 63.","difficulty":"moderate","source":"SSC CGL · SSC CHSL"},
+  {"id":"reason-analogy-8","question":"ACE : BDF :: GIK : ?","options":["HJL","HIJ","IKM","GHI"],"answer":0,"explanation":"Each letter moves one place forward: G→H, I→J, K→L.","difficulty":"moderate"},
+  {"id":"reason-analogy-9","question":"Find the odd one out: 27, 64, 125, 144","options":["27","64","125","144"],"answer":3,"explanation":"27, 64 and 125 are perfect cubes (3³, 4³, 5³); 144 is not.","difficulty":"moderate","source":"SSC CGL · RRB NTPC"},
+  {"id":"reason-analogy-10","question":"Find the odd one out: Mercury, Venus, Moon, Mars","options":["Mercury","Venus","Moon","Mars"],"answer":2,"explanation":"Mercury, Venus and Mars are planets; the Moon is a satellite.","difficulty":"moderate"},
+  {"id":"reason-analogy-11","question":"Pen : Write :: Knife : ?","options":["Sharp","Cut","Steel","Kitchen"],"answer":1,"explanation":"A pen is used to write; a knife is used to cut.","difficulty":"moderate"},
+  {"id":"reason-analogy-12","question":"Find the odd one out: Triangle, Square, Pentagon, Cube","options":["Triangle","Square","Pentagon","Cube"],"answer":3,"explanation":"The first three are flat (2-D) figures; a cube is a solid.","difficulty":"moderate"},
+  {"id":"reason-analogy-13","question":"BD : GI :: LN : ?","options":["QS","PR","RT","QR"],"answer":0,"explanation":"Each letter moves five places: B→G, D→I, so L→Q and N→S.","difficulty":"moderate","source":"SSC CHSL · RRB NTPC"},
+  {"id":"reason-analogy-14","question":"12 : 145 :: 15 : ?","options":["225","226","240","256"],"answer":1,"explanation":"12² + 1 = 145, so 15² + 1 = 226.","difficulty":"hard","source":"SSC CGL · SSC CHSL"},
+  {"id":"reason-analogy-15","question":"Find the odd one out: 17, 23, 29, 33","options":["17","23","29","33"],"answer":3,"explanation":"17, 23 and 29 are prime; 33 = 3 × 11.","difficulty":"hard"},
+  {"id":"reason-analogy-16","question":"Find the odd letter group: BCD, FGH, KLM, PRT","options":["BCD","FGH","KLM","PRT"],"answer":3,"explanation":"The others are three consecutive letters; P, R, T skip a letter each time.","difficulty":"hard"},
+  {"id":"reason-analogy-17","question":"Odometer : Distance :: Anemometer : ?","options":["Wind speed","Humidity","Air pressure","Rainfall"],"answer":0,"explanation":"An odometer measures distance; an anemometer measures wind speed.","difficulty":"hard","source":"SSC CGL · RRB NTPC"},
+  {"id":"reason-analogy-18","question":"CAT : DDY :: DOG : ?","options":["ERL","EPL","ERK","FRL"],"answer":0,"explanation":"The letters move +1, +3, +5: D→E, O→R, G→L.","difficulty":"hard"},
+  {"id":"reason-analogy-19","question":"Ornithology : Birds :: Entomology : ?","options":["Insects","Fossils","Fungi","Words"],"answer":0,"explanation":"Ornithology is the study of birds; entomology, of insects (etymology is the study of words).","difficulty":"hard"},
+  {"id":"reason-analogy-20","question":"Select the pair that has the same relationship as 4 : 65.","options":["2 : 9","3 : 26","5 : 124","6 : 215"],"answer":0,"explanation":"4³ + 1 = 65, and 2³ + 1 = 9. The other pairs use n³ − 1.","difficulty":"very-hard","source":"SSC CGL · SSC CPO"},
+  {"id":"reason-analogy-21","question":"Find the odd pair: 12 : 144, 15 : 225, 17 : 289, 19 : 351","options":["12 : 144","15 : 225","17 : 289","19 : 351"],"answer":3,"explanation":"Each pair is n : n², but 19² = 361, not 351.","difficulty":"very-hard"},
+  {"id":"reason-analogy-22","question":"Find the odd letter group: DGJ, MPS, QTW, UXZ","options":["DGJ","MPS","QTW","UXZ"],"answer":3,"explanation":"The others move +3, +3; in UXZ, X→Z is only +2.","difficulty":"very-hard","source":"SSC CGL · SSC CHSL"},
+  {"id":"reason-analogy-23","question":"5 : 30 :: 9 : ?","options":["72","81","90","99"],"answer":2,"explanation":"5 × 6 = 30, i.e. n(n + 1); so 9 × 10 = 90.","difficulty":"very-hard"},
+  {"id":"reason-analogy-24","question":"Find the odd one out: 169, 225, 289, 343","options":["169","225","289","343"],"answer":3,"explanation":"169, 225 and 289 are squares of 13, 15 and 17; 343 is 7³ and not a perfect square.","difficulty":"very-hard"},
+  {"id":"reason-analogy-25","question":"If BIG is related to YRT, then CUP is related to:","options":["XFK","XEK","WFK","XFJ"],"answer":0,"explanation":"Each letter is replaced by its opposite (positions add to 27): C→X, U→F, P→K.","difficulty":"very-hard","source":"SSC CGL · RRB NTPC"},
+  {"id":"reason-analogy-26","question":"Find the odd pair: (3, 10), (5, 26), (7, 50), (9, 81)","options":["(3, 10)","(5, 26)","(7, 50)","(9, 81)"],"answer":3,"explanation":"The rule is n² + 1: 9² + 1 = 82, not 81.","difficulty":"very-hard"},
+  {"id":"reason-analogy-27","question":"KNOT : LPRX :: FARM : ?","options":["GCUQ","GCUP","GDUQ","HCUQ"],"answer":0,"explanation":"The letters move +1, +2, +3, +4 in turn: K→L, N→P, O→R, T→X; so F→G, A→C, R→U, M→Q.","difficulty":"very-hard","source":"SSC CGL · SSC CPO"},
+  {"id":"reason-analogy-28","question":"(6, 8) : 100 :: (5, 12) : ?","options":["169","144","170","60"],"answer":0,"explanation":"The rule is the sum of the squares: 6² + 8² = 100, so 5² + 12² = 25 + 144 = 169.","difficulty":"very-hard","source":"SSC CGL · SSC CHSL"},
+  {"id":"reason-analogy-29","question":"Find the odd one out: 143, 221, 323, 341","options":["143","221","323","341"],"answer":3,"explanation":"143 = 11 × 13, 221 = 13 × 17 and 323 = 17 × 19 are products of two consecutive primes; 341 = 11 × 31 is not.","difficulty":"very-hard","source":"SSC CGL · SSC CPO"},
+  {"id":"reason-analogy-30","question":"Miser : Stingy :: Spendthrift : ?","options":["Extravagant","Generous","Wealthy","Careless"],"answer":0,"explanation":"The second word names the defining trait of the first: a miser is stingy, a spendthrift is extravagant. Generous is a virtue, not wasteful spending.","difficulty":"very-hard"},
+];
+
+export default questions;
