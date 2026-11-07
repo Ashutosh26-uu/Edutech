@@ -3,7 +3,7 @@
 // a practice set breaks its rules, or a generated answer does not match its question.
 import { readFileSync } from "node:fs";
 import { TOPICS } from "@/data/topics";
-import { BANK_TOPIC_IDS, loadAllBank } from "@/lib/bank";
+import { BANK_TOPIC_IDS, bankSize, loadAllBank } from "@/lib/bank";
 import { buildIndex } from "./bank-index.mjs";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { PATTERNS, mockPlan } from "@/data/patterns";
@@ -22,6 +22,10 @@ const tiers = (qs) => Object.fromEntries(DIFFICULTIES.map((d) => [d, qs.filter((
 const QUESTION_BANK = await loadAllBank();
 if (buildIndex() !== readFileSync("src/data/bank/index.ts", "utf8")) fail("bank index is stale", "run: npm run bank:index");
 for (const id of BANK_TOPIC_IDS) if (!TOPICS.some((t) => t.id === id)) fail(`bank file ${id}: no such topic in topics.ts`);
+for (const id of BANK_TOPIC_IDS) {
+  const n = QUESTION_BANK.filter((q) => q.topicId === id).length;
+  if (n !== bankSize(id)) fail(`bank index count for ${id}`, `index says ${bankSize(id)}, file has ${n}`);
+}
 for (const q of QUESTION_BANK) if (!q.id.startsWith(`${q.topicId}-`)) fail(`id ${q.id}: must start with its topic id "${q.topicId}-"`);
 for (const t of TOPICS) {
   if (hasGenerator(t.id)) continue;

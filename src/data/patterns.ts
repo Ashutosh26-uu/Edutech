@@ -95,6 +95,22 @@ export const PATTERNS: Record<string, Pattern> = {
     marks: 2,
     negative: 1 / 3,
   },
+
+  // ---------------- Engineering and medical entrance ----------------
+  // JEE Main Paper 1: 75 questions (25 per subject; the real paper has 20 MCQs + 5 numericals per subject), 3 hours, +4/−1.
+  "jee-main": {
+    paper: "Paper 1 (B.E./B.Tech)",
+    sections: [sec("Physics", 25, 60), sec("Chemistry", 25, 60), sec("Mathematics", 25, 60)],
+    marks: 4,
+    negative: 0.25,
+  },
+  // NEET UG: 180 questions (45 Physics, 45 Chemistry, 90 Biology), 3 hours, +4/−1.
+  "neet-ug": {
+    paper: "NEET UG",
+    sections: [sec("Physics", 45, 45), sec("Chemistry", 45, 45), sec("Biology (Botany & Zoology)", 90, 90)],
+    marks: 4,
+    negative: 0.25,
+  },
 };
 
 export interface MockSection extends PatternSection {
