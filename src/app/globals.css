@@ -221,7 +221,7 @@ html.dark {
   @apply card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:translate-y-0 active:shadow-xs;
 }
 @utility btn {
-  @apply inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-[background-color,border-color,color,opacity,transform] select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  @apply inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium pointer-coarse:min-h-11 transition-[background-color,border-color,color,opacity,transform] select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
 }
 @utility btn-primary {
   @apply btn bg-ink text-on-ink shadow-sm hover:opacity-90;
@@ -250,6 +250,22 @@ html.dark {
   background-image: linear-gradient(to right, var(--color-slate-200) 1px, transparent 1px), linear-gradient(to bottom, var(--color-slate-200) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+}
+
+/* Touch screens: 16px text in inputs so iPhones do not zoom in on focus (buttons get their 44px via the btn utility). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Large monitors: a slightly bigger type scale, so the page (and its rem-based width) does not look tiny. */
+@media (min-width: 1920px) {
+  html {
+    font-size: 17px;
+  }
 }
 
 @media print {
