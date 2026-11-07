@@ -20,7 +20,9 @@ const tiers = (qs) => Object.fromEntries(DIFFICULTIES.map((d) => [d, qs.filter((
 
 // 1. Bank: every file belongs to a topic, the index is current, ids carry their topic
 const QUESTION_BANK = await loadAllBank();
-if (buildIndex() !== readFileSync("src/data/bank/index.ts", "utf8")) fail("bank index is stale", "run: npm run bank:index");
+// Line endings may differ after a Windows checkout, so compare without them.
+const norm = (s) => s.replace(/\r/g, "");
+if (norm(buildIndex()) !== norm(readFileSync("src/data/bank/index.ts", "utf8"))) fail("bank index is stale", "run: npm run bank:index");
 for (const id of BANK_TOPIC_IDS) if (!TOPICS.some((t) => t.id === id)) fail(`bank file ${id}: no such topic in topics.ts`);
 for (const id of BANK_TOPIC_IDS) {
   const n = QUESTION_BANK.filter((q) => q.topicId === id).length;
