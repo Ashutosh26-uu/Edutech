@@ -442,8 +442,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           <h4 className="mb-3 font-semibold">Section-wise</h4>
           {/* Four columns do not fit a phone: the table scrolls sideways inside the card. */}
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
-            <table className="w-full min-w-[28rem] text-sm">
-            <thead className="text-left text-xs text-slate-500">
+            <table className="min-w-[28rem]">
+            <thead>
               <tr>
                 <th className="pb-2 font-medium">Section</th>
                 <th className="pb-2 font-medium">{marks > 1 ? "Marks" : "Score"}</th>
@@ -577,7 +577,7 @@ export function Stat({ label, value, tone }: { label: string; value: React.React
   return (
     <div className={`rounded-xl p-3 ${TONES[tone]}`}>
       <div className="text-xs font-medium opacity-80">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
+      <div className="text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
