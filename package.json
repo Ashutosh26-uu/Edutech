@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "bank:index": "node scripts/bank-index.mjs",
+    "check:live": "node scripts/check-live.mjs",
     "check:questions": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/check-questions.mjs"
   },
   "dependencies": {
