@@ -220,7 +220,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   return (
     <div className="space-y-4">
       {/* On timed tests the counter and clock stay in view while the question scrolls. */}
-      <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm ${timed ? "sticky top-14 z-10 -mx-4 -mt-4 rounded-t-xl bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5" : ""}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm ${timed ? "sticky top-14 z-10 -mx-4 -mt-4 rounded-t-xl bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5 [@media(max-height:560px)]:static" : ""}`}>
         <span className="font-medium text-slate-600">
           Question {idx + 1} of {questions.length}
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
@@ -440,7 +440,9 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
       {sections && sections.length > 1 && (
         <div className="card">
           <h4 className="mb-3 font-semibold">Section-wise</h4>
-          <table className="w-full text-sm">
+          {/* Four columns do not fit a phone: the table scrolls sideways inside the card. */}
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
+            <table className="w-full min-w-[28rem] text-sm">
             <thead className="text-left text-xs text-slate-500">
               <tr>
                 <th className="pb-2 font-medium">Section</th>
@@ -468,7 +470,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       )}
 

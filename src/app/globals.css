@@ -107,7 +107,7 @@ html.dark {
   @apply rounded-xl border border-slate-200 bg-surface p-4 sm:p-5;
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium pointer-coarse:min-h-11 transition-colors disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
   @apply btn bg-ink text-on-ink hover:opacity-90;
@@ -128,6 +128,22 @@ html.dark {
 @utility bg-grid {
   background-image: linear-gradient(to right, var(--color-slate-200) 1px, transparent 1px), linear-gradient(to bottom, var(--color-slate-200) 1px, transparent 1px);
   background-size: 48px 48px;
+}
+
+/* Touch screens: 16px text in inputs so iPhones do not zoom in on focus (buttons get their 44px via the btn utility). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Large monitors: a slightly bigger type scale, so the page (and its rem-based width) does not look tiny. */
+@media (min-width: 1920px) {
+  html {
+    font-size: 17px;
+  }
 }
 
 @media print {
