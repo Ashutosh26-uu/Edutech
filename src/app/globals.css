@@ -91,32 +91,153 @@ html.dark {
 
 /* Base styles sit in the base layer so utility classes (e.g. text-on-ink) can override them. */
 @layer base {
+  html {
+    /* Anchors and focused inputs land below the sticky header; phones keep the chosen text size. */
+    scroll-padding-top: 4.5rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-slate-50 text-slate-700 antialiased;
     font-feature-settings: "cv11", "ss01";
+    /* Keep content clear of notches and the home indicator on phones. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* No grey flash on tap in mobile browsers; the active: styles show the press instead. */
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1,
   h2,
   h3 {
     @apply tracking-tight text-slate-900;
+    text-wrap: balance;
+  }
+  p,
+  li {
+    text-wrap: pretty;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+
+  /* Keyboard focus is visible on everything; mouse clicks don't draw a ring. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  kbd {
+    @apply rounded border border-slate-200 bg-slate-50 px-1 font-mono text-[10px] text-slate-500;
+  }
+
+  /* Result tables: light header, hairlines between rows, numbers that line up. */
+  table {
+    @apply w-full border-collapse text-sm;
+  }
+  thead th {
+    @apply pb-2 text-left text-xs font-medium tracking-wide text-slate-500 uppercase;
+  }
+  tbody tr {
+    @apply border-t border-slate-100;
+  }
+  td {
+    @apply py-2 align-top tabular-nums;
+  }
+
+  /* Thin scrollbars that follow the theme (Firefox, then WebKit). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-slate-300) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-slate-300);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Each page eases in as it mounts. */
+  main > * {
+    animation: rise 0.3s ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
   }
 }
 
 @utility card {
-  @apply rounded-xl border border-slate-200 bg-surface p-4 sm:p-5;
+  @apply rounded-xl border border-slate-200 bg-surface p-4 shadow-xs sm:p-5;
+}
+/* A card that is a link: lifts a little under the pointer. */
+@utility card-link {
+  @apply card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:translate-y-0 active:shadow-xs;
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-[background-color,border-color,color,opacity,transform] select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
 }
 @utility btn-primary {
-  @apply btn bg-ink text-on-ink hover:opacity-90;
+  @apply btn bg-ink text-on-ink shadow-sm hover:opacity-90;
 }
 @utility btn-ghost {
-  @apply btn border border-slate-200 bg-surface text-slate-700 hover:bg-slate-100;
+  @apply btn border border-slate-200 bg-surface text-slate-700 hover:border-slate-300 hover:bg-slate-100;
 }
 @utility input {
-  @apply w-full rounded-lg border border-slate-200 bg-surface px-3.5 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15;
+  @apply w-full rounded-lg border border-slate-200 bg-surface px-3.5 py-2 text-sm text-slate-900 shadow-xs transition-[border-color,box-shadow] outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500;
+}
+/* Grey placeholder with a slow shimmer, for content that is still loading. */
+@utility skeleton {
+  @apply rounded-lg bg-slate-100;
+  background-image: linear-gradient(90deg, var(--color-slate-100) 0%, var(--color-slate-200) 50%, var(--color-slate-100) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
 }
 @utility chip {
   @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium;
@@ -128,6 +249,7 @@ html.dark {
 @utility bg-grid {
   background-image: linear-gradient(to right, var(--color-slate-200) 1px, transparent 1px), linear-gradient(to bottom, var(--color-slate-200) 1px, transparent 1px);
   background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
 
 @media print {

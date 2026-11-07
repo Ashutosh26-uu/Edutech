@@ -440,8 +440,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
       {sections && sections.length > 1 && (
         <div className="card">
           <h4 className="mb-3 font-semibold">Section-wise</h4>
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-slate-500">
+          <table>
+            <thead>
               <tr>
                 <th className="pb-2 font-medium">Section</th>
                 <th className="pb-2 font-medium">{marks > 1 ? "Marks" : "Score"}</th>
@@ -574,7 +574,7 @@ export function Stat({ label, value, tone }: { label: string; value: React.React
   return (
     <div className={`rounded-xl p-3 ${TONES[tone]}`}>
       <div className="text-xs font-medium opacity-80">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
+      <div className="text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
