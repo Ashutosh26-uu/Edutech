@@ -1829,6 +1829,172 @@ export const TOPICS: Topic[] = [
       "Heights and distances: tan 30° = 1/√3, tan 45° = 1, tan 60° = √3. Measure the height from the observer's eye level",
     ],
   },
+
+  // ---------------- English Language ----------------
+  {
+    id: "eng-reading-comprehension",
+    name: "Reading Comprehension",
+    subject: "English Language",
+    aliases: ["RC passages","unseen passage","comprehension","passage-based questions","inference questions"],
+    summary: "Short unseen passages on science, economics, society and narrative, with questions on main idea, inference, tone, the author's purpose and the meaning of words in context. The pattern follows the RC sets in IBPS/SBI PO, SSC CGL and CDS English papers.",
+    keyPoints: [
+      "Main idea and title: choose the option that covers the whole passage, not one detail",
+      "Inference: the answer must follow from the text; reject options with 'always', 'never', 'only' that go beyond it",
+      "Tone and attitude: sarcastic, critical, ambivalent, appreciative — judge from the author's word choice",
+      "Vocabulary in context: the meaning the sentence needs, which is often not the most common meaning",
+      "Strengthen, weaken and assumption questions test the gap between the evidence and the conclusion",
+      "'Cannot be answered' and 'EXCEPT' questions: check each option against the passage line by line",
+    ],
+  },
+  {
+    id: "eng-cloze-rearrangement",
+    name: "Cloze Test, Para Jumbles and Sentence Completion",
+    subject: "English Language",
+    aliases: ["cloze test","para jumbles","sentence rearrangement","fillers","sentence completion"],
+    summary: "Filling blanks in sentences and short passages with the word, phrase or connector that fits the grammar and logic, and putting jumbled sentences P, Q, R, S into a coherent paragraph. These are core verbal-ability items in bank PO and SSC papers.",
+    keyPoints: [
+      "Connectors decide the blank: but/although/far from signal contrast; so/therefore signal result",
+      "Double-blank fillers: both words must fit, and the pair must keep the sentence's contrast or cause",
+      "Collocations and phrasal verbs: reach an agreement, move a motion, put off (postpone) vs call off (cancel)",
+      "Para jumbles: find the opening sentence (no pronoun or connector) and follow pronoun and time links",
+      "Mandatory pairs: a sentence with 'They', 'this' or 'However' must follow the sentence it refers to",
+      "Grammar in cloze: inversion after 'Not only', 'It is high time' + past, 'lest' + should, 'Had I known' + would have",
+    ],
+  },
+
+  // ---------------- Reasoning ----------------
+  {
+    id: "reason-critical-reasoning",
+    name: "Statements, Assumptions, Arguments and Course of Action",
+    subject: "Reasoning",
+    aliases: ["statement and assumption","statement and argument","course of action","statement and conclusion","cause and effect"],
+    summary: "Verbal reasoning on a given statement: what it takes for granted, which conclusions follow, which arguments are strong, what action is sensible, and how two events are causally linked. Also covers inference grading, plus strengthen and weaken questions, as set in IBPS/SBI PO and SSC papers.",
+    keyPoints: [
+      "An assumption is unstated but necessary; extreme words (only, always, every, all) usually make it non-implicit",
+      "A strong argument is relevant, important and directly linked; examples from other countries and 'only way' claims are weak",
+      "A course of action must be practical, proportionate and address the cause; bans and mass dismissals rarely follow",
+      "'Only those' gives a necessary condition, not a sufficient one",
+      "Cause and effect: one causes the other, independent causes, or a common cause behind both",
+      "Inference grading: definitely true, probably true, data inadequate or definitely false, judged only from the passage",
+    ],
+  },
+  {
+    id: "reason-data-sufficiency",
+    name: "Data Sufficiency and Input–Output",
+    subject: "Reasoning",
+    aliases: ["data sufficiency","DS questions","input output","machine input","word and number arrangement"],
+    summary: "Deciding whether one statement, the other, either, both or neither is enough to answer a question on arithmetic, ranking, relations, directions or codes, without necessarily finding the answer. Also covers machine input–output problems that rearrange or transform words and numbers step by step.",
+    keyPoints: [
+      "Test each statement alone first, then together; 'either' means each alone gives a single definite answer",
+      "Watch for hidden gaps: unknown gender in relations, ± roots, two equations that are really one",
+      "Yes/No questions are sufficient when the answer is always yes or always no",
+      "Code DS: two words that always appear together can never be separated",
+      "Input–output: apply the stated rule one step at a time; elements already in place can shorten the steps",
+      "Rearrangement keeps the relative order of untouched elements, which helps to work backwards to the input",
+    ],
+  },
+
+  // ---------------- Child Development & Pedagogy ----------------
+  {
+    id: "cdp-pedagogy-subjects",
+    name: "Pedagogy of Maths, EVS and Languages",
+    subject: "Child Development & Pedagogy",
+    aliases: ["maths pedagogy","EVS pedagogy","language pedagogy","CTET pedagogy","NCF 2005"],
+    summary: "The subject-pedagogy sections of CTET and state TETs: how children learn mathematics, environmental studies and languages, typical errors and misconceptions, and suitable teaching and assessment strategies. Framed by NCF 2005, NCF-SE 2023 and NEP 2020.",
+    keyPoints: [
+      "Maths: mathematisation as the main goal, Van Hiele levels, counting principles, error analysis, Pólya's four steps",
+      "Concrete, then pictorial, then abstract (Bruner) for place value, fractions and measurement",
+      "EVS: integrated with language and maths in Classes I–II, a separate subject in III–V, with six themes from Family and Friends to Things We Make and Do",
+      "Languages: LSRW order, whole language vs phonics, scanning vs skimming, Krashen's i + 1, errors as natural",
+      "Multilingualism as a resource; NEP 2020 prefers the mother tongue as medium at least till Grade 5",
+      "NCF-SE 2023: three languages in Grades 9–10, two in Grades 11–12, board exams at least twice a year",
+    ],
+  },
+
+  // ---------------- Hindi Language ----------------
+  {
+    id: "hindi-sahitya",
+    name: "हिंदी साहित्य (Hindi Literature)",
+    subject: "Hindi Language",
+    aliases: ["hindi literature","हिंदी साहित्य का इतिहास","काल-विभाजन","कवि और रचनाएँ","hindi sahitya"],
+    summary: "हिंदी साहित्य का काल-विभाजन (आदिकाल, भक्तिकाल, रीतिकाल, आधुनिक काल), प्रमुख कवि-लेखक और उनकी रचनाएँ। गद्य विधाएँ, पत्र-पत्रिकाएँ और ज्ञानपीठ व साहित्य अकादमी जैसे पुरस्कार।",
+    keyPoints: [
+      "आचार्य शुक्ल का काल-विभाजन: वीरगाथा काल (संवत 1050–1375), भक्तिकाल (1375–1700), रीतिकाल (1700–1900), आधुनिक काल (1900 से)",
+      "भक्तिकाल: निर्गुण (कबीर; जायसी की सूफ़ी धारा) और सगुण (तुलसी की रामभक्ति, सूर की कृष्णभक्ति); अष्टछाप की स्थापना विट्ठलनाथ ने की",
+      "रीतिकाल: रीतिबद्ध (केशव, चिंतामणि, मतिराम), रीतिसिद्ध (बिहारी), रीतिमुक्त (घनानंद)",
+      "छायावाद के चार स्तंभ: प्रसाद (कामायनी), पंत (पल्लव), निराला (राम की शक्ति पूजा), महादेवी (यामा); तार सप्तक (1943) अज्ञेय",
+      "गद्य: प्रेमचंद (गोदान, सेवासदन), परीक्षा गुरु (1882), उदंत मार्तंड (1826), सरस्वती (1900)",
+      "पुरस्कार: हिंदी का पहला ज्ञानपीठ पंत (1968), पहला साहित्य अकादमी माखनलाल चतुर्वेदी (1955, हिमतरंगिनी)",
+    ],
+  },
+
+  // ---------------- Computer Awareness ----------------
+  {
+    id: "comp-ms-office-internet",
+    name: "MS Office, Internet and Cyber Security",
+    subject: "Computer Awareness",
+    aliases: ["ms office","excel functions","keyboard shortcuts","networking","cyber security","malware"],
+    summary: "MS Word, Excel and PowerPoint shortcuts, Excel functions and cell references, and common file extensions. Internet protocols, networking devices and types, malware, cyber attacks and India's cyber laws.",
+    keyPoints: [
+      "Word: Ctrl + E centre, Ctrl + J justify, Ctrl + K hyperlink, Ctrl + Enter page break, F7 spell check; PowerPoint: F5 slide show",
+      "Excel: COUNT counts numbers, COUNTA non-empty cells; AVERAGE ignores text and blanks; $A$1 absolute reference; INT rounds down",
+      "IMAP keeps mail on the server, POP3 downloads it, SMTP sends; HTTPS uses port 443; IPv4 is 32-bit, IPv6 128-bit",
+      "Router joins networks by IP address; switch works inside a LAN; PAN < LAN < MAN < WAN",
+      "Malware: virus needs a host file, worm self-replicates, Trojan disguises itself, ransomware encrypts files (WannaCry, 2017)",
+      "Phishing (e-mail), vishing (voice), smishing (SMS), pharming (fake site via DNS); Section 66A struck down in Shreya Singhal (2015); CERT-In under MeitY",
+    ],
+  },
+
+  // ---------------- General Knowledge ----------------
+  {
+    id: "gk-states-culture",
+    name: "Indian States: Culture, Festivals and Geography",
+    subject: "General Knowledge",
+    aliases: ["state wise dances","festivals of india","gi tags","national parks of india","state formation dates"],
+    summary: "State-wise classical and folk dances, festivals, crafts and GI-tagged products. Important national parks and the dates on which India's states were formed.",
+    keyPoints: [
+      "Eight classical dances recognised by Sangeet Natak Akademi; Sattriya (Assam) added in 2000; Chhau has Purulia, Seraikela and Mayurbhanj styles",
+      "Festivals: Bihu (Assam, three a year), Hornbill (Nagaland, 1–10 December), Chapchar Kut (Mizoram), Nuakhai (Odisha), Hareli (Chhattisgarh), Bathukamma (Telangana)",
+      "Darjeeling Tea was India's first GI product (2004–05); Pashmina (J&K), Chanderi (MP), Bidriware (Karnataka), Muga silk (Assam)",
+      "National parks: Kaziranga (rhino), Gir (Asiatic lion), Keibul Lamjao (floating, sangai), Hemis (snow leopard), Dudhwa (swamp deer)",
+      "State formation: Andhra State 1953, Nagaland 1963, Haryana 1966, Meghalaya/Manipur/Tripura 1972, Sikkim 1975, Mizoram and Arunachal 1987, Goa 1987, three states in 2000, Telangana 2014",
+      "UNESCO intangible heritage: Ramlila (2008), Chhau and Kalbelia (2010), Kumbh Mela (2017), Durga Puja (2021), Garba (2023)",
+    ],
+  },
+
+  // ---------------- General Science ----------------
+  {
+    id: "sci-everyday-science",
+    name: "Everyday Science",
+    subject: "General Science",
+    aliases: ["science in daily life","household chemicals","inventions and discoveries","health and nutrition","general science gk"],
+    summary: "The science behind everyday phenomena, household chemicals and kitchen chemistry, and electricity bills. Health and nutrition basics and the major inventions and discoveries with their discoverers.",
+    keyPoints: [
+      "Twinkling of stars: atmospheric refraction; mirage: refraction and total internal reflection; danger signals red because red scatters least",
+      "Kitchen chemistry: baking soda releases CO₂, baking powder = baking soda + tartaric acid, LPG is mainly butane, silver tarnish is Ag₂S, green copper coating is basic copper carbonate",
+      "Soap forms micelles; hard water's Ca²⁺ and Mg²⁺ form scum; salt lowers the freezing point of water",
+      "Electricity units: kWh = kW × hours; battery energy = V × Ah",
+      "Nutrition: kwashiorkor (protein), marasmus (protein + calories), goitre (iodine), fluorosis from excess fluoride",
+      "Discoveries: X-rays 1895, radioactivity 1896, electron 1897, neutron 1932; penicillin (Fleming, 1928); rabies vaccine (Pasteur, 1885); oral polio vaccine (Sabin)",
+    ],
+  },
+
+  // ---------------- Indian Economy ----------------
+  {
+    id: "eco-sectors-schemes",
+    name: "Sectors of the Economy and Government Schemes",
+    subject: "Indian Economy",
+    aliases: ["government schemes","sarkari yojana","msme","primary secondary tertiary sector","core industries"],
+    summary: "Primary, secondary and tertiary sectors, MSME classification and the eight core industries. Major central government schemes with their launch years, ministries and key benefits.",
+    keyPoints: [
+      "Agriculture employs about 46% of workers (PLFS 2023-24) while services give the largest share of GVA",
+      "MSME 2020 criteria: micro ≤ ₹1 crore / ₹5 crore, small ≤ ₹10 crore / ₹50 crore, medium ≤ ₹50 crore / ₹250 crore (investment / turnover)",
+      "Eight core industries: refinery products carry the highest weight (28.04%), then electricity, steel, coal",
+      "Farm schemes: KCC 1998, Soil Health Card 2015, PMFBY 2016 (2% / 1.5% / 5%), e-NAM 2016, PM-KISAN 2019 (₹6,000), PM-KUSUM 2019",
+      "Finance schemes: Jan Dhan 2014, MUDRA 2015 (Shishu / Kishore / Tarun), PMJJBY ₹436 and PMSBY ₹20, APY by PFRDA, Stand-Up India 2016 (₹10 lakh–₹1 crore)",
+      "Welfare schemes: MGNREGA 2005 (100 days), Ujjwala 2016, PM-JAY 2018 (₹5 lakh), SVANidhi 2020, PM Vishwakarma 2023, PM Surya Ghar 2024 (300 units)",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
