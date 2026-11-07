@@ -1,7 +1,10 @@
 // Checks the question bank, the set builder and the Quant generators. Run: npm run check:questions
 // Fails (exit 1) if any topic is thin, a tier is missing, a question is duplicated or malformed,
 // a practice set breaks its rules, or a generated answer does not match its question.
-import { QUESTION_BANK, TOPICS } from "@/data/topics";
+import { readFileSync } from "node:fs";
+import { TOPICS } from "@/data/topics";
+import { BANK_TOPIC_IDS, bankSize, loadAllBank } from "@/lib/bank";
+import { buildIndex } from "./bank-index.mjs";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { PATTERNS, mockPlan } from "@/data/patterns";
 import { localProvider } from "@/lib/ai/local";
@@ -15,7 +18,15 @@ const fail = (name, detail = "") => {
 };
 const tiers = (qs) => Object.fromEntries(DIFFICULTIES.map((d) => [d, qs.filter((q) => q.difficulty === d).length]));
 
-// 1. Bank
+// 1. Bank: every file belongs to a topic, the index is current, ids carry their topic
+const QUESTION_BANK = await loadAllBank();
+if (buildIndex() !== readFileSync("src/data/bank/index.ts", "utf8")) fail("bank index is stale", "run: npm run bank:index");
+for (const id of BANK_TOPIC_IDS) if (!TOPICS.some((t) => t.id === id)) fail(`bank file ${id}: no such topic in topics.ts`);
+for (const id of BANK_TOPIC_IDS) {
+  const n = QUESTION_BANK.filter((q) => q.topicId === id).length;
+  if (n !== bankSize(id)) fail(`bank index count for ${id}`, `index says ${bankSize(id)}, file has ${n}`);
+}
+for (const q of QUESTION_BANK) if (!q.id.startsWith(`${q.topicId}-`)) fail(`id ${q.id}: must start with its topic id "${q.topicId}-"`);
 for (const t of TOPICS) {
   if (hasGenerator(t.id)) continue;
   const k = tiers(QUESTION_BANK.filter((q) => q.topicId === t.id));

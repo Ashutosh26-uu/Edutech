@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
 import { Stat } from "@/components/Quiz";
-import { QUESTION_BANK, TOPIC_BY_ID } from "@/data/topics";
+import { TOPIC_BY_ID } from "@/data/topics";
+import { findQuestions } from "@/lib/bank";
 import { useAccount } from "@/lib/account";
 import { IS_STATIC } from "@/lib/api";
 import { cardsForQuestions } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
+import type { MCQ } from "@/lib/types";
 
 interface Mistake {
   questionId: string;
@@ -18,19 +20,22 @@ interface Mistake {
   lastWrongAt: number;
 }
 
-const BANK = new Map(QUESTION_BANK.map((q) => [q.id, q]));
-
 /** The mistake notebook: every question the account has got wrong and not yet got right again. */
 export default function MistakesPage() {
   const account = useAccount();
   const [mistakes, setMistakes] = useState<Mistake[] | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
+  // The questions behind the notebook entries, loaded for just the topics they belong to.
+  const [bank, setBank] = useState<Map<string, MCQ>>(new Map());
 
   useEffect(() => {
     if (!account.ready || !account.user) return;
     fetch("/api/progress", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { mistakes: [] }))
-      .then((d) => setMistakes(d.mistakes))
+      .then(async (d) => {
+        setBank(await findQuestions((d.mistakes as Mistake[]).map((m) => m.questionId)));
+        setMistakes(d.mistakes);
+      })
       .catch(() => setMistakes([]));
   }, [account.ready, account.user]);
 
@@ -56,7 +61,7 @@ export default function MistakesPage() {
   for (const m of mistakes) byTopic.set(m.topicId, [...(byTopic.get(m.topicId) ?? []), m]);
   const topics = [...byTopic].sort((a, b) => b[1].length - a[1].length);
   const repeat = mistakes.filter((m) => m.timesWrong > 1).length;
-  const questions = mistakes.flatMap((m) => BANK.get(m.questionId) ?? []);
+  const questions = mistakes.flatMap((m) => bank.get(m.questionId) ?? []);
 
   return (
     <div className="space-y-6">
@@ -105,7 +110,7 @@ export default function MistakesPage() {
               </div>
               <ul className="divide-y divide-slate-100 text-sm">
                 {ms.slice(0, 8).map((m) => {
-                  const q = BANK.get(m.questionId);
+                  const q = bank.get(m.questionId);
                   return (
                     <li key={m.questionId} className="py-2">
                       <p className="line-clamp-2 text-slate-800">{q?.question ?? m.questionId}</p>

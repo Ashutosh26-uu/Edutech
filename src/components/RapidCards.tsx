@@ -2,7 +2,7 @@
 
 import { Check, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { cardsForTopic } from "@/lib/cards";
+import { cardsForQuestions } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 
@@ -35,7 +35,6 @@ export function RapidCards({ questions, onClose }: { questions: MCQ[]; onClose: 
   });
 
   if (done) {
-    const missedTopics = [...new Set(missed.map((q) => q.topicId).filter(Boolean))] as string[];
     return (
       <div className="space-y-4 text-center">
         <h3 className="text-lg font-semibold">
@@ -55,8 +54,7 @@ export function RapidCards({ questions, onClose }: { questions: MCQ[]; onClose: 
             <button
               className="btn-ghost"
               onClick={() => {
-                const ids = new Set(missed.map((q) => `q:${q.id}`));
-                setSaved(addCards(missedTopics.flatMap(cardsForTopic).filter((c) => ids.has(c.id))));
+                setSaved(addCards(cardsForQuestions(missed)));
               }}
             >
               {saved === null ? "Add missed cards to my flashcards" : `Added ${saved} cards`}

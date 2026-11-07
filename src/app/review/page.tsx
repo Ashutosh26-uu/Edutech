@@ -7,6 +7,7 @@ import { Stat } from "@/components/Quiz";
 import { SpeakButton } from "@/components/Speak";
 import { TOPICS } from "@/data/topics";
 import { customCard, cardsForTopic } from "@/lib/cards";
+import { bankSize } from "@/lib/bank";
 import { previewIntervals, retrievability, type Grade } from "@/lib/fsrs";
 import { addCards, deleteCard, dueCards, gradeCard, type Flashcard } from "@/lib/storage";
 import { useStore } from "@/lib/useStore";
@@ -167,14 +168,14 @@ function AddTopicDecks({ have }: { have: Set<string> }) {
       <p className="mt-1 text-sm text-slate-600">Turn a topic’s question bank into flashcards.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {TOPICS.map((t) => {
-          const cards = cardsForTopic(t.id);
-          if (!cards.length) return null;
-          const added = cards.every((c) => have.has(c.id));
+          const size = bankSize(t.id);
+          if (!size) return null;
+          const added = [...have].filter((id) => id.startsWith(`q:${t.id}-`)).length >= size;
           return (
             <button
               key={t.id}
               disabled={added}
-              onClick={() => setMsg(`Added ${addCards(cards)} cards from ${t.name}.`)}
+              onClick={() => cardsForTopic(t.id).then((cards) => setMsg(`Added ${addCards(cards)} cards from ${t.name}.`))}
               className={`chip px-3 py-1.5 text-sm ring-1 ${added ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-surface text-slate-700 ring-slate-200 hover:ring-brand-300"}`}
             >
               {added ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}

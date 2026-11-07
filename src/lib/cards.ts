@@ -1,14 +1,15 @@
-import { QUESTION_BANK, TOPIC_BY_ID } from "@/data/topics";
+import { TOPIC_BY_ID } from "@/data/topics";
+import { loadTopicBank } from "./bank";
 import type { MCQ } from "./types";
 import { formatTime } from "./youtube";
 import type { Flashcard } from "./storage";
 
-type NewCard = Omit<Flashcard, "stability" | "difficulty" | "reps" | "lapses" | "lastReview" | "due" | "created">;
+export type NewCard = Omit<Flashcard, "stability" | "difficulty" | "reps" | "lapses" | "lastReview" | "due" | "created">;
 
 /** Question-bank MCQs become question → answer cards (retrieval practice without the options to lean on). */
-export function cardsForTopic(topicId: string): NewCard[] {
+export async function cardsForTopic(topicId: string): Promise<NewCard[]> {
   const topic = TOPIC_BY_ID.get(topicId);
-  return QUESTION_BANK.filter((q) => q.topicId === topicId).map((q) => ({
+  return (await loadTopicBank(topicId)).map((q) => ({
     id: `q:${q.id}`,
     front: q.question,
     back: `${q.options[q.answer]}\n\n${q.explanation}`,

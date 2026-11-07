@@ -243,7 +243,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         <div className="h-full bg-brand-500 transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
-      <h3 className="text-lg font-semibold leading-snug text-slate-900" lang={lang === "hi" && q.questionHi ? "hi" : undefined}>{text.question}</h3>
+      <h3 className="text-lg font-semibold leading-snug whitespace-pre-line text-slate-900" lang={lang === "hi" && q.questionHi ? "hi" : undefined}>{text.question}</h3>
       <div className="grid gap-2">
         {text.options.map((opt, i) => {
           const picked = chosen[idx] === i;
@@ -266,7 +266,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
             <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
             <BookmarkButton question={q} />
           </div>
-          <p className="mt-1">{text.explanation}</p>
+          <p className="mt-1 whitespace-pre-line">{text.explanation}</p>
           {q.timestamp !== undefined && onTimestamp && (
             <button className="mt-2 font-medium text-brand-700 underline" onClick={() => onTimestamp(q.timestamp!)}>
               <Play className="mr-1 inline h-3 w-3" />Watch this part ({formatTime(q.timestamp)})
@@ -533,7 +533,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           const t = inLang(r.question, lang);
           return (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
-            <p className="font-medium text-slate-900">
+            <p className="font-medium whitespace-pre-line text-slate-900">
               {i + 1}. {t.question} <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} />
             </p>
             <p className="mt-1">
@@ -545,7 +545,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
               )}
               {r.seconds !== undefined && <span className="text-slate-500"> · {r.seconds}s</span>}
             </p>
-            <p className="mt-1 text-slate-600">{t.explanation}</p>
+            <p className="mt-1 whitespace-pre-line text-slate-600">{t.explanation}</p>
             {r.question.timestamp !== undefined && onTimestamp && (
               <button className="mt-1 font-medium text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
                 <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}
