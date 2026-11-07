@@ -89,7 +89,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 {plan.pattern.paper} mock: {totalQuestions(plan.sections)} questions · {totalMinutes(plan.sections)} minutes{plan.pattern.sectional ? " · sectional timing" : ""}
               </h2>
               <span className="text-xs text-slate-500">
-                +{plan.pattern.marks} per correct · −{+((plan.pattern.negative ?? exam.negativeMarking ?? 0) * plan.pattern.marks).toFixed(2)} per wrong
+                +{plan.pattern.marks} per correct · {(plan.pattern.negative ?? exam.negativeMarking ?? 0) > 0 ? <>−{+((plan.pattern.negative ?? exam.negativeMarking ?? 0) * plan.pattern.marks).toFixed(2)} per wrong</> : "no negative marking"}
               </span>
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">

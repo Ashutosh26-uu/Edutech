@@ -77,7 +77,8 @@ export type ExamCategory =
   | "Other Central"
   | "State Subordinate"
   | "Design & Architecture"
-  | "Commerce & Professional";
+  | "Commerce & Professional"
+  | "Campus Placement";
 
 export interface Exam {
   id: string;
