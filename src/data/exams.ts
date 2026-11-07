@@ -6,19 +6,21 @@ import type { Exam, ExamCategory } from "@/lib/types";
  * year, and the exam page then points to the official notification instead of guessing.
  */
 
-const POLITY = ["polity-preamble", "polity-fundamental-rights", "polity-dpsp-duties", "polity-parliament"];
-const HISTORY = ["history-ancient", "history-national-movement", "history-mughal"];
-const GEO = ["geo-physical-india", "geo-indian-rivers", "geo-solar-system"];
+const POLITY = ["polity-preamble", "polity-fundamental-rights", "polity-dpsp-duties", "polity-parliament", "polity-president-pm", "polity-judiciary", "polity-state-local-govt", "polity-constitutional-bodies", "polity-amendments-emergency"];
+const HISTORY = ["history-ancient", "history-national-movement", "history-mughal", "history-delhi-sultanate", "history-bhakti-sufi", "history-british-expansion", "history-reform-movements", "history-art-culture"];
+const GEO = ["geo-physical-india", "geo-indian-rivers", "geo-solar-system", "geo-climate-monsoon", "geo-soils-agriculture", "geo-minerals-industries", "geo-world", "env-ecology"];
 const SCIENCE = ["sci-physics", "sci-biology", "sci-chemistry"];
-const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-ci", "quant-time-work", "quant-tsd", "quant-average", "quant-ratio", "quant-number-system", "quant-mensuration"];
-const REASONING = ["reason-series", "reason-coding", "reason-blood-relations", "reason-syllogism", "reason-direction", "reason-analogy"];
+const QUANT = ["quant-percentage", "quant-profit-loss", "quant-simple-interest", "quant-ci", "quant-time-work", "quant-tsd", "quant-average", "quant-ratio", "quant-number-system", "quant-mensuration", "quant-data-interpretation", "quant-algebra-geometry"];
+const REASONING = ["reason-series", "reason-coding", "reason-blood-relations", "reason-syllogism", "reason-direction", "reason-analogy", "reason-seating-puzzles", "reason-inequality-order", "reason-clock-calendar"];
 const ENGLISH = ["eng-vocabulary", "eng-grammar"];
 // Class 11–12 level subjects for JEE, NEET, state CETs, NDA and Agniveer: their own topics, plus the general-science basics.
-const PHY = ["phy-kinematics", "phy-laws-of-motion", "phy-work-energy-power", "phy-rotational-motion", "phy-thermodynamics-kinetic-theory", "phy-electrostatics", "phy-current-electricity", "phy-magnetism-emi", "phy-optics", "phy-modern-physics", "sci-physics"];
-const CHEM = ["chem-mole-concept", "chem-atomic-structure", "chem-periodic-table", "chem-chemical-bonding", "chem-chemical-equilibrium", "chem-thermodynamics", "chem-electrochemistry", "chem-goc", "chem-hydrocarbons-haloalkanes", "chem-p-block-coordination", "sci-chemistry"];
-const MATH_JEE = ["math-quadratic-complex", "math-sequences-series", "math-trigonometry", "math-straight-lines-circles", "math-conic-sections", "math-limits-continuity", "math-differentiation-applications", "math-integration", "math-probability-pnc", "math-matrices-determinants-vectors"];
-const BIO = ["bio-cell-structure-division", "bio-biomolecules-enzymes", "bio-genetics-inheritance", "bio-molecular-basis-inheritance", "bio-evolution", "bio-plant-physiology", "bio-human-physiology-systems", "bio-neural-endocrine", "bio-reproduction-health", "bio-ecology-environment", "sci-biology"];
-const GA = [...POLITY, ...HISTORY, ...GEO, "eco-basics", ...SCIENCE];
+const PHY = ["phy-kinematics", "phy-laws-of-motion", "phy-work-energy-power", "phy-rotational-motion", "phy-thermodynamics-kinetic-theory", "phy-electrostatics", "phy-current-electricity", "phy-magnetism-emi", "phy-optics", "phy-modern-physics", "sci-physics", "phy-units-measurement", "phy-gravitation", "phy-shm-waves", "phy-fluids-elasticity", "phy-em-waves-dual-nature"];
+const CHEM = ["chem-mole-concept", "chem-atomic-structure", "chem-periodic-table", "chem-chemical-bonding", "chem-chemical-equilibrium", "chem-thermodynamics", "chem-electrochemistry", "chem-goc", "chem-hydrocarbons-haloalkanes", "chem-p-block-coordination", "sci-chemistry", "chem-solutions-states", "chem-s-block-hydrogen", "chem-carbonyl-acids", "chem-amines-biomolecules", "chem-practical-salt-analysis"];
+const MATH_JEE = ["math-quadratic-complex", "math-sequences-series", "math-trigonometry", "math-straight-lines-circles", "math-conic-sections", "math-limits-continuity", "math-differentiation-applications", "math-integration", "math-probability-pnc", "math-matrices-determinants-vectors", "math-sets-relations-functions", "math-statistics", "math-inverse-trig", "math-3d-geometry", "math-definite-integrals-area"];
+const BIO = ["bio-cell-structure-division", "bio-biomolecules-enzymes", "bio-genetics-inheritance", "bio-molecular-basis-inheritance", "bio-evolution", "bio-plant-physiology", "bio-human-physiology-systems", "bio-neural-endocrine", "bio-reproduction-health", "bio-ecology-environment", "sci-biology", "bio-living-world-plant-kingdom", "bio-animal-kingdom", "bio-plant-morphology-anatomy", "bio-biotechnology", "bio-health-microbes"];
+const ECON = ["eco-basics", "eco-planning-budget", "eco-money-inflation"];
+const GK = ["gk-static", "gk-science-tech", "gk-international-orgs"];
+const GA = [...POLITY, ...HISTORY, ...GEO, ...ECON, ...SCIENCE, ...GK];
 
 type Subject = Exam["subjects"][number];
 const s = (name: string, topicIds: string[] = []): Subject => ({ name, topicIds });
@@ -32,12 +34,12 @@ const ga = s("General Awareness", GA);
 const science = s("General Science", SCIENCE);
 const hindi = s("Hindi Language", ["hindi-vyakaran"]);
 const computer = s("Computer Knowledge", ["comp-awareness"]);
-const bankingGa = s("General, Economy & Banking Awareness", ["bank-awareness", "eco-basics"]);
+const bankingGa = s("General, Economy & Banking Awareness", ["bank-awareness", ...ECON, ...GK]);
 const cdp = s("Child Development & Pedagogy", ["cdp-child-development"]);
 const evs = s("Environmental Studies", ["sci-biology", "geo-solar-system", "geo-indian-rivers"]);
 const stateGk = s("State-specific GK (history, geography, culture)");
 const csat = s("CSAT / Aptitude", ["quant-percentage", "quant-average", "quant-ratio", "quant-tsd", "quant-number-system", ...REASONING]);
-const gsBlocks = [s("Indian Polity", POLITY), s("History", HISTORY), s("Geography", GEO), s("Economy", ["eco-basics"]), s("General Science", SCIENCE)];
+const gsBlocks = [s("Indian Polity", POLITY), s("History", HISTORY), s("Geography", GEO), s("Economy", [...ECON]), s("General Science", SCIENCE)];
 
 type Def = Omit<Exam, "category" | "level" | "conductedBy" | "website"> & Partial<Pick<Exam, "level" | "conductedBy" | "website">>;
 
@@ -66,7 +68,7 @@ export const EXAMS: Exam[] = [
     { id: "ibps-so", name: "IBPS SO", fullName: "Specialist Officer (IT, Agriculture, Law, HR, Marketing, Rajbhasha)", conductedBy: "Institute of Banking Personnel Selection", website: "https://www.ibps.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, english, s("Professional Knowledge")] },
     { id: "sbi-po", name: "SBI PO", fullName: "Probationary Officer, State Bank of India", conductedBy: "State Bank of India", website: "https://sbi.co.in/web/careers", negativeMarking: 0.25, featured: true, subjects: [s("Reasoning & Computer Aptitude", [...REASONING, "comp-awareness"]), s("Data Analysis & Interpretation", QUANT), english, bankingGa] },
     { id: "sbi-clerk", name: "SBI Clerk", fullName: "Junior Associate (Customer Support & Sales), State Bank of India", conductedBy: "State Bank of India", website: "https://sbi.co.in/web/careers", negativeMarking: 0.25, subjects: [s("Reasoning & Computer Aptitude", [...REASONING, "comp-awareness"]), s("Numerical Ability", QUANT), english, bankingGa] },
-    { id: "rbi-grade-b", name: "RBI Grade B", fullName: "Officer in Grade B (DR) – General", conductedBy: "Reserve Bank of India", website: "https://www.rbi.org.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, english, s("General Awareness", ["bank-awareness", "eco-basics", ...POLITY]), s("Economic & Social Issues", ["eco-basics"]), s("Finance & Management", ["bank-awareness"])] },
+    { id: "rbi-grade-b", name: "RBI Grade B", fullName: "Officer in Grade B (DR) – General", conductedBy: "Reserve Bank of India", website: "https://www.rbi.org.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, english, s("General Awareness", ["bank-awareness", ...ECON, ...POLITY]), s("Economic & Social Issues", [...ECON]), s("Finance & Management", ["bank-awareness"])] },
     { id: "rbi-assistant", name: "RBI Assistant", fullName: "Assistant, Reserve Bank of India", conductedBy: "Reserve Bank of India", website: "https://www.rbi.org.in", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), s("Numerical Ability", QUANT), english, bankingGa, computer] },
     { id: "nabard-grade-a", name: "NABARD Grade A", fullName: "Assistant Manager (RDBS)", conductedBy: "National Bank for Agriculture and Rural Development", website: "https://www.nabard.org", negativeMarking: 0.25, subjects: [s("Reasoning", REASONING), quant, english, computer, bankingGa, s("Agriculture & Rural Development")] },
   ]),
@@ -79,7 +81,7 @@ export const EXAMS: Exam[] = [
 
   ...group("Railways", { conductedBy: "Railway Recruitment Boards" }, [
     { id: "rrb-ntpc", name: "RRB NTPC", fullName: "Non-Technical Popular Categories (Graduate and Undergraduate)", negativeMarking: 1 / 3, featured: true, subjects: [maths, reasoning, s("General Awareness", [...GA, "comp-awareness"])] },
-    { id: "rrb-group-d", name: "RRB Group D", fullName: "Level 1 posts (Track Maintainer, Helper, Assistant and others)", negativeMarking: 1 / 3, subjects: [maths, reasoning, science, s("General Awareness & Current Affairs", [...POLITY, ...HISTORY, ...GEO, "eco-basics"])] },
+    { id: "rrb-group-d", name: "RRB Group D", fullName: "Level 1 posts (Track Maintainer, Helper, Assistant and others)", negativeMarking: 1 / 3, subjects: [maths, reasoning, science, s("General Awareness & Current Affairs", [...POLITY, ...HISTORY, ...GEO, ...ECON])] },
     { id: "rrb-alp", name: "RRB ALP", fullName: "Assistant Loco Pilot", negativeMarking: 1 / 3, subjects: [maths, reasoning, science, ga, s("Basic Science & Engineering / Trade")] },
     { id: "rrb-je", name: "RRB JE", fullName: "Junior Engineer, Depot Material Superintendent, Chemical & Metallurgical Assistant", negativeMarking: 1 / 3, subjects: [maths, reasoning, ga, science, s("Technical Abilities")] },
     { id: "rpf-constable", name: "RPF Constable", fullName: "Constable (Executive), Railway Protection Force", negativeMarking: 1 / 3, subjects: [s("Arithmetic", QUANT), reasoning, ga] },
@@ -92,7 +94,7 @@ export const EXAMS: Exam[] = [
     { id: "upsc-nda", name: "UPSC NDA", fullName: "National Defence Academy and Naval Academy Examination", negativeMarking: 1 / 3, subjects: [s("Mathematics", MATH_JEE), s("General Ability: English", ENGLISH), s("General Ability: General Knowledge", GA)] },
     { id: "upsc-capf", name: "UPSC CAPF AC", fullName: "Central Armed Police Forces (Assistant Commandants) Examination", negativeMarking: 1 / 3, subjects: [s("General Ability & Intelligence", [...GA, ...REASONING, ...QUANT]), s("General Studies, Essay & Comprehension")] },
     { id: "upsc-ese", name: "UPSC ESE", fullName: "Engineering Services Examination", negativeMarking: 1 / 3, subjects: [s("General Studies & Engineering Aptitude", [...REASONING, ...QUANT, "comp-awareness"]), s("Engineering Discipline Paper")] },
-    { id: "upsc-epfo", name: "UPSC EPFO", fullName: "Enforcement Officer / Accounts Officer and APFC, EPFO", negativeMarking: 1 / 3, subjects: [s("General English", ENGLISH), s("Indian Polity, Economy & History", [...POLITY, ...HISTORY, "eco-basics"]), s("Quantitative Aptitude & Reasoning", [...QUANT, ...REASONING]), computer, s("Industrial Relations & Labour Laws")] },
+    { id: "upsc-epfo", name: "UPSC EPFO", fullName: "Enforcement Officer / Accounts Officer and APFC, EPFO", negativeMarking: 1 / 3, subjects: [s("General English", ENGLISH), s("Indian Polity, Economy & History", [...POLITY, ...HISTORY, ...ECON]), s("Quantitative Aptitude & Reasoning", [...QUANT, ...REASONING]), computer, s("Industrial Relations & Labour Laws")] },
     { id: "upsc-cms", name: "UPSC CMS", fullName: "Combined Medical Services Examination", negativeMarking: 1 / 3, subjects: [s("General Medicine & Paediatrics"), s("Surgery, Gynaecology & Obstetrics, Preventive & Social Medicine")] },
   ]),
 
@@ -193,7 +195,7 @@ export const EXAMS: Exam[] = [
   ]),
 
   ...group("State Subordinate", { level: "State" }, [
-    { id: "upsssc-pet", name: "UPSSSC PET", fullName: "Preliminary Eligibility Test for Group C posts", conductedBy: "Uttar Pradesh Subordinate Services Selection Commission", negativeMarking: null, featured: true, subjects: [s("Indian History, Polity & Geography", [...HISTORY, ...POLITY, ...GEO]), s("Indian Economy", ["eco-basics"]), s("General Science", SCIENCE), s("Elementary Arithmetic", QUANT), s("General Hindi", ["hindi-vyakaran"]), s("General English", ENGLISH), s("Reasoning", REASONING), s("Data Interpretation", QUANT)] },
+    { id: "upsssc-pet", name: "UPSSSC PET", fullName: "Preliminary Eligibility Test for Group C posts", conductedBy: "Uttar Pradesh Subordinate Services Selection Commission", negativeMarking: null, featured: true, subjects: [s("Indian History, Polity & Geography", [...HISTORY, ...POLITY, ...GEO]), s("Indian Economy", [...ECON]), s("General Science", SCIENCE), s("Elementary Arithmetic", QUANT), s("General Hindi", ["hindi-vyakaran"]), s("General English", ENGLISH), s("Reasoning", REASONING), s("Data Interpretation", QUANT)] },
     { id: "bssc-cgl", name: "BSSC CGL", fullName: "Inter Level / Graduate Level Combined Competitive Examination", conductedBy: "Bihar Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, s("Mathematics", QUANT), s("Mental Ability", REASONING)] },
     { id: "hssc-cet", name: "HSSC CET", fullName: "Common Eligibility Test for Group C and D posts", conductedBy: "Haryana Staff Selection Commission", negativeMarking: null, subjects: [ga, stateGk, reasoning, quant, english, hindi] },
     { id: "rsmssb-patwari", name: "Rajasthan Patwari", fullName: "Patwari Direct Recruitment", conductedBy: "Rajasthan Staff Selection Board", negativeMarking: null, subjects: [s("General Science, History, Polity & Geography", [...SCIENCE, ...HISTORY, ...POLITY, ...GEO]), stateGk, s("General English & Hindi", [...ENGLISH, "hindi-vyakaran"]), s("Mental Ability & Reasoning", REASONING), s("Basic Computer", ["comp-awareness"])] },
@@ -242,10 +244,10 @@ export const EXAMS: Exam[] = [
   ]),
 
   ...group("Commerce & Professional", {}, [
-    { id: "ca-foundation", name: "CA Foundation", fullName: "Chartered Accountancy Foundation Examination", conductedBy: "The Institute of Chartered Accountants of India", negativeMarking: null, subjects: [s("Accounting"), s("Business Laws"), s("Quantitative Aptitude", QUANT), s("Business Economics", ["eco-basics"])] },
+    { id: "ca-foundation", name: "CA Foundation", fullName: "Chartered Accountancy Foundation Examination", conductedBy: "The Institute of Chartered Accountants of India", negativeMarking: null, subjects: [s("Accounting"), s("Business Laws"), s("Quantitative Aptitude", QUANT), s("Business Economics", [...ECON])] },
     { id: "ca-intermediate", name: "CA Intermediate", fullName: "Chartered Accountancy Intermediate Examination", conductedBy: "The Institute of Chartered Accountants of India", negativeMarking: null, subjects: [s("Accounting, Law, Taxation, Costing, Auditing and Financial Management")] },
-    { id: "cseet", name: "CSEET", fullName: "Company Secretary Executive Entrance Test", conductedBy: "The Institute of Company Secretaries of India", negativeMarking: null, subjects: [s("Business Communication", ENGLISH), s("Legal Aptitude & Logical Reasoning", [...POLITY, ...REASONING]), s("Economic & Business Environment", ["eco-basics", "bank-awareness"]), s("Current Affairs", GA)] },
-    { id: "cma-foundation", name: "CMA Foundation", fullName: "Cost and Management Accountancy Foundation", conductedBy: "The Institute of Cost Accountants of India", negativeMarking: null, subjects: [s("Fundamentals of Economics & Management", ["eco-basics"]), s("Accounting"), s("Business Laws & Ethics"), s("Business Mathematics & Statistics", QUANT)] },
+    { id: "cseet", name: "CSEET", fullName: "Company Secretary Executive Entrance Test", conductedBy: "The Institute of Company Secretaries of India", negativeMarking: null, subjects: [s("Business Communication", ENGLISH), s("Legal Aptitude & Logical Reasoning", [...POLITY, ...REASONING]), s("Economic & Business Environment", [...ECON, "bank-awareness"]), s("Current Affairs", GA)] },
+    { id: "cma-foundation", name: "CMA Foundation", fullName: "Cost and Management Accountancy Foundation", conductedBy: "The Institute of Cost Accountants of India", negativeMarking: null, subjects: [s("Fundamentals of Economics & Management", [...ECON]), s("Accounting"), s("Business Laws & Ethics"), s("Business Mathematics & Statistics", QUANT)] },
   ]),
 
   ...group("University & Research", {}, [
