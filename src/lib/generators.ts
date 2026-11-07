@@ -29,6 +29,7 @@ const UNIT_HI: Record<string, string> = {
   days: "दिन",
   years: "वर्ष",
   hours: "घंटे",
+  minutes: "मिनट",
   seconds: "सेकंड",
   litres: "लीटर",
   "km/h": "किमी/घंटा",
@@ -44,7 +45,8 @@ const unitHi = (u: string) => UNIT_HI[u];
 
 /** Builds a numeric MCQ with plausible near-miss distractors. */
 function numeric(id: string, topicId: string, difficulty: Difficulty, question: string, answer: number, explanation: string, hi: Hi, r: Rand, unit = "", suffix = ""): MCQ {
-  const steps = [0.8, 0.9, 1.1, 1.2, 1.25, 0.75, 1.5, 0.5];
+  // Very hard questions get near misses (within ±15%), so rough estimation cannot rule options out.
+  const steps = difficulty === "very-hard" ? [0.9, 0.95, 1.05, 1.1, 0.92, 1.08, 0.85, 1.15, 0.8, 1.2] : [0.8, 0.9, 1.1, 1.2, 1.25, 0.75, 1.5, 0.5];
   const set = new Set<number>([answer]);
   for (const s of shuffle(steps, r)) {
     if (set.size === 4) break;
@@ -164,6 +166,23 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }),
     "very-hard": either((id, r) => {
+      // Three successive changes, worked backwards: original = final ÷ (product of the three factors).
+      const [x, y, z] = pick([[20, 25, 10], [25, 20, 50], [10, 20, 25], [50, 20, 25], [20, 10, 25], [40, 25, 20], [25, 40, 20], [10, 25, 20]], r);
+      const orig = pick([800, 1200, 1600, 2000, 2400, 3200, 4000, 4800, 6000], r);
+      const fin = (orig * (100 + x) * (100 - y) * (100 + z)) / 1e6;
+      if (!Number.isInteger(fin)) return GENERATORS["quant-percentage"]["very-hard"](id, r);
+      return numeric(
+        id, "quant-percentage", "very-hard",
+        `A number is first increased by ${x}%, then decreased by ${y}%, and then increased by ${z}%. If the final number is ${fmt(fin)}, what was the original number?`,
+        orig,
+        `Original × ${100 + x}/100 × ${100 - y}/100 × ${100 + z}/100 = ${fmt(fin)}, so original = ${fmt(fin)} × 100 × 100 × 100 ÷ (${100 + x} × ${100 - y} × ${100 + z}) = ${fmt(orig)}.`,
+        {
+          q: `एक संख्या में पहले ${x}% की वृद्धि, फिर ${y}% की कमी और फिर ${z}% की वृद्धि की जाती है। यदि अंतिम संख्या ${fmt(fin)} है, तो मूल संख्या क्या थी?`,
+          e: `मूल संख्या × ${100 + x}/100 × ${100 - y}/100 × ${100 + z}/100 = ${fmt(fin)}, अतः मूल संख्या = ${fmt(fin)} × 100 × 100 × 100 ÷ (${100 + x} × ${100 - y} × ${100 + z}) = ${fmt(orig)}।`,
+        },
+        r,
+      );
+    }, (id, r) => {
       const [x, ans] = pick([[25, 20], [100, 50], [150, 60], [400, 80], [50, 33.33], [20, 16.67]], r);
       const income = r() < 0.5;
       const q = income
@@ -292,6 +311,24 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }),
     "very-hard": either((id, r) => {
+      // Two scenarios: SP₁ = CP(100 + x)/100; SP₂ = CP(100 − y)(100 + w)/10⁴; SP₁ − SP₂ = Z.
+      const [x, y, w] = pick([[20, 20, 30], [10, 10, 20], [25, 20, 25], [20, 10, 30], [10, 20, 25], [30, 20, 50], [25, 10, 25], [20, 20, 40]], r);
+      const cp = pick([500, 800, 1000, 1200, 1500, 2000, 2500, 3000, 4000], r);
+      const k = (100 + x) * 100 - (100 - y) * (100 + w);
+      const less = (cp * k) / 1e4;
+      if (k <= 0 || !Number.isInteger(less)) return GENERATORS["quant-profit-loss"]["very-hard"](id, r);
+      return numeric(
+        id, "quant-profit-loss", "very-hard",
+        `A man bought an article and sold it at a gain of ${x}%. Had he bought it at ${y}% less and sold it for ₹${fmt(less)} less, he would have gained ${w}%. What is the cost price of the article?`,
+        cp,
+        `Let CP = ₹100. First SP = ₹${100 + x}. New CP = ₹${100 - y}, new SP = ${100 - y} × ${100 + w}/100 = ₹${fmt(((100 - y) * (100 + w)) / 100)}. Difference = ${100 + x} − ${fmt(((100 - y) * (100 + w)) / 100)} = ₹${fmt(k / 100)} for every ₹100 of CP, so CP = ${fmt(less)} × 100 ÷ ${fmt(k / 100)} = ₹${fmt(cp)}.`,
+        {
+          q: `एक व्यक्ति ने एक वस्तु खरीदी और उसे ${x}% लाभ पर बेच दिया। यदि उसने उसे ${y}% कम में खरीदा होता और ₹${fmt(less)} कम में बेचा होता, तो उसे ${w}% लाभ होता। वस्तु का क्रय मूल्य क्या है?`,
+          e: `मान लीजिए क्रय मूल्य = ₹100। पहला विक्रय मूल्य = ₹${100 + x}। नया क्रय मूल्य = ₹${100 - y}, नया विक्रय मूल्य = ${100 - y} × ${100 + w}/100 = ₹${fmt(((100 - y) * (100 + w)) / 100)}। अंतर = ${100 + x} − ${fmt(((100 - y) * (100 + w)) / 100)} = प्रति ₹100 क्रय मूल्य पर ₹${fmt(k / 100)}, अतः क्रय मूल्य = ${fmt(less)} × 100 ÷ ${fmt(k / 100)} = ₹${fmt(cp)}।`,
+        },
+        r, "₹",
+      );
+    }, (id, r) => {
       // Mark-up needed so that a discount still leaves a target profit.
       const [d, g, ans] = pick([[20, 20, 50], [25, 20, 60], [10, 8, 20], [20, 4, 30], [25, 5, 40], [16, 26, 50], [10, 17, 30]], r);
       return numeric(
@@ -564,6 +601,25 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }),
     "very-hard": either((id, r) => {
+      // Pipes: A and B fill, C empties; after t hours C is shut, and A + B finish the rest.
+      const [a, b, c, t] = pick([[10, 15, 30, 5], [6, 12, 8, 4], [20, 30, 60, 5], [15, 20, 60, 3], [8, 12, 24, 1], [12, 16, 48, 1]], r);
+      const filled = t * (1 / a + 1 / b - 1 / c);
+      const ans = Math.round(((1 - filled) / (1 / a + 1 / b)) * 1e6) / 1e6;
+      if (!Number.isInteger(ans) || ans <= 0) return GENERATORS["quant-time-work"]["very-hard"](id, r);
+      const L = (a * b * c) / gcd(gcd(a, b), c);
+      const net = L / a + L / b - L / c;
+      return numeric(
+        id, "quant-time-work", "very-hard",
+        `Pipe A can fill a tank in ${a} hours and pipe B in ${b} hours, while pipe C can empty it in ${c} hours. All three are opened together, and after ${t} hour${t > 1 ? "s" : ""} pipe C is closed. In how many more hours will the tank be full?`,
+        ans,
+        `Take the tank as ${fmt(L)} units: A fills ${fmt(L / a)}, B ${fmt(L / b)} and C empties ${fmt(L / c)} per hour, so all three together fill ${fmt(net)} per hour. In ${t} hour${t > 1 ? "s" : ""}: ${fmt(net * t)} units; ${fmt(L - net * t)} remain. A + B fill ${fmt(L / a + L / b)} per hour, so ${fmt(L - net * t)} ÷ ${fmt(L / a + L / b)} = ${fmt(ans)} hours more.`,
+        {
+          q: `पाइप A एक टंकी को ${a} घंटे में और पाइप B ${b} घंटे में भर सकता है, जबकि पाइप C उसे ${c} घंटे में खाली कर सकता है। तीनों पाइप एक साथ खोले जाते हैं और ${t} घंटे बाद पाइप C बंद कर दिया जाता है। टंकी को पूरा भरने में और कितने घंटे लगेंगे?`,
+          e: `टंकी को ${fmt(L)} इकाई मानें: A प्रति घंटे ${fmt(L / a)}, B ${fmt(L / b)} भरता है और C ${fmt(L / c)} खाली करता है, अतः तीनों मिलकर प्रति घंटे ${fmt(net)} इकाई भरते हैं। ${t} घंटे में: ${fmt(net * t)} इकाई; ${fmt(L - net * t)} शेष। A + B प्रति घंटे ${fmt(L / a + L / b)} भरते हैं, अतः ${fmt(L - net * t)} ÷ ${fmt(L / a + L / b)} = ${fmt(ans)} घंटे और।`,
+        },
+        r, "", " hours",
+      );
+    }, (id, r) => {
       // Pairwise rates: A+B, B+C, C+A given; find one person alone.
       const [a, b, c] = pick([[20, 30, 60], [30, 60, 20], [40, 60, 120], [15, 30, 30], [6, 12, 12], [60, 20, 30]], r);
       const pair = (x: number, y: number) => (x * y) / (x + y);
@@ -945,6 +1001,22 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }),
     "very-hard": either((id, r) => {
+      // Late at a fraction of the usual speed: time scales inversely, so usual time = late × a/(b − a).
+      const [a, b, late] = pick([[3, 4, 10], [4, 5, 12], [2, 3, 20], [5, 6, 10], [3, 5, 30], [4, 7, 15], [5, 7, 16], [7, 8, 6], [6, 7, 8]], r);
+      const ans = (late * a) / (b - a);
+      if (!Number.isInteger(ans)) return GENERATORS["quant-tsd"]["very-hard"](id, r);
+      return numeric(
+        id, "quant-tsd", "very-hard",
+        `Walking at ${a}/${b} of his usual speed, a man reaches his office ${late} minutes late. What is his usual time to reach the office?`,
+        ans,
+        `At ${a}/${b} of the speed the journey takes ${b}/${a} of the usual time, i.e. ${b - a}/${a} of it extra. So ${b - a}/${a} × usual time = ${late} minutes, and usual time = ${late} × ${a}/${b - a} = ${fmt(ans)} minutes.`,
+        {
+          q: `अपनी सामान्य चाल की ${a}/${b} चाल से चलते हुए एक व्यक्ति अपने कार्यालय ${late} मिनट देर से पहुँचता है। कार्यालय पहुँचने में उसका सामान्य समय क्या है?`,
+          e: `${a}/${b} चाल पर यात्रा में सामान्य समय का ${b}/${a} गुना समय लगता है, अर्थात् ${b - a}/${a} भाग अतिरिक्त। अतः ${b - a}/${a} × सामान्य समय = ${late} मिनट, और सामान्य समय = ${late} × ${a}/${b - a} = ${fmt(ans)} मिनट।`,
+        },
+        r, "", " minutes",
+      );
+    }, (id, r) => {
       // Chase: the gap closes at the relative speed while the thief keeps running.
       const [gap, vt, vp] = pick([[200, 10, 12], [100, 8, 10], [300, 12, 15], [150, 9, 12], [250, 10, 15], [120, 10, 14]], r);
       const ans = (gap * vt) / (vp - vt);
@@ -1051,6 +1123,22 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     "very-hard": either((id, r) => {
+      // Three-year CI − SI = P × r²(300 + r)/10⁶: the two-year shortcut P(r/100)² is the trap.
+      const [rate, p] = pick([[10, 10000], [10, 20000], [10, 5000], [5, 8000], [5, 16000], [5, 40000], [20, 5000], [20, 2500], [20, 10000]], r);
+      const diff = (p * rate * rate * (300 + rate)) / 1e6;
+      if (!Number.isInteger(diff)) return GENERATORS["quant-ci"]["very-hard"](id, r);
+      return numeric(
+        id, "quant-ci", "very-hard",
+        `The difference between the compound interest and the simple interest on a sum for 3 years at ${rate}% per annum is ₹${fmt(diff)}. What is the sum?`,
+        p,
+        `For 3 years, CI − SI = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}. So P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}. (The 2-year formula P(r/100)² would give the wrong sum.)`,
+        {
+          q: `किसी धनराशि पर ${rate}% वार्षिक दर से 3 वर्ष के चक्रवृद्धि ब्याज और साधारण ब्याज का अंतर ₹${fmt(diff)} है। वह धनराशि क्या है?`,
+          e: `3 वर्ष के लिए चक्रवृद्धि ब्याज − साधारण ब्याज = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}। अतः P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}। (2 वर्ष वाला सूत्र P(r/100)² यहाँ गलत उत्तर देगा।)`,
+        },
+        r, "₹",
+      );
+    }, (id, r) => {
       const n = pick([3, 4, 5, 6, 8, 10], r);
       const [times, pow] = pick([[4, 2], [8, 3], [16, 4]], r);
       return numeric(
