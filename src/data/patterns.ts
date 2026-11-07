@@ -96,6 +96,24 @@ export const PATTERNS: Record<string, Pattern> = {
     negative: 1 / 3,
   },
 
+  // ---------------- Campus placement ----------------
+  // TCS NQT foundation and advanced sections (coding questions left out: they need a code runner).
+  "tcs-nqt": {
+    paper: "Foundation + Advanced (MCQ sections)",
+    sections: [sec("Numerical Ability", 20, 25), sec("Verbal Ability", 25, 25), sec("Reasoning Ability", 20, 25), sec("Advanced Quantitative & Reasoning", 15, 25)],
+    marks: 1,
+    negative: 0,
+    sectional: true,
+  },
+  // Infosys System Engineer test, as commonly reported.
+  "infosys-placement": {
+    paper: "System Engineer",
+    sections: [sec("Logical Reasoning", 15, 25), sec("Mathematical Ability", 10, 35), sec("Verbal Ability", 20, 20), sec("Pseudocode", 5, 10), sec("Puzzle Solving", 4, 10)],
+    marks: 1,
+    negative: 0,
+    sectional: true,
+  },
+
   // ---------------- Engineering and medical entrance ----------------
   // JEE Main Paper 1: 75 questions (25 per subject; the real paper has 20 MCQs + 5 numericals per subject), 3 hours, +4/−1.
   "jee-main": {

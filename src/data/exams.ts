@@ -22,6 +22,14 @@ const ECON = ["eco-basics", "eco-planning-budget", "eco-money-inflation", "eco-s
 const GK = ["gk-static", "gk-science-tech", "gk-international-orgs", "gk-states-culture"];
 const GA = [...POLITY, ...HISTORY, ...GEO, ...ECON, ...SCIENCE, ...GK];
 
+// Campus placement: programming, CS fundamentals, and aptitude pitched at company tests.
+const PROG = ["cs-c-programming", "cs-oops-cpp-java", "cs-python", "apt-pseudocode"];
+const DSA = ["cs-dsa-linear", "cs-dsa-nonlinear"];
+const CS_CORE = ["cs-dbms-sql", "cs-operating-systems", "cs-computer-networks", "cs-software-engineering"];
+const P_QUANT = ["apt-advanced-quant", "apt-pnc-probability", "quant-percentage", "quant-profit-loss", "quant-time-work", "quant-tsd", "quant-ratio", "quant-average", "quant-number-system", "quant-data-interpretation"];
+const P_LOGIC = ["apt-logical-placement", "reason-series", "reason-coding", "reason-blood-relations", "reason-direction", "reason-seating-puzzles", "reason-syllogism", "reason-data-sufficiency"];
+const P_VERBAL = ["apt-verbal-placement", "eng-grammar", "eng-vocabulary", "eng-reading-comprehension", "eng-cloze-rearrangement"];
+
 type Subject = Exam["subjects"][number];
 const s = (name: string, topicIds: string[] = []): Subject => ({ name, topicIds });
 
@@ -256,6 +264,24 @@ export const EXAMS: Exam[] = [
     { id: "tancet", name: "TANCET", fullName: "Tamil Nadu Common Entrance Test (MBA, MCA)", conductedBy: "Anna University", level: "State", negativeMarking: null, subjects: [s("Quantitative Ability", QUANT), s("Analytical Reasoning", REASONING), s("Verbal Ability", ENGLISH)] },
   ]),
 ];
+
+// ---------------- Campus placement ----------------
+// Company tests change often; subjects follow recent public reports of each company's pattern.
+EXAMS.push(
+  ...group("Campus Placement", { level: "National" }, [
+    { id: "tcs-nqt", name: "TCS NQT", fullName: "TCS National Qualifier Test (Ninja / Digital / Prime)", conductedBy: "Tata Consultancy Services", negativeMarking: null, featured: true, subjects: [s("Numerical Ability", P_QUANT), s("Verbal Ability", P_VERBAL), s("Reasoning Ability", P_LOGIC), s("Advanced Quantitative & Reasoning", ["apt-advanced-quant", "apt-pnc-probability", "apt-logical-placement"]), s("Programming Logic & Coding (MCQ)", [...PROG, ...DSA])] },
+    { id: "infosys-placement", name: "Infosys (SE / SP / DSE)", fullName: "Infosys hiring test for System Engineer, Specialist Programmer and Digital Specialist Engineer", conductedBy: "Infosys", negativeMarking: null, subjects: [s("Logical Reasoning", P_LOGIC), s("Mathematical Ability", P_QUANT), s("Verbal Ability", P_VERBAL), s("Pseudocode", ["apt-pseudocode", "cs-c-programming", "cs-python"]), s("Puzzle Solving", ["apt-logical-placement"]), s("Technical (SP / DSE)", [...DSA, ...CS_CORE])] },
+    { id: "wipro-placement", name: "Wipro (Elite NTH / Turbo)", fullName: "Wipro National Talent Hunt and Turbo hiring tests", conductedBy: "Wipro", negativeMarking: null, subjects: [s("Quantitative Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("Verbal Ability", P_VERBAL), s("Programming (MCQ)", [...PROG, ...DSA]), s("Written Communication")] },
+    { id: "accenture-placement", name: "Accenture (ASE)", fullName: "Accenture Associate Software Engineer assessment", conductedBy: "Accenture", negativeMarking: null, subjects: [s("Cognitive: English Ability", P_VERBAL), s("Cognitive: Critical Reasoning & Problem Solving", P_LOGIC), s("Technical: Pseudocode", ["apt-pseudocode"]), s("Technical: Networking, Security & Cloud", ["cs-computer-networks", "cs-software-engineering", "comp-ms-office-internet"]), s("Coding (MCQ)", [...PROG, ...DSA])] },
+    { id: "cognizant-genc", name: "Cognizant GenC", fullName: "Cognizant GenC / GenC Next / GenC Pro assessment", conductedBy: "Cognizant", negativeMarking: null, subjects: [s("Quantitative Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("English Comprehension", P_VERBAL), s("Technical Assessment", [...PROG, ...DSA, ...CS_CORE])] },
+    { id: "capgemini-placement", name: "Capgemini", fullName: "Capgemini Analyst / Senior Analyst hiring test", conductedBy: "Capgemini", negativeMarking: null, subjects: [s("Pseudocode", ["apt-pseudocode", "cs-c-programming"]), s("English Communication", P_VERBAL), s("Game-based Aptitude", ["apt-logical-placement", "apt-advanced-quant"]), s("Behavioural Competency")] },
+    { id: "hcltech-placement", name: "HCLTech", fullName: "HCLTech fresher hiring test", conductedBy: "HCLTech", negativeMarking: null, subjects: [s("Quantitative Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("Verbal Ability", P_VERBAL), s("Technical (Programming & CS)", [...PROG, ...CS_CORE])] },
+    { id: "techmahindra-placement", name: "Tech Mahindra", fullName: "Tech Mahindra fresher hiring test", conductedBy: "Tech Mahindra", negativeMarking: null, subjects: [s("Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("English", P_VERBAL), s("Technical", [...PROG, ...CS_CORE])] },
+    { id: "ibm-placement", name: "IBM", fullName: "IBM Associate Developer / Systems Engineer hiring test", conductedBy: "IBM", negativeMarking: null, subjects: [s("Cognitive Ability (Numerical & Logical)", [...P_QUANT, ...P_LOGIC]), s("English Language", P_VERBAL), s("Technical (MCQ)", [...PROG, ...DSA, ...CS_CORE])] },
+    { id: "deloitte-placement", name: "Deloitte", fullName: "Deloitte USI Analyst hiring test", conductedBy: "Deloitte", negativeMarking: null, subjects: [s("Quantitative Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("Verbal Ability", P_VERBAL), s("Technical (MCQ)", [...PROG, ...CS_CORE])] },
+    { id: "product-sde", name: "Product Company SDE (MCQ round)", fullName: "Online-assessment MCQ round of product companies (Amazon, Microsoft, Adobe and similar)", conductedBy: "Product companies", negativeMarking: null, featured: true, subjects: [s("Data Structures & Algorithms", DSA), s("CS Fundamentals", CS_CORE), s("Programming & Output Prediction", PROG), s("Aptitude", ["apt-advanced-quant", "apt-pnc-probability", "apt-logical-placement"])] },
+  ]),
+);
 
 export const EXAM_BY_ID = new Map(EXAMS.map((e) => [e.id, e]));
 
