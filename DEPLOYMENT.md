@@ -29,10 +29,19 @@ This repo is linked to the Neon project `quiet-salad-64911010` (branch `producti
 
 Current deployment: **https://studyclip.netlify.app** (Netlify project `studyclip`, linked from this folder with `netlify link`). `netlify.toml` holds the build settings; Netlify's Next.js runtime turns the API routes into serverless functions. An older Vercel deployment (`vercel.json`, https://studyclip-six.vercel.app) still exists.
 
-1. Deploy from this folder (builds locally, then uploads):
+1. Deploy from this folder. The one-step command builds and uploads together:
    ```bash
    netlify deploy --prod --build
    ```
+   If the upload fails with `ExpiredToken` (the build can outlast the upload token), build first and upload the build separately. Upload `.netlify/static`, **not** the `.next` folder that `netlify.toml` names. Uploading `.next` puts every CSS/JS file at `/static/...` while pages ask for `/_next/static/...`, so the site renders unstyled. This happened on 7 Nov 2026.
+   ```bash
+   netlify build
+   netlify deploy --no-build --dir .netlify/static          # draft: prints a draft URL
+   npm run check:live -- <draft URL>                         # pages, every CSS/JS file, /api/health
+   netlify deploy --prod --no-build --dir .netlify/static    # same files, now live
+   npm run check:live
+   ```
+   After any production deploy, run `npm run check:live`; it fails if a page or a CSS/JS file it references does not load. If an upload hangs, the deploy stays in "uploading", and later deploys may skip the files it never finished. Cancel it (`netlify api cancelSiteDeploy --data '{"deploy_id":"<id>"}'`; `netlify api listSiteDeploys` shows the ids) before deploying again. To put a previous deploy back live, run `netlify api restoreSiteDeploy` or use Deploys → Publish deploy in the Netlify UI.
    Or let GitHub deploy every push to `main`: `.github/workflows/deploy-netlify.yml` runs `npm run db:migrate` and then `netlify deploy --prod` (with retries). It stays switched off until you add the repository secrets `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` and `DATABASE_URL` (plus `DATABASE_URL_UNPOOLED`) under Settings → Secrets and variables → Actions.
    Deploying by hand, run `npm run db:migrate` first whenever `drizzle/` has a new migration.
 2. Set the environment variables from `.env.example` (`netlify env:set KEY value --context production`, or Project configuration → Environment variables):

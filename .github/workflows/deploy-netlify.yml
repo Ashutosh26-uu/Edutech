@@ -65,3 +65,8 @@ jobs:
             echo "Deploy attempt $i failed; retrying in 20 s"; sleep 20
           done
           exit 1
+
+      # A deploy can report success yet serve pages whose CSS/JS files 404; fail the run if so.
+      - if: steps.gate.outputs.ready == 'true'
+        name: Check the live site
+        run: npm run check:live
