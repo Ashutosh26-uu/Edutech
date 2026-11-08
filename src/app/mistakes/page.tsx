@@ -1,6 +1,6 @@
 "use client";
 
-import { BookmarkPlus, NotebookPen } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -67,6 +67,9 @@ export default function MistakesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <Link href="/progress" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> My progress
+          </Link>
           <h1 className="text-2xl font-semibold text-slate-900">Mistake notebook</h1>
           <p className="mt-1 text-sm text-slate-600">
             Questions you got wrong, saved to your account. Answer one correctly in a mistakes set and it leaves the notebook. Questions you starred are in{" "}

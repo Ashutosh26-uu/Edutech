@@ -1,6 +1,6 @@
 "use client";
 
-import { BookmarkPlus, Star } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { BookmarkButton, DifficultyChip, Stat } from "@/components/Quiz";
@@ -32,6 +32,9 @@ export default function SavedPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <Link href="/progress" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> My progress
+          </Link>
           <h1 className="text-2xl font-semibold text-slate-900">Saved questions</h1>
           <p className="mt-1 text-sm text-slate-600">
             Tap <Star className="inline h-3.5 w-3.5" /> Save on any answered question to keep it here.{" "}

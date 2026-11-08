@@ -72,11 +72,18 @@ export default function InterviewPage() {
       {q && <p className="text-sm text-slate-600">{shown.length} matching questions</p>}
 
       <ul className="space-y-2">
-        {shown.map(({ item, section: s }) => {
+        {shown.map(({ item, section: s }, n) => {
           const key = s.id + item.q;
+          const keyAt = (j: number) => shown[j] && shown[j].section.id + shown[j].item.q;
+          const openAt = (j: number) => {
+            const k = keyAt(j);
+            if (!k) return;
+            setOpen(k);
+            requestAnimationFrame(() => document.getElementById(`iq-${j}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+          };
           const isOpen = open === key;
           return (
-            <li key={key} className="card p-0">
+            <li key={key} id={`iq-${n}`} className="card scroll-mt-20 p-0">
               <button className="flex w-full items-start justify-between gap-3 p-4 text-left" onClick={() => setOpen(isOpen ? null : key)} aria-expanded={isOpen}>
                 <span className="font-medium text-slate-900">
                   {q && <span className="mr-2 chip bg-slate-100 text-xs text-slate-600">{s.title}</span>}
@@ -94,6 +101,28 @@ export default function InterviewPage() {
                       <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" /> <Line text={item.tip} />
                     </p>
                   )}
+                  <div className="flex justify-between pt-1">
+                    <button className="btn-ghost px-3 py-1.5 text-xs" disabled={n === 0} onClick={() => openAt(n - 1)}>
+                      ← Previous question
+                    </button>
+                    {n < shown.length - 1 ? (
+                      <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => openAt(n + 1)}>
+                        Next question →
+                      </button>
+                    ) : !q && INTERVIEW.findIndex((x) => x.id === section) < INTERVIEW.length - 1 ? (
+                      <button
+                        className="btn-primary px-3 py-1.5 text-xs"
+                        onClick={() => {
+                          const next = INTERVIEW[INTERVIEW.findIndex((x) => x.id === section) + 1];
+                          setSection(next.id);
+                          setOpen(next.id + next.items[0].q);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        Next section: {INTERVIEW[INTERVIEW.findIndex((x) => x.id === section) + 1].title} →
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               )}
             </li>
