@@ -273,4 +273,14 @@ html.dark {
   footer {
     display: none;
   }
+  /* Printed pages (the resume) on plain white paper, without the page-in animation. */
+  body {
+    background: #fff;
+  }
+  main > * {
+    animation: none;
+  }
+  @page {
+    margin: 14mm;
+  }
 }

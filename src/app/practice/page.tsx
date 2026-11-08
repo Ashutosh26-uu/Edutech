@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChallengeBox, readChallenge } from "@/components/Challenge";
 import { TestPaywall } from "@/components/Paywall";
 import { Quiz, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -15,6 +16,7 @@ import { api, IS_STATIC } from "@/lib/api";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
+import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
 
 export default function PracticePage() {
@@ -57,6 +59,8 @@ function PracticeView() {
   const isSmart = params.get("smart") === "1";
   const isMistakes = params.get("mistakes") === "1";
   const isSaved = params.get("saved") === "1";
+  // A friend's challenge link: the same questions they answered, plus their score.
+  const challenge = readChallenge(params);
   const section = params.get("section") ?? "";
   const requestedTopics = (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
   const plan = exam ? mockPlan(exam) : null;
@@ -76,6 +80,7 @@ function PracticeView() {
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
+  const [finished, setFinished] = useState<AnswerResult[] | null>(null);
   const key = topicIds.join(",");
 
   // Smart practice weights come from the account's progress when signed in, else this browser's.
@@ -91,6 +96,13 @@ function PracticeView() {
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
+    setFinished(null);
+    if (challenge) {
+      const found = await findQuestions(challenge.ids);
+      const qs = challenge.ids.flatMap((id) => (found.has(id) ? [shuffleOptions(found.get(id)!)] : []));
+      if (!qs.length) return setError("This challenge link doesn’t match any questions. Ask your friend to send it again.");
+      return setQuestions(qs);
+    }
     if (isSaved) {
       const saved = Object.values(load().bookmarks)
         .map((b) => b.question)
@@ -129,11 +141,12 @@ function PracticeView() {
     if (!ok) setError(json.error);
     else setQuestions(json.questions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready]);
+  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready, params]);
 
   useEffect(() => {
     if (!account.ready) return;
-    if ((key || isMistakes || isSaved) && phase === "running" && !(isTimed && server)) loadQuestions();
+    if ((key || isMistakes || isSaved || challenge) && phase === "running" && !(isTimed && server)) loadQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, isMistakes, isSaved, loadQuestions, round, phase, isTimed, server, account.ready]);
 
   const loginFirst = () => router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
@@ -177,6 +190,7 @@ function PracticeView() {
   };
 
   const onFinish = (results: AnswerResult[]) => {
+    if (!isTimed) setFinished(results);
     const answered = results.filter((r) => r.chosen !== null);
     recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
@@ -193,7 +207,7 @@ function PracticeView() {
     }
   };
 
-  if (!topicIds.length && !isMistakes && !isSaved) {
+  if (!topicIds.length && !isMistakes && !isSaved && !challenge) {
     return (
       <div className="card text-sm">
         Nothing to practise here yet.{" "}
@@ -209,7 +223,9 @@ function PracticeView() {
   }
 
   const topicName = requestedTopics.length === 1 ? TOPIC_BY_ID.get(requestedTopics[0])!.name : `${requestedTopics.length} topics`;
-  const title = isSaved
+  const title = challenge
+    ? `${challenge.by} challenged you`
+    : isSaved
     ? "My saved questions"
     : isMistakes
     ? `My mistakes${requestedTopics.length === 1 ? `: ${topicName}` : ""}`
@@ -232,7 +248,9 @@ function PracticeView() {
   const sections = serverTest?.sections ?? localSections ?? undefined;
   const sectional = serverTest?.sectional ?? (!!localSections && !!plan?.pattern.sectional);
 
-  const description = isSaved
+  const description = challenge
+    ? `${challenge.ids.length} questions · ${challenge.by} scored ${challenge.score}/${challenge.ids.length}. Answer them all, then compare.`
+    : isSaved
     ? "Questions you starred to revise, up to 20 at a time in a new order."
     : isMistakes
     ? "Questions you got wrong before. Answer one correctly and it leaves your notebook."
@@ -309,6 +327,7 @@ function PracticeView() {
           />
         )}
       </div>
+      {finished && !isTimed && !isMistakes && <ChallengeBox results={finished} challenge={challenge} />}
       {IS_STATIC && isTimed && <p className="text-xs text-slate-500">Demo build: scores stay in this browser.</p>}
     </div>
   );

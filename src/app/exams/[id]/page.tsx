@@ -136,9 +136,14 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                         </Link>
                         <TopicAccuracy topicId={tid} />
                       </div>
-                      <Link href={`/practice?exam=${exam.id}&topics=${tid}`} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
-                        Practise
-                      </Link>
+                      <span className="flex shrink-0 gap-1.5">
+                        <Link href={`/learn?topic=${encodeURIComponent(t.name)}`} className="btn-ghost px-3 py-1.5 text-xs">
+                          Notes
+                        </Link>
+                        <Link href={`/practice?exam=${exam.id}&topics=${tid}`} className="btn-ghost px-3 py-1.5 text-xs">
+                          Practise
+                        </Link>
+                      </span>
                     </li>
                   );
                 })}
