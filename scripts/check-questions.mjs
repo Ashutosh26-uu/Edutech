@@ -4,7 +4,8 @@
 import { readFileSync } from "node:fs";
 import { TOPICS } from "@/data/topics";
 import { BANK_TOPIC_IDS, bankSize, loadAllBank } from "@/lib/bank";
-import { buildIndex } from "./bank-index.mjs";
+import { buildIndex, buildNotesIndex, NOTES_OUT } from "./bank-index.mjs";
+import { NOTES_LOADERS } from "@/data/notes";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { PATTERNS, mockPlan } from "@/data/patterns";
 import { localProvider } from "@/lib/ai/local";
@@ -24,6 +25,13 @@ const QUESTION_BANK = await loadAllBank();
 const norm = (s) => s.replace(/\r/g, "");
 if (norm(buildIndex()) !== norm(readFileSync("src/data/bank/index.ts", "utf8"))) fail("bank index is stale", "run: npm run bank:index");
 for (const id of BANK_TOPIC_IDS) if (!TOPICS.some((t) => t.id === id)) fail(`bank file ${id}: no such topic in topics.ts`);
+// Short notes: index current, every file belongs to a topic and has real content.
+if (norm(buildNotesIndex()) !== norm(readFileSync(NOTES_OUT, "utf8"))) fail("notes index is stale", "run: npm run bank:index");
+for (const [id, load] of Object.entries(NOTES_LOADERS)) {
+  if (!TOPICS.some((t) => t.id === id)) fail(`notes file ${id}: no such topic in topics.ts`);
+  const n = (await load()).default;
+  if (!n.sections?.length || n.sections.some((s) => !s.heading || !s.points?.length)) fail(`notes ${id}: needs sections with a heading and points`);
+}
 for (const id of BANK_TOPIC_IDS) {
   const n = QUESTION_BANK.filter((q) => q.topicId === id).length;
   if (n !== bankSize(id)) fail(`bank index count for ${id}`, `index says ${bankSize(id)}, file has ${n}`);

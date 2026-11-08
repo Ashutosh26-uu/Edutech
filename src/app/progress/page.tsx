@@ -10,6 +10,80 @@ import { clearAll, load, type TopicStat } from "@/lib/storage";
 
 type Data = ReturnType<typeof load>;
 
+/** Accuracy per subject, weakest first: one horizontal bar each, with the share as text so colour carries nothing alone. */
+function SubjectAccuracy({ topics }: { topics: { id: string; attempted: number; correct: number }[] }) {
+  const bySubject = new Map<string, { attempted: number; correct: number }>();
+  for (const t of topics) {
+    const subject = TOPIC_BY_ID.get(t.id)?.subject ?? "Other";
+    const s = bySubject.get(subject) ?? { attempted: 0, correct: 0 };
+    s.attempted += t.attempted;
+    s.correct += t.correct;
+    bySubject.set(subject, s);
+  }
+  const rows = [...bySubject].map(([subject, s]) => ({ subject, ...s, pct: s.attempted ? Math.round((s.correct / s.attempted) * 100) : 0 })).sort((a, b) => a.pct - b.pct);
+  return (
+    <section className="card">
+      <h2 className="font-semibold text-slate-900">Accuracy by subject</h2>
+      {rows.length ? (
+        <ul className="mt-3 space-y-2.5">
+          {rows.map((r) => (
+            <li key={r.subject} title={`${r.subject}: ${r.correct} of ${r.attempted} correct (${r.pct}%)`}>
+              <div className="flex items-baseline justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate text-slate-700">{r.subject}</span>
+                <span className="shrink-0 text-slate-900 tabular-nums">
+                  {r.pct}% <span className="text-xs text-slate-500">· {r.attempted} Qs</span>
+                </span>
+              </div>
+              <div className="mt-1 h-2 rounded-full bg-slate-100">
+                <div className="h-2 rounded-full bg-brand-500" style={{ width: `${Math.max(r.pct, 2)}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">Practise a few topics to see how each subject is going.</p>
+      )}
+    </section>
+  );
+}
+
+/** Score (as % of maximum) of the last 12 tests, oldest to newest, so the direction is visible at a glance. */
+function ScoreTrend({ points }: { points: { at: number; pct: number; label: string }[] }) {
+  const last = [...points].sort((a, b) => a.at - b.at).slice(-12);
+  const avg = (xs: { pct: number }[]) => (xs.length ? xs.reduce((n, x) => n + x.pct, 0) / xs.length : 0);
+  const half = Math.floor(last.length / 2);
+  const change = last.length >= 4 ? Math.round(avg(last.slice(half)) - avg(last.slice(0, half))) : null;
+  return (
+    <section className="card">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="font-semibold text-slate-900">Test score trend</h2>
+        {change !== null && (
+          <span className={`text-sm font-medium ${change >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+            {change >= 0 ? "▲" : "▼"} {Math.abs(change)} points (recent half vs earlier)
+          </span>
+        )}
+      </div>
+      {last.length ? (
+        <>
+          <div className="mt-4 flex h-32 items-end gap-1.5" role="img" aria-label={`Scores of the last ${last.length} tests, oldest first: ${last.map((p) => Math.round(p.pct) + "%").join(", ")}`}>
+            {last.map((p, i) => (
+              <div key={i} className="group relative flex h-full min-w-0 flex-1 items-end" title={`${p.label} · ${new Date(p.at).toLocaleDateString()} · ${Math.round(p.pct)}%`}>
+                <div className="w-full rounded-t bg-brand-500 transition-opacity group-hover:opacity-80" style={{ height: `${Math.max(p.pct, 2)}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex justify-between text-xs text-slate-500">
+            <span>Oldest</span>
+            <span>Latest: {Math.round(last.at(-1)!.pct)}%</span>
+          </div>
+        </>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">Take a timed test to start your score trend.</p>
+      )}
+    </section>
+  );
+}
+
 interface AttemptRow {
   id: string;
   examId: string;
@@ -91,6 +165,8 @@ export default function ProgressPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
+        <SubjectAccuracy topics={topics} />
+        <ScoreTrend points={synced ? remote.attempts.map((a) => ({ at: a.submittedAt, pct: a.total ? (a.score / a.total) * 100 : 0, label: `${EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · ${a.kind === "full" ? "full mock" : a.kind === "section" ? "section test" : "topic test"}` })) : data.mocks.map((m) => ({ at: m.takenAt, pct: m.maxScore ? (m.score / m.maxScore) * 100 : 0, label: `${EXAM_BY_ID.get(m.examId)?.name ?? m.examId} · mock` }))} />
         <section className="card">
           <h2 className="font-semibold text-slate-900">Focus on these topics</h2>
           {weak.length ? (

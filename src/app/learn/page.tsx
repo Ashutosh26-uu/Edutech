@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
 import { MicButton, SpeakButton } from "@/components/Speak";
+import { TopicNotesView } from "@/components/TopicNotesView";
 import { TOPICS } from "@/data/topics";
 import { useAccount } from "@/lib/account";
 import { api, IS_STATIC } from "@/lib/api";
@@ -146,6 +147,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
             ))}
           </ul>
         </div>
+        <TopicNotesView topicId={topic.id} />
         <div className="card">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Practice questions ({questions.length})</h3>

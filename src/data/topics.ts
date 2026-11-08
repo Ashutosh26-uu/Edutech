@@ -1187,7 +1187,7 @@ export const TOPICS: Topic[] = [
       "Hind II was the first restriction enzyme; EcoRI cuts GAATTC between G and A, leaving sticky ends.",
       "pBR322: ori, rop, ampR and tetR; insertional inactivation of β-galactosidase gives white recombinant colonies.",
       "Competent cells: Ca²⁺ treatment, ice, heat shock at 42 °C; PCR uses Taq polymerase from Thermus aquaticus.",
-      "cryIAc and cryIIAb control cotton bollworms, cryIAb the corn borer; RNAi protects tobacco from Meloidegyne incognita.",
+      "cryIAc and cryIIAb control cotton bollworms, cryIAb the corn borer; RNAi protects tobacco from Meloidogyne incognita.",
       "Insulin by Eli Lilly (1983) with A and B chains made separately; first gene therapy (1990) for ADA deficiency; Rosie gave milk with human alpha-lactalbumin.",
       "GEAC regulates GM research; biopiracy and the Basmati patent (1997) are the key ethical issues.",
     ],

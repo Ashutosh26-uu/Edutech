@@ -35,6 +35,8 @@ const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
       ["Learn topics", "/learn"],
       ["Flashcards", "/review"],
       ["Exam tomorrow", "/last-minute"],
+      ["Interview prep", "/interview"],
+      ["Resume builder", "/resume"],
     ],
   },
   // One popular exam from each family: SSC, banking, railways, UPSC, teaching.
