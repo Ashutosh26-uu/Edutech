@@ -1,333 +1,93 @@
 "use client";
 
-import { ArrowDown, ArrowUp, CheckCircle2, Circle, Download, Plus, Sparkles, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Circle, Download, FileDown, FileText, FileUp, ImagePlus, Plus, Sparkles, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PAGE_H, PAGE_W, ResumeSheet } from "@/components/ResumeSheet";
+import {
+  BUILT_IN_LABEL,
+  EMPTY_RESUME,
+  EXAMPLE_RESUME,
+  SECTION_PRESETS,
+  STORAGE_KEY,
+  blankEntry,
+  fileBase,
+  resumeStrength,
+  resumeToDocx,
+  sectionOf,
+  upgradeResume,
+  type BuiltIn,
+  type Entry,
+  type Resume,
+  type SectionKey,
+  type Template,
+} from "@/lib/resume";
 
 /**
- * Resume builder for freshers. One A4 page, three templates, live preview that matches the PDF
- * exactly (the preview is the printed page, scaled down). Everything stays in this browser.
- * Text is real text in a single reading order, so applicant-tracking systems can parse it.
+ * A real resume builder: four templates, an A4 preview that matches the PDF, your own sections,
+ * optional photo / personal details / declaration (common in Indian resumes), and downloads as
+ * PDF (print, with clickable links) or Word (.docx). Everything stays in this browser.
  */
 
-// ---------------- Data ----------------
-
-interface Entry {
-  title: string;
-  sub: string;
-  period: string;
-  place: string;
-  points: string;
-}
-type ListKey = "education" | "projects" | "experience" | "certifications";
-type Template = "classic" | "modern" | "sidebar";
-type Font = "sans" | "serif";
-interface Resume {
-  name: string;
-  headline: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  github: string;
-  website: string;
-  summary: string;
-  education: Entry[];
-  projects: Entry[];
-  experience: Entry[];
-  certifications: Entry[];
-  skills: string;
-  achievements: string;
-  languages: string;
-  order: ListKey[];
-  template: Template;
-  accent: string;
-  font: Font;
-}
-
-const KEY = "studyclip:resume";
-const blank = (): Entry => ({ title: "", sub: "", period: "", place: "", points: "" });
-const EMPTY: Resume = {
-  name: "",
-  headline: "",
-  email: "",
-  phone: "",
-  location: "",
-  linkedin: "",
-  github: "",
-  website: "",
-  summary: "",
-  education: [blank()],
-  projects: [blank()],
-  experience: [],
-  certifications: [],
-  skills: "",
-  achievements: "",
-  languages: "",
-  order: ["education", "projects", "experience", "certifications"],
-  template: "modern",
-  accent: "#1d4ed8",
-  font: "sans",
-};
-
-const EXAMPLE: Resume = {
-  ...EMPTY,
-  name: "Aarav Sharma",
-  headline: "B.Tech Computer Science (2026) · Java, Spring Boot, React, SQL",
-  email: "aarav.sharma@example.com",
-  phone: "+91 98765 43210",
-  location: "Lucknow, Uttar Pradesh",
-  linkedin: "linkedin.com/in/aarav-sharma",
-  github: "github.com/aaravsharma",
-  website: "",
-  summary:
-    "Final-year CSE student who builds full-stack web apps with Java and React. Solved 400+ problems on coding platforms and led a 4-member team to the finals of a national hackathon. Looking for a software engineer role where I can ship reliable backend services.",
-  education: [
-    { title: "B.Tech, Computer Science and Engineering", sub: "Institute of Engineering and Technology, Lucknow", period: "2022 – 2026", place: "CGPA 8.4 / 10", points: "Coursework: Data Structures, DBMS, Operating Systems, Computer Networks" },
-    { title: "Class XII (CBSE)", sub: "Kendriya Vidyalaya, Lucknow", period: "2022", place: "91.2%", points: "" },
-  ],
-  projects: [
-    {
-      title: "CampusCart: student marketplace",
-      sub: "Spring Boot, React, MySQL, JWT",
-      period: "2025",
-      place: "github.com/aaravsharma/campuscart",
-      points:
-        "Built a buy-and-sell web app for hostel students with search, chat and listing photos\nDesigned REST APIs and a normalised MySQL schema; added JWT login and role-based access\nCut search time from 1.8 s to 0.3 s with indexes and paginated queries; 600+ registered users",
-    },
-    {
-      title: "Attendance with face recognition",
-      sub: "Python, OpenCV, Flask",
-      period: "2024",
-      place: "",
-      points: "Marked class attendance from a webcam feed with 94% accuracy on 120 students\nExported daily reports to Excel and email for the department office",
-    },
-  ],
-  experience: [
-    {
-      title: "Software Development Intern",
-      sub: "TechNova Solutions",
-      period: "May – Jul 2025",
-      place: "Noida (on-site)",
-      points: "Added 6 REST endpoints to an inventory service used by 40+ warehouses\nWrote JUnit tests that raised coverage from 52% to 78% and caught 3 pricing bugs before release",
-    },
-  ],
-  certifications: [{ title: "Oracle Certified Associate, Java SE", sub: "Oracle", period: "2025", place: "", points: "" }],
-  skills: "Languages: Java, Python, C, JavaScript, SQL\nFrameworks: Spring Boot, React, Flask\nTools: Git, Docker, Postman, Linux\nCS fundamentals: DSA, OOP, DBMS, OS, Computer Networks",
-  achievements:
-    "Finalist, Smart India Hackathon 2024 (top 5 of 120 teams in the problem statement)\n4★ on CodeChef (max rating 1850); 400+ problems solved across platforms\nTechnical head, college coding club: ran 10 contests with 300+ participants",
-  languages: "English, Hindi",
-};
-
-const SECTION_LABEL: Record<ListKey, string> = { education: "Education", projects: "Projects", experience: "Experience", certifications: "Certifications" };
-const FIELD_HINTS: Record<ListKey, { title: string; sub: string; period: string; place: string; points: string }> = {
-  education: { title: "Degree or class, e.g. B.Tech CSE", sub: "College / school", period: "Years, e.g. 2022 – 2026", place: "Score, e.g. CGPA 8.4 or 91%", points: "Optional: coursework, rank, thesis (one per line)" },
-  projects: { title: "Project name", sub: "Tech used", period: "Year", place: "Link (GitHub / live)", points: "What it does · what you built · a result with a number (one per line)" },
-  experience: { title: "Role, e.g. Software Intern", sub: "Company", period: "Dates", place: "City / remote", points: "Start each line with a verb and add a number: Built…, Reduced… by 40%" },
+const HINTS: Record<BuiltIn | "custom", Record<keyof Entry, string>> = {
+  education: { title: "Degree or class, e.g. B.Tech CSE", sub: "College / school, city", period: "Years, e.g. 2022 – 2026", place: "Score, e.g. CGPA 8.4 / 10 or 91%", points: "Optional: coursework, rank, thesis (one per line)" },
+  projects: { title: "Project name", sub: "Tech used", period: "Year", place: "Link (GitHub / live demo)", points: "What it does · what you built · a result with a number (one per line). Use **double stars** for bold." },
+  experience: { title: "Role, e.g. Software Intern", sub: "Company", period: "Dates, e.g. May – Jul 2025", place: "City / remote", points: "Start each line with a verb and add a number: Built…, Reduced… by 40%" },
   certifications: { title: "Certificate", sub: "Issued by", period: "Year", place: "Credential link (optional)", points: "" },
+  custom: { title: "Title / role", sub: "Organisation", period: "Dates", place: "Place or link (optional)", points: "Details (one per line)" },
 };
-const ACCENTS = ["#1d4ed8", "#0f766e", "#7c3aed", "#be123c", "#1f2937"];
-const TEMPLATES: { id: Template; name: string }[] = [
-  { id: "modern", name: "Modern" },
-  { id: "classic", name: "Classic" },
-  { id: "sidebar", name: "Side headings" },
+const ACCENTS = ["#1d4ed8", "#0f766e", "#7c3aed", "#be123c", "#b45309", "#1f2937"];
+const TEMPLATES: { id: Template; name: string; note: string }[] = [
+  { id: "modern", name: "Modern", note: "Clean, one column. Best for most jobs and for company software (ATS)." },
+  { id: "classic", name: "Classic", note: "Centred and black-and-white. Formal; good for government and core jobs." },
+  { id: "sidebar", name: "Side headings", note: "Headings in a left column. Compact and easy to scan." },
+  { id: "twocol", name: "Two column", note: "Tinted side panel with photo and skills. Looks great to people; some company software reads one-column resumes better." },
 ];
 
-const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
-const filled = (e: Entry) => !!(e.title || e.sub);
-const contactOf = (r: Resume) => [r.email, r.phone, r.location, r.linkedin, r.github, r.website].filter(Boolean);
+type Tab = "about" | "summary" | SectionKey | "skills" | "extra";
 
-// ---------------- Strength check ----------------
-
-const WEAK_START = /^(i |my |responsible for|worked on|helped|did |was )/i;
-
-function strength(r: Resume) {
-  const bullets = [...r.projects, ...r.experience].flatMap((e) => lines(e.points));
-  const checks = [
-    { ok: !!r.name && !!r.email && !!r.phone, text: "Name, email and phone are filled in" },
-    { ok: !!(r.linkedin || r.github), text: "LinkedIn or GitHub link added" },
-    { ok: r.summary.trim().length >= 120 && r.summary.trim().length <= 420, text: "Summary is 2–3 lines (120–420 characters)" },
-    { ok: r.education.some(filled) && r.education.some((e) => !!e.place), text: "Education has your score (CGPA / %)" },
-    { ok: r.projects.filter(filled).length >= 2, text: "At least 2 projects" },
-    { ok: bullets.length >= 4, text: "At least 4 bullet points across projects and experience" },
-    { ok: bullets.length > 0 && bullets.filter((b) => /\d/.test(b)).length >= Math.ceil(bullets.length / 2), text: "Half your bullets have a number (%, users, time saved)" },
-    { ok: bullets.length > 0 && !bullets.some((b) => WEAK_START.test(b)), text: "Bullets start with an action verb (Built, Led, Reduced…), not “I” or “Responsible for”" },
-    { ok: lines(r.skills).length >= 2, text: "Skills grouped in at least 2 lines (Languages, Tools…)" },
-    { ok: lines(r.achievements).length >= 1 || r.certifications.some(filled), text: "An achievement or certification" },
-  ];
-  const score = Math.round((checks.filter((c) => c.ok).length / checks.length) * 100);
-  return { score, checks };
-}
-
-// ---------------- Preview (the printed page) ----------------
-
-/** A4 at 96 dpi. The preview renders at this size and is scaled to fit; print uses it 1:1. */
-const PAGE_W = 794;
-const PAGE_H = 1123;
-
-function Sheet({ r, id = "resume-sheet" }: { r: Resume; id?: string }) {
-  const font = r.font === "serif" ? "Georgia, 'Times New Roman', serif" : "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-  const accent = r.template === "classic" ? "#111827" : r.accent;
-  const contact = contactOf(r);
-  const skills = lines(r.skills).map((l) => {
-    const i = l.indexOf(":");
-    return i > 0 ? { label: l.slice(0, i).trim(), items: l.slice(i + 1).trim() } : { label: "", items: l };
+/** Shrinks a chosen photo to a 260 px square JPEG so it fits in browser storage. */
+function squarePhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 260;
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const s = Math.min(img.width, img.height);
+      c.getContext("2d")!.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
   });
-
-  const Heading = ({ children }: { children: string }) =>
-    r.template === "sidebar" ? (
-      <h2 style={{ color: accent }} className="pt-0.5 text-[11.5px] font-bold tracking-[0.08em] uppercase">
-        {children}
-      </h2>
-    ) : r.template === "modern" ? (
-      <h2 style={{ color: accent, borderColor: accent }} className="mb-1.5 border-b-2 pb-0.5 text-[13px] font-bold tracking-[0.06em] uppercase">
-        {children}
-      </h2>
-    ) : (
-      <h2 style={{ color: "#111827" }} className="mb-1.5 border-b border-gray-800 pb-0.5 text-center text-[13px] font-bold tracking-[0.12em] uppercase">{children}</h2>
-    );
-
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) =>
-    r.template === "sidebar" ? (
-      <section className="grid grid-cols-[118px_1fr] gap-4 border-t border-gray-200 pt-2.5">
-        <Heading>{title}</Heading>
-        <div className="min-w-0">{children}</div>
-      </section>
-    ) : (
-      <section>
-        <Heading>{title}</Heading>
-        {children}
-      </section>
-    );
-
-  const EntryView = ({ e }: { e: Entry }) => (
-    <div className="mb-2 last:mb-0" style={{ breakInside: "avoid" }}>
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="min-w-0 text-[12.5px] leading-snug">
-          <b className="text-gray-900">{e.title}</b>
-          {e.sub && <span className="text-gray-700">{e.title ? " · " : ""}{e.sub}</span>}
-        </div>
-        {e.period && <div className="shrink-0 text-[11.5px] text-gray-600">{e.period}</div>}
-      </div>
-      {e.place && <div className="text-[11.5px] text-gray-600">{e.place}</div>}
-      {lines(e.points).length > 0 && (
-        <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-[11.8px] leading-snug text-gray-800 marker:text-gray-500">
-          {lines(e.points).map((p, i) => (
-            <li key={i}>{p}</li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-
-  const body = (
-    <>
-      {r.summary.trim() && (
-        <Section title="Summary">
-          <p className="text-[11.8px] leading-snug text-gray-800">{r.summary.trim()}</p>
-        </Section>
-      )}
-      {r.order.map((k) =>
-        r[k].some(filled) ? (
-          <Section key={k} title={SECTION_LABEL[k]}>
-            {r[k].filter(filled).map((e, i) => (
-              <EntryView key={i} e={e} />
-            ))}
-          </Section>
-        ) : null,
-      )}
-      {skills.length > 0 && (
-        <Section title="Skills">
-          <div className="space-y-0.5 text-[11.8px] leading-snug text-gray-800">
-            {skills.map((s, i) => (
-              <div key={i}>
-                {s.label && <b className="text-gray-900">{s.label}: </b>}
-                {s.items}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-      {lines(r.achievements).length > 0 && (
-        <Section title="Achievements">
-          <ul className="list-disc space-y-0.5 pl-4 text-[11.8px] leading-snug text-gray-800 marker:text-gray-500">
-            {lines(r.achievements).map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
-        </Section>
-      )}
-      {r.languages.trim() && (
-        <Section title="Languages">
-          <p className="text-[11.8px] text-gray-800">{r.languages.trim()}</p>
-        </Section>
-      )}
-    </>
-  );
-
-  return (
-    <article id={id} style={{ width: PAGE_W, minHeight: PAGE_H, fontFamily: font }} className="bg-white px-[46px] py-[40px] text-gray-900" data-theme="light">
-      {r.template === "classic" ? (
-        <header className="mb-3 text-center">
-          <h1 style={{ color: "#111827" }} className="text-[26px] leading-tight font-bold tracking-wide">{r.name || "Your Name"}</h1>
-          {r.headline && <p className="mt-0.5 text-[12.5px] text-gray-700">{r.headline}</p>}
-          <p className="mt-1 text-[11.5px] text-gray-700">{contact.join("  •  ") || "email  •  phone  •  city  •  LinkedIn"}</p>
-        </header>
-      ) : r.template === "modern" ? (
-        <header className="mb-3">
-          <h1 style={{ color: accent }} className="text-[30px] leading-tight font-bold tracking-tight">
-            {r.name || "Your Name"}
-          </h1>
-          {r.headline && <p className="mt-0.5 text-[13px] font-medium text-gray-700">{r.headline}</p>}
-          <p className="mt-1.5 text-[11.5px] text-gray-600">{contact.join("   |   ") || "email   |   phone   |   city   |   LinkedIn"}</p>
-        </header>
-      ) : (
-        <header className="mb-3 flex items-end justify-between gap-6">
-          <div className="min-w-0">
-            <h1 style={{ color: accent }} className="text-[28px] leading-tight font-bold">
-              {r.name || "Your Name"}
-            </h1>
-            {r.headline && <p className="mt-0.5 text-[12.5px] text-gray-700">{r.headline}</p>}
-          </div>
-          <div className="shrink-0 text-right text-[11px] leading-snug text-gray-700">
-            {(contact.length ? contact : ["email", "phone", "city"]).map((c, i) => (
-              <div key={i}>{c}</div>
-            ))}
-          </div>
-        </header>
-      )}
-      <div className={r.template === "sidebar" ? "space-y-2.5" : "space-y-3"}>{body}</div>
-    </article>
-  );
 }
 
-// ---------------- Page ----------------
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
 
 export default function ResumePage() {
-  const [r, setR] = useState<Resume>(EMPTY);
+  const [r, setR] = useState<Resume>(EMPTY_RESUME);
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<"about" | ListKey | "skills">("about");
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [tab, setTab] = useState<Tab>("about");
+  const [busy, setBusy] = useState("");
+  const [newSection, setNewSection] = useState("");
+  const photoInput = useRef<HTMLInputElement>(null);
+  const importInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     try {
-      const saved = localStorage.getItem(KEY);
-      if (saved) {
-        const old = JSON.parse(saved);
-        // Older saves had a single "links" field and no `place`; keep what they had.
-        const upgrade = (list?: Partial<Entry>[]) => (Array.isArray(list) ? list.map((e) => ({ ...blank(), ...e })) : undefined);
-        setR({
-          ...EMPTY,
-          ...old,
-          linkedin: old.linkedin ?? old.links ?? "",
-          education: upgrade(old.education) ?? EMPTY.education,
-          projects: upgrade(old.projects) ?? EMPTY.projects,
-          experience: upgrade(old.experience) ?? [],
-          certifications: upgrade(old.certifications) ?? [],
-          order: Array.isArray(old.order) && old.order.length === 4 ? old.order : EMPTY.order,
-        });
-      }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setR(upgradeResume(JSON.parse(saved)));
     } catch {
       /* storage blocked or old data unreadable: start blank */
     }
@@ -336,39 +96,54 @@ export default function ResumePage() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify(r));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(r));
     } catch {
-      /* storage blocked: the resume still works for this visit */
+      /* storage full or blocked: the resume still works for this visit */
     }
   }, [r, loaded]);
 
+  // ---------- Editing helpers ----------
   const set = <K extends keyof Resume>(k: K, v: Resume[K]) => setR((x) => ({ ...x, [k]: v }));
-  const setEntry = (list: ListKey, i: number, k: keyof Entry, v: string) => setR((x) => ({ ...x, [list]: x[list].map((e, j) => (j === i ? { ...e, [k]: v } : e)) }));
-  const add = (list: ListKey) => setR((x) => ({ ...x, [list]: [...x[list], blank()] }));
-  const remove = (list: ListKey, i: number) => setR((x) => ({ ...x, [list]: x[list].filter((_, j) => j !== i) }));
-  const moveEntry = (list: ListKey, i: number, d: -1 | 1) =>
+  const entriesOf = (x: Resume, key: SectionKey) => (key.startsWith("custom:") ? (x.custom.find((c) => c.id === key.slice(7))?.entries ?? []) : x[key as BuiltIn]);
+  const withEntries = (x: Resume, key: SectionKey, entries: Entry[]): Resume =>
+    key.startsWith("custom:") ? { ...x, custom: x.custom.map((c) => (c.id === key.slice(7) ? { ...c, entries } : c)) } : { ...x, [key]: entries };
+  const setEntry = (key: SectionKey, i: number, k: keyof Entry, v: string) => setR((x) => withEntries(x, key, entriesOf(x, key).map((e, j) => (j === i ? { ...e, [k]: v } : e))));
+  const addEntry = (key: SectionKey) => setR((x) => withEntries(x, key, [...entriesOf(x, key), blankEntry()]));
+  const removeEntry = (key: SectionKey, i: number) => setR((x) => withEntries(x, key, entriesOf(x, key).filter((_, j) => j !== i)));
+  const moveEntry = (key: SectionKey, i: number, d: -1 | 1) =>
     setR((x) => {
-      const a = [...x[list]];
+      const a = [...entriesOf(x, key)];
       const j = i + d;
       if (j < 0 || j >= a.length) return x;
       [a[i], a[j]] = [a[j], a[i]];
-      return { ...x, [list]: a };
+      return withEntries(x, key, a);
     });
-  const moveSection = (k: ListKey, d: -1 | 1) =>
+  const moveSection = (key: SectionKey, d: -1 | 1) =>
     setR((x) => {
       const a = [...x.order];
-      const i = a.indexOf(k);
+      const i = a.indexOf(key);
       const j = i + d;
-      if (j < 0 || j >= a.length) return x;
+      if (i < 0 || j < 0 || j >= a.length) return x;
       [a[i], a[j]] = [a[j], a[i]];
       return { ...x, order: a };
     });
+  const addCustom = (title: string) => {
+    const id = Math.random().toString(36).slice(2, 8);
+    setR((x) => ({ ...x, custom: [...x.custom, { id, title: title || "New section", entries: [blankEntry()] }], order: [...x.order, `custom:${id}` as SectionKey] }));
+    setTab(`custom:${id}`);
+    setNewSection("");
+  };
+  const removeCustom = (id: string) => {
+    if (!confirm("Delete this section and everything in it?")) return;
+    setR((x) => ({ ...x, custom: x.custom.filter((c) => c.id !== id), order: x.order.filter((k) => k !== `custom:${id}`) }));
+    setTab("about");
+  };
 
-  // Scale the A4 sheet to the preview column, and measure whether it runs past one page.
+  // ---------- Preview scale and page count ----------
   const wrap = useRef<HTMLDivElement>(null);
-  const sheet = useRef<HTMLDivElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
-  const [overflow, setOverflow] = useState(false);
+  const [height, setHeight] = useState(PAGE_H);
   useLayoutEffect(() => {
     const el = wrap.current;
     if (!el) return;
@@ -377,18 +152,54 @@ export default function ResumePage() {
     return () => ro.disconnect();
   }, []);
   useLayoutEffect(() => {
-    const h = sheet.current?.querySelector("#resume-sheet")?.scrollHeight ?? 0;
-    setOverflow(h > PAGE_H + 2);
+    setHeight(Math.max(PAGE_H, preview.current?.querySelector("article")?.scrollHeight ?? PAGE_H));
   }, [r, scale]);
+  const pages = Math.ceil((height - 2) / PAGE_H);
 
-  const { score, checks } = useMemo(() => strength(r), [r]);
-  const tabs: { id: typeof tab; label: string }[] = [
-    { id: "about", label: "Personal" },
-    ...r.order.map((k) => ({ id: k, label: SECTION_LABEL[k] })),
-    { id: "skills", label: "Skills & more" },
+  // ---------- Downloads ----------
+  const printPdf = () => {
+    const title = document.title;
+    document.title = fileBase(r); // the browser suggests this as the PDF file name
+    const restore = () => {
+      document.title = title;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  };
+  const downloadWord = async () => {
+    setBusy("word");
+    try {
+      download(await resumeToDocx(r), `${fileBase(r)}.docx`);
+    } catch (e) {
+      alert("Could not create the Word file. Please try again.");
+      console.error(e);
+    } finally {
+      setBusy("");
+    }
+  };
+  const exportBackup = () => download(new Blob([JSON.stringify(r, null, 2)], { type: "application/json" }), `${fileBase(r)}.studyclip.json`);
+  const importBackup = async (file: File) => {
+    try {
+      setR(upgradeResume(JSON.parse(await file.text())));
+      setTab("about");
+    } catch {
+      alert("That file isn’t a resume backup from StudyClip.");
+    }
+  };
+
+  const { score, checks } = useMemo(() => resumeStrength(r), [r]);
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "about", label: "Contact" },
+    { id: "summary", label: "Summary" },
+    ...r.order.map((k) => ({ id: k as Tab, label: sectionOf(r, k)?.title ?? k })),
+    { id: "skills", label: "Skills" },
+    { id: "extra", label: "More" },
   ];
+  const template = TEMPLATES.find((t) => t.id === r.template)!;
 
-  const input = (label: string, value: string, onChange: (v: string) => void, opts: { placeholder?: string; area?: boolean; rows?: number } = {}) => (
+  // ---------- Small UI pieces ----------
+  const field = (label: string, value: string, onChange: (v: string) => void, opts: { placeholder?: string; area?: boolean; rows?: number; hint?: string } = {}) => (
     <label className="block text-sm">
       <span className="font-medium text-slate-700">{label}</span>
       {opts.area ? (
@@ -396,77 +207,103 @@ export default function ResumePage() {
       ) : (
         <input className="input mt-1" value={value} placeholder={opts.placeholder} onChange={(e) => onChange(e.target.value)} />
       )}
+      {opts.hint && <span className="mt-1 block text-xs text-slate-500">{opts.hint}</span>}
+    </label>
+  );
+  const toggle = (label: string, on: boolean, onChange: (v: boolean) => void, hint?: string) => (
+    <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={on} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        <span className="font-medium text-slate-800">{label}</span>
+        {hint && <span className="block text-xs text-slate-500">{hint}</span>}
+      </span>
     </label>
   );
 
-  const listEditor = (list: ListKey) => (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 text-xs text-slate-500">
-          Section order:
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={() => moveSection(list, -1)} aria-label={`Move ${SECTION_LABEL[list]} up`}>
-            <ArrowUp className="h-3.5 w-3.5" />
-          </button>
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={() => moveSection(list, 1)} aria-label={`Move ${SECTION_LABEL[list]} down`}>
-            <ArrowDown className="h-3.5 w-3.5" />
+  const sectionEditor = (key: SectionKey) => {
+    const isCustom = key.startsWith("custom:");
+    const custom = isCustom ? r.custom.find((c) => c.id === key.slice(7)) : undefined;
+    const hints = HINTS[isCustom ? "custom" : (key as BuiltIn)];
+    const list = entriesOf(r, key);
+    const singular = (custom?.title || BUILT_IN_LABEL[key as BuiltIn] || "entry").replace(/s$/, "").toLowerCase();
+    return (
+      <div className="space-y-3">
+        {custom && (
+          <div className="flex items-end gap-2">
+            <div className="flex-1">{field("Section title", custom.title, (v) => setR((x) => ({ ...x, custom: x.custom.map((c) => (c.id === custom.id ? { ...c, title: v } : c)) })))}</div>
+            <button className="btn-ghost text-red-600" onClick={() => removeCustom(custom.id)}>
+              <Trash2 className="h-4 w-4" /> Delete section
+            </button>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            Position on resume
+            <button className="btn-ghost px-2 py-1" onClick={() => moveSection(key, -1)} aria-label="Move section up">
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
+            <button className="btn-ghost px-2 py-1" onClick={() => moveSection(key, 1)} aria-label="Move section down">
+              <ArrowDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => addEntry(key)}>
+            <Plus className="h-3.5 w-3.5" /> Add {singular}
           </button>
         </div>
-        <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => add(list)}>
-          <Plus className="h-3.5 w-3.5" /> Add {SECTION_LABEL[list].toLowerCase().replace(/s$/, "")}
-        </button>
+        {!list.length && <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">Empty sections don’t appear on the resume.</p>}
+        {list.map((e, i) => (
+          <div key={i} className="space-y-2.5 rounded-xl border border-slate-200 p-3.5">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span className="font-medium">#{i + 1}</span>
+              <span className="flex gap-1">
+                <button className="rounded p-1 hover:bg-slate-100" onClick={() => moveEntry(key, i, -1)} aria-label="Move up">
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </button>
+                <button className="rounded p-1 hover:bg-slate-100" onClick={() => moveEntry(key, i, 1)} aria-label="Move down">
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+                <button className="rounded p-1 text-red-600 hover:bg-red-50" onClick={() => removeEntry(key, i)} aria-label="Remove">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </div>
+            <input className="input" placeholder={hints.title} value={e.title} onChange={(ev) => setEntry(key, i, "title", ev.target.value)} />
+            <input className="input" placeholder={hints.sub} value={e.sub} onChange={(ev) => setEntry(key, i, "sub", ev.target.value)} />
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <input className="input" placeholder={hints.period} value={e.period} onChange={(ev) => setEntry(key, i, "period", ev.target.value)} />
+              <input className="input" placeholder={hints.place} value={e.place} onChange={(ev) => setEntry(key, i, "place", ev.target.value)} />
+            </div>
+            {hints.points && <textarea className="input" rows={key === "education" ? 2 : 4} placeholder={hints.points} value={e.points} onChange={(ev) => setEntry(key, i, "points", ev.target.value)} />}
+          </div>
+        ))}
       </div>
-      {!r[list].length && <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">Nothing here yet. Leave it empty and the section won’t appear on the resume.</p>}
-      {r[list].map((e, i) => (
-        <div key={i} className="space-y-2.5 rounded-xl border border-slate-200 p-3.5">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span className="font-medium">
-              {SECTION_LABEL[list].replace(/s$/, "")} {i + 1}
-            </span>
-            <span className="flex gap-1">
-              <button className="rounded p-1 hover:bg-slate-100" onClick={() => moveEntry(list, i, -1)} aria-label="Move up">
-                <ArrowUp className="h-3.5 w-3.5" />
-              </button>
-              <button className="rounded p-1 hover:bg-slate-100" onClick={() => moveEntry(list, i, 1)} aria-label="Move down">
-                <ArrowDown className="h-3.5 w-3.5" />
-              </button>
-              <button className="rounded p-1 text-red-600 hover:bg-red-50" onClick={() => remove(list, i)} aria-label="Remove">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </span>
-          </div>
-          <input className="input" placeholder={FIELD_HINTS[list].title} value={e.title} onChange={(ev) => setEntry(list, i, "title", ev.target.value)} />
-          <input className="input" placeholder={FIELD_HINTS[list].sub} value={e.sub} onChange={(ev) => setEntry(list, i, "sub", ev.target.value)} />
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            <input className="input" placeholder={FIELD_HINTS[list].period} value={e.period} onChange={(ev) => setEntry(list, i, "period", ev.target.value)} />
-            <input className="input" placeholder={FIELD_HINTS[list].place} value={e.place} onChange={(ev) => setEntry(list, i, "place", ev.target.value)} />
-          </div>
-          {FIELD_HINTS[list].points && <textarea className="input" rows={list === "education" ? 2 : 4} placeholder={FIELD_HINTS[list].points} value={e.points} onChange={(ev) => setEntry(list, i, "points", ev.target.value)} />}
-        </div>
-      ))}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-5">
-      {/* Print only the sheet, on A4 with no page margin (the sheet has its own). */}
-      <style>{`#resume-print-root { display: none; } @media print { @page { size: A4; margin: 0; } body > *:not(#resume-print-root) { display: none !important; } #resume-print-root { display: block !important; } html, body { background: #fff !important; padding: 0 !important; } }`}</style>
-      {mounted && createPortal(<div id="resume-print-root"><Sheet r={r} id="resume-sheet-print" /></div>, document.body)}
+      {/* Print only the resume copy at the end of <body>, on A4 with no page margin. */}
+      <style>{`#resume-print-root { display: none; } @media print { @page { size: A4; margin: 0; } body > *:not(#resume-print-root) { display: none !important; } #resume-print-root { display: block !important; } html, body { background: #fff !important; padding: 0 !important; } #resume-print-root article { min-height: 0 !important; } }`}</style>
+      {mounted && createPortal(<div id="resume-print-root"><ResumeSheet r={r} id="resume-sheet-print" /></div>, document.body)}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Resume builder</h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-600">A one-page, recruiter-ready resume. Pick a template, fill the sections, and download the PDF. It saves in this browser as you type.</p>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">Make the resume you’ll actually send: pick a template, fill the sections, then download a PDF or a Word file. Saved in this browser as you type.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             className="btn-ghost"
             onClick={() => {
-              if (!r.name || confirm("Replace what you have typed with the example resume?")) setR({ ...EXAMPLE, template: r.template, accent: r.accent, font: r.font });
+              if (!r.name || confirm("Replace what you have typed with the example resume?")) setR({ ...EXAMPLE_RESUME, template: r.template, accent: r.accent, font: r.font, density: r.density });
             }}
           >
             <Sparkles className="h-4 w-4" /> Fill example
           </button>
-          <button className="btn-primary" onClick={() => window.print()}>
+          <button className="btn-ghost" onClick={downloadWord} disabled={busy === "word"}>
+            <FileText className="h-4 w-4" /> {busy === "word" ? "Preparing…" : "Word (.docx)"}
+          </button>
+          <button className="btn-primary" onClick={printPdf}>
             <Download className="h-4 w-4" /> Download PDF
           </button>
           <a href="#resume-preview" className="btn-ghost lg:hidden">
@@ -479,33 +316,34 @@ export default function ResumePage() {
         {/* ---------- Editor ---------- */}
         <div className="min-w-0 space-y-4">
           <div className="card space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-20 text-sm font-medium text-slate-700">Template</span>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {TEMPLATES.map((t) => (
-                <button key={t.id} onClick={() => set("template", t.id)} className={`rounded-lg border px-3 py-1.5 text-sm ${r.template === t.id ? "border-brand-500 bg-brand-50 font-medium text-brand-700" : "border-slate-200 hover:border-slate-300"}`}>
+                <button key={t.id} onClick={() => set("template", t.id)} className={`rounded-lg border px-3 py-2 text-sm ${r.template === t.id ? "border-brand-500 bg-brand-50 font-semibold text-brand-700" : "border-slate-200 hover:border-slate-300"}`}>
                   {t.name}
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="w-20 text-sm font-medium text-slate-700">Colour</span>
-              {ACCENTS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => set("accent", c)}
-                  disabled={r.template === "classic"}
-                  className={`h-7 w-7 rounded-full ring-offset-2 ring-offset-surface disabled:opacity-30 ${r.accent === c ? "ring-2 ring-slate-900" : ""}`}
-                  style={{ background: c }}
-                  aria-label={`Accent colour ${c}`}
-                  title={r.template === "classic" ? "The classic template is black and white" : undefined}
-                />
-              ))}
-              <span className="ml-3 text-sm font-medium text-slate-700">Font</span>
-              {(["sans", "serif"] as const).map((f) => (
-                <button key={f} onClick={() => set("font", f)} className={`rounded-lg border px-3 py-1 text-sm ${r.font === f ? "border-brand-500 bg-brand-50 font-medium text-brand-700" : "border-slate-200"}`} style={{ fontFamily: f === "serif" ? "Georgia, serif" : undefined }}>
-                  {f === "sans" ? "Sans" : "Serif"}
-                </button>
-              ))}
+            <p className="text-xs text-slate-500">{template.note}</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+              <span className="flex items-center gap-1.5">
+                {ACCENTS.map((c) => (
+                  <button key={c} onClick={() => set("accent", c)} disabled={r.template === "classic"} className={`h-7 w-7 rounded-full ring-offset-2 ring-offset-surface disabled:opacity-30 ${r.accent === c ? "ring-2 ring-slate-900" : ""}`} style={{ background: c }} aria-label={`Accent colour ${c}`} title={r.template === "classic" ? "Classic is black and white" : undefined} />
+                ))}
+              </span>
+              <span className="flex gap-1">
+                {(["sans", "serif"] as const).map((f) => (
+                  <button key={f} onClick={() => set("font", f)} className={`rounded-lg border px-2.5 py-1 text-sm ${r.font === f ? "border-brand-500 bg-brand-50 font-medium text-brand-700" : "border-slate-200"}`} style={{ fontFamily: f === "serif" ? "Georgia, serif" : undefined }}>
+                    {f === "sans" ? "Sans" : "Serif"}
+                  </button>
+                ))}
+              </span>
+              <span className="flex gap-1">
+                {(["compact", "normal", "relaxed"] as const).map((d) => (
+                  <button key={d} onClick={() => set("density", d)} className={`rounded-lg border px-2.5 py-1 text-sm capitalize ${r.density === d ? "border-brand-500 bg-brand-50 font-medium text-brand-700" : "border-slate-200"}`}>
+                    {d}
+                  </button>
+                ))}
+              </span>
             </div>
           </div>
 
@@ -520,28 +358,131 @@ export default function ResumePage() {
 
             {tab === "about" && (
               <div className="space-y-3">
-                {input("Full name", r.name, (v) => set("name", v), { placeholder: "Aarav Sharma" })}
-                {input("Headline", r.headline, (v) => set("headline", v), { placeholder: "B.Tech CSE (2026) · Java, React, SQL" })}
+                {field("Full name", r.name, (v) => set("name", v), { placeholder: "Aarav Sharma" })}
+                {field("Headline", r.headline, (v) => set("headline", v), { placeholder: "B.Tech CSE (2026) · Java, React, SQL", hint: "One line under your name: degree and year, or your target role, plus 3–4 key skills." })}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {input("Email", r.email, (v) => set("email", v), { placeholder: "name@email.com" })}
-                  {input("Phone", r.phone, (v) => set("phone", v), { placeholder: "+91 …" })}
+                  {field("Email", r.email, (v) => set("email", v), { placeholder: "name@email.com" })}
+                  {field("Phone", r.phone, (v) => set("phone", v), { placeholder: "+91 98765 43210" })}
                 </div>
-                {input("City", r.location, (v) => set("location", v), { placeholder: "Lucknow, Uttar Pradesh" })}
+                {field("City", r.location, (v) => set("location", v), { placeholder: "Lucknow, Uttar Pradesh" })}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {input("LinkedIn", r.linkedin, (v) => set("linkedin", v), { placeholder: "linkedin.com/in/…" })}
-                  {input("GitHub", r.github, (v) => set("github", v), { placeholder: "github.com/…" })}
+                  {field("LinkedIn", r.linkedin, (v) => set("linkedin", v), { placeholder: "linkedin.com/in/…" })}
+                  {field("GitHub", r.github, (v) => set("github", v), { placeholder: "github.com/…" })}
                 </div>
-                {input("Portfolio / other link", r.website, (v) => set("website", v), { placeholder: "Optional" })}
-                {input("Summary", r.summary, (v) => set("summary", v), { area: true, rows: 4, placeholder: "2–3 lines: what you are, your best proof (a project, rank or internship), and the role you want." })}
-                <p className="text-xs text-slate-500">{r.summary.trim().length} characters · aim for 120–420</p>
+                {field("Portfolio / other link", r.website, (v) => set("website", v), { placeholder: "Optional", hint: "Email, phone and links become clickable in the PDF and Word file." })}
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                  {r.photo ? <img src={r.photo} alt="Your photo" className="h-14 w-14 rounded-full object-cover" /> : <span className="grid h-14 w-14 place-items-center rounded-full bg-slate-100 text-slate-400"><ImagePlus className="h-5 w-5" /></span>}
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    {toggle("Show a photo", r.showPhoto, (v) => set("showPhoto", v), "Optional. Many Indian employers expect one; leave it off for companies abroad.")}
+                    <div className="flex gap-2">
+                      <button className="btn-ghost px-2.5 py-1 text-xs" onClick={() => photoInput.current?.click()}>
+                        {r.photo ? "Change photo" : "Upload photo"}
+                      </button>
+                      {r.photo && (
+                        <button className="btn-ghost px-2.5 py-1 text-xs text-red-600" onClick={() => setR((x) => ({ ...x, photo: "", showPhoto: false }))}>
+                          <X className="h-3.5 w-3.5" /> Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    ref={photoInput}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      try {
+                        const photo = await squarePhoto(f);
+                        setR((x) => ({ ...x, photo, showPhoto: true }));
+                      } catch {
+                        alert("Could not read that image. Try a JPG or PNG.");
+                      }
+                    }}
+                  />
+                </div>
               </div>
             )}
-            {(["education", "projects", "experience", "certifications"] as const).map((k) => tab === k && <div key={k}>{listEditor(k)}</div>)}
+
+            {tab === "summary" && (
+              <div className="space-y-2">
+                {field("Professional summary", r.summary, (v) => set("summary", v), { area: true, rows: 6, placeholder: "2–3 lines: who you are, your best proof (a project, rank or internship with a number), and the role you want." })}
+                <p className="text-xs text-slate-500">{r.summary.trim().length} characters · aim for 120–420 · wrap words in **double stars** to make them bold.</p>
+              </div>
+            )}
+
+            {r.order.includes(tab as SectionKey) && sectionEditor(tab as SectionKey)}
+
             {tab === "skills" && (
               <div className="space-y-3">
-                {input("Skills (one group per line, “Group: items”)", r.skills, (v) => set("skills", v), { area: true, rows: 5, placeholder: "Languages: Java, Python, SQL\nFrameworks: Spring Boot, React\nTools: Git, Docker, Linux" })}
-                {input("Achievements (one per line)", r.achievements, (v) => set("achievements", v), { area: true, rows: 4, placeholder: "Finalist, Smart India Hackathon 2024\n4★ on CodeChef (1850)" })}
-                {input("Languages", r.languages, (v) => set("languages", v), { placeholder: "English, Hindi" })}
+                {field("Skills", r.skills, (v) => set("skills", v), { area: true, rows: 6, placeholder: "Languages: Java, Python, SQL\nFrameworks: Spring Boot, React\nTools: Git, Docker, Linux", hint: "One group per line as “Group: items”. Only list what you can answer interview questions on." })}
+                {field("Achievements (one per line)", r.achievements, (v) => set("achievements", v), { area: true, rows: 4, placeholder: "Finalist, Smart India Hackathon 2024\n4★ on CodeChef (max rating 1850)" })}
+              </div>
+            )}
+
+            {tab === "extra" && (
+              <div className="space-y-4">
+                <div className="space-y-2 rounded-xl border border-slate-200 p-3.5">
+                  <div className="text-sm font-medium text-slate-800">Add a section</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SECTION_PRESETS.filter((p) => !r.custom.some((c) => c.title === p)).map((p) => (
+                      <button key={p} className="chip bg-slate-100 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-200" onClick={() => addCustom(p)}>
+                        <Plus className="h-3 w-3" /> {p}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input className="input" placeholder="Or type your own section name" value={newSection} onChange={(e) => setNewSection(e.target.value)} />
+                    <button className="btn-ghost shrink-0" onClick={() => addCustom(newSection.trim())} disabled={!newSection.trim()}>
+                      Add
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {field("Languages", r.languages, (v) => set("languages", v), { placeholder: "English, Hindi" })}
+                  {field("Interests", r.interests, (v) => set("interests", v), { placeholder: "Chess, open source" })}
+                </div>
+                <div className="space-y-3 rounded-xl border border-slate-200 p-3.5">
+                  {toggle("Personal details", r.showPersonal, (v) => set("showPersonal", v), "Date of birth and nationality. Common in Indian resumes; leave off for private companies unless asked.")}
+                  {r.showPersonal && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {field("Date of birth", r.dob, (v) => set("dob", v), { placeholder: "15 August 2004" })}
+                      {field("Nationality", r.nationality, (v) => set("nationality", v), { placeholder: "Indian" })}
+                    </div>
+                  )}
+                  {toggle("Declaration with place, date and signature line", r.declaration, (v) => set("declaration", v), "“I hereby declare that the information given above is true…”: often asked for in government and campus forms.")}
+                  {r.declaration && field("Place", r.declPlace, (v) => set("declPlace", v), { placeholder: "Lucknow" })}
+                </div>
+                <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+                  <button className="btn-ghost text-xs" onClick={exportBackup}>
+                    <FileDown className="h-4 w-4" /> Save backup file
+                  </button>
+                  <button className="btn-ghost text-xs" onClick={() => importInput.current?.click()}>
+                    <FileUp className="h-4 w-4" /> Load backup file
+                  </button>
+                  <input
+                    ref={importInput}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f) importBackup(f);
+                    }}
+                  />
+                  <button
+                    className="btn-ghost text-xs text-red-600"
+                    onClick={() => {
+                      if (confirm("Clear the whole resume? Save a backup first if you may need it.")) setR({ ...EMPTY_RESUME, template: r.template, accent: r.accent, font: r.font, density: r.density });
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" /> Clear everything
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">The backup file lets you move your resume to another phone or computer, or keep versions for different jobs.</p>
               </div>
             )}
           </div>
@@ -563,34 +504,30 @@ export default function ResumePage() {
                 </li>
               ))}
             </ul>
-            <button
-              className="text-xs text-red-600 hover:underline"
-              onClick={() => {
-                if (confirm("Clear the whole resume? This cannot be undone.")) setR({ ...EMPTY, template: r.template, accent: r.accent, font: r.font });
-              }}
-            >
-              Clear everything
-            </button>
           </div>
         </div>
 
         {/* ---------- Live preview ---------- */}
-        <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          {overflow && (
+        <div id="resume-preview" className="min-w-0 scroll-mt-20 lg:sticky lg:top-20 lg:self-start">
+          {pages > 1 && (
             <p className="mb-2 flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-sm text-amber-900">
-              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" /> Your resume runs past one page. Freshers should keep to one: shorten bullets or remove older items.
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {pages} pages. Freshers should keep to one: try Compact spacing, or shorten bullets. Two pages are fine with 3+ years of experience.
             </p>
           )}
           <div ref={wrap} className="w-full">
-            <div id="resume-preview" ref={sheet}>
-              <div id="resume-frame" className="overflow-hidden rounded-lg shadow-lg ring-1 ring-black/10 " style={{ width: PAGE_W * scale, height: (overflow ? (sheet.current?.querySelector("#resume-sheet")?.scrollHeight ?? PAGE_H) : PAGE_H) * scale }}>
-                <div id="resume-scale" style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: PAGE_W }}>
-                  <Sheet r={r} />
-                </div>
+            <div className="relative overflow-hidden rounded-lg shadow-lg ring-1 ring-black/10" style={{ width: PAGE_W * scale, height: pages * PAGE_H * scale }}>
+              <div ref={preview} style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: PAGE_W }}>
+                <ResumeSheet r={r} />
               </div>
+              {/* Where page 2 starts in the PDF. */}
+              {Array.from({ length: pages - 1 }, (_, i) => (
+                <div key={i} className="pointer-events-none absolute right-0 left-0 border-t-2 border-dashed border-red-400" style={{ top: (i + 1) * PAGE_H * scale }}>
+                  <span className="absolute right-1 -top-5 rounded bg-red-500 px-1.5 text-[10px] text-white">page {i + 2}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <p className="mt-2 text-center text-xs text-slate-500">A4 preview · exactly what the PDF will look like. In the print window choose “Save as PDF”.</p>
+          <p className="mt-2 text-center text-xs text-slate-500">A4 preview: exactly what the PDF looks like. In the print window choose “Save as PDF”; links stay clickable.</p>
         </div>
       </div>
     </div>
