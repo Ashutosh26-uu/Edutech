@@ -97,7 +97,8 @@ export const testAttempts = pgTable(
     skipped: integer("skipped"),
     score: real("score"),
   },
-  (t) => [index("attempts_user_idx").on(t.userId, t.startedAt)],
+  // attempts_rank_idx: ranking a submitted test against everyone else's on the same exam and kind.
+  (t) => [index("attempts_user_idx").on(t.userId, t.startedAt), index("attempts_rank_idx").on(t.examId, t.kind, t.submittedAt)],
 );
 
 /**
@@ -168,3 +169,39 @@ export const userData = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
+
+/**
+ * Problems users report on a question (wrong key, typo, unclear explanation). Reviewed on
+ * /admin/reports; resolving or dismissing a report keeps it for the record.
+ */
+export const questionReports = pgTable(
+  "question_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    questionId: text("question_id").notNull(),
+    topicId: text("topic_id"),
+    reason: text("reason", { enum: ["wrong-answer", "wrong-question", "wrong-explanation", "duplicate", "other"] }).notNull(),
+    note: text("note"),
+    status: text("status", { enum: ["open", "resolved", "dismissed"] }).notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("reports_status_idx").on(t.status, t.createdAt), index("reports_question_idx").on(t.questionId)],
+);
+
+/**
+ * How often each bank question is answered and which option people pick, in the question's
+ * original option order. When most people pick an option other than the key, the key may be
+ * wrong; /admin/reports lists those questions.
+ */
+export const questionStats = pgTable("question_stats", {
+  questionId: text("question_id").primaryKey(),
+  topicId: text("topic_id").notNull(),
+  answered: integer("answered").notNull().default(0),
+  correct: integer("correct").notNull().default(0),
+  pick0: integer("pick0").notNull().default(0),
+  pick1: integer("pick1").notNull().default(0),
+  pick2: integer("pick2").notNull().default(0),
+  pick3: integer("pick3").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

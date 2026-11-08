@@ -182,7 +182,7 @@ function PracticeView() {
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
     // progress and the mistake notebook follow the account.
     if (!isTimed && server && account.user) {
-      postJson("/api/progress", { answers: answered.filter((r) => r.question.topicId).map((r) => ({ questionId: r.question.id, topicId: r.question.topicId!, correct: r.correct })) }).catch(() => {});
+      postJson("/api/progress", { answers: answered.filter((r) => r.question.topicId).map((r) => ({ questionId: r.question.id, topicId: r.question.topicId!, correct: r.correct, chosenText: r.chosen === null ? null : (r.question.options[r.chosen] ?? null) })) }).catch(() => {});
     }
     if (isFullMock && exam) {
       const correct = results.filter((r) => r.correct).length;
@@ -298,6 +298,7 @@ function PracticeView() {
             sectional={isTimed && sectional}
             previous={isTimed ? previous : null}
             submit={isTimed && serverTest ? submitToServer : undefined}
+            attemptId={isTimed ? serverTest?.attemptId : undefined}
             onFinish={onFinish}
             onRestart={() => {
               setServerTest(null);

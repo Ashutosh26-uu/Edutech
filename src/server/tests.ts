@@ -8,6 +8,7 @@ import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
 import { recordMistakes } from "./progress";
+import { picksFromTest, recordPicks } from "./quality";
 
 const FULL_SIZE = 25;
 const TOPIC_SIZE = 15;
@@ -215,6 +216,8 @@ export async function submitTest(user: SessionUser, attemptId: string, answers: 
   });
 
   if (!updated) return submitTest(user, attemptId, answers, times); // a concurrent submit won; return its result
+  // Answer statistics are a nice-to-have: a failure here must not lose the submitted result.
+  await recordPicks(picksFromTest(attempt.questions, clean)).catch((e) => console.error("recordPicks failed", e));
   return { ...review({ ...attempt, correct, wrong, skipped, score, submittedAt: new Date() }, clean, cleanTimes, late) };
 }
 

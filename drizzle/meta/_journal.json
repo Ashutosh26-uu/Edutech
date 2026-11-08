@@ -36,6 +36,13 @@
       "when": 1793887008339,
       "tag": "0004_user_data",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794154358835,
+      "tag": "0005_reports_stats_rank",
+      "breakpoints": true
     }
   ]
 }
