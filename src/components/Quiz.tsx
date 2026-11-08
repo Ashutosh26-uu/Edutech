@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { RichText } from "@/components/RichText";
+import { ReportButton, StandingCard } from "@/components/QualityWidgets";
 import { cardsForQuestions } from "@/lib/cards";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
@@ -45,6 +46,8 @@ interface Props {
   onFinish?: (results: AnswerResult[]) => void;
   onTimestamp?: (secs: number) => void;
   onRestart?: () => void;
+  /** Server-scored tests: the attempt id, for the rank and percentile on the result screen. */
+  attemptId?: string;
   /**
    * Server-scored tests: questions arrive without answers, and this sends the chosen options and
    * per-question seconds to the server and resolves with the full questions (with answers).
@@ -105,7 +108,7 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit }: Props) {
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId }: Props) {
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
   const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
@@ -197,7 +200,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
-  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} />;
+  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} attemptId={attemptId} />;
 
   const q = questions[idx];
   const text = inLang(q, lang);
@@ -266,7 +269,10 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         <div className={`rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
-            <BookmarkButton question={q} />
+            <span className="flex shrink-0 gap-1">
+              <ReportButton question={q} />
+              <BookmarkButton question={q} />
+            </span>
           </div>
           <div className="mt-1 whitespace-pre-line"><RichText text={text.explanation} /></div>
           {q.timestamp !== undefined && onTimestamp && (
@@ -348,10 +354,11 @@ interface ResultsProps {
   previous?: { score: number; total: number } | null;
   onTimestamp?: (s: number) => void;
   onRestart?: () => void;
+  attemptId?: string;
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart }: ResultsProps) {
+export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, attemptId }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [lang, setLang] = useLang();
   const bilingual = useMemo(() => hasHindi(results.map((r) => r.question)), [results]);
@@ -403,6 +410,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         <Stat label="Wrong" value={wrong} tone="red" />
         <Stat label="Skipped" value={skipped} tone="slate" />
       </div>
+      {attemptId && <StandingCard attemptId={attemptId} />}
       <p className="text-sm text-slate-600">
         Accuracy <b>{pct}%</b> of attempted
         {negativeMarking > 0 && <> · Negative marking: −{+(negativeMarking * marks).toFixed(2)} mark{negativeMarking * marks === 1 ? "" : "s"} per wrong answer</>}
@@ -536,7 +544,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           return (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <div className="font-medium whitespace-pre-line text-slate-900">
-              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} />
+              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} /> <ReportButton question={r.question} />
             </div>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : t.options[r.chosen]}</b>

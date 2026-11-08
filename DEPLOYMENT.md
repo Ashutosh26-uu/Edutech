@@ -56,6 +56,12 @@ Current deployment: **https://studyclip.netlify.app** (Netlify project `studycli
 7. Optionally set `ANTHROPIC_API_KEY` to turn on the AI doubt solver on `/learn` (signed-in users, `DOUBT_DAILY_LIMIT` per day, default 10). Every answer is a paid API call; set a monthly spend limit in the Anthropic Console.
 8. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL` (your support address). The Contact, Privacy, Terms and Refund pages then show it next to the contact form.
 
+## Question reports and answer statistics
+
+Every bank question has a **Report** button (signed in or not, 20 reports per hour per IP); reports land in `question_reports`. Answers from practice (signed in) and timed tests are also counted per question in `question_stats`, by the option's position in the bank. Admins (`ADMIN_EMAILS`) see both at `/admin/reports`: reported questions grouped by question, and **suspect answer keys** — questions with at least 15 answers where another option is picked more often than the key. Fix the question in `src/data/bank/<topic>.ts`, deploy, then mark its reports fixed. Needs migration `0005` (`npm run db:migrate`).
+
+Result screens of server-scored tests show **rank and percentile** among everyone who took the same kind of test (each user's best attempt counts; topic and section tests compare only the same topics).
+
 ## Contact messages
 
 The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Set `ADMIN_EMAILS` (comma-separated account emails) and the listed accounts can read and mark messages at `/admin/messages`. Without it, read them in the Neon console's SQL editor:
