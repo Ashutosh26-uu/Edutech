@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RichText } from "@/components/RichText";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -93,6 +94,7 @@ export default function AdminReportsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
+        <Link href="/admin/messages" className="text-sm text-brand-700 hover:underline">Contact messages →</Link>
         <h1 className="text-2xl font-semibold">Question reports</h1>
         <p className="text-sm text-slate-600">Fix a question in its bank file, deploy, then mark its reports resolved.</p>
       </div>

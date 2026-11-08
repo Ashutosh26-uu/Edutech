@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CheckCircle2, Play, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Play, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Stat } from "@/components/Quiz";
@@ -71,14 +71,51 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
   const store = useStore();
   const [shown, setShown] = useState(false);
   const [done, setDone] = useState(0);
-  const card = store ? dueCards(store)[0] : undefined;
+  // Skipped cards go to the back of this session's queue without being rated.
+  const [skipped, setSkipped] = useState<string[]>([]);
+  // Cards already passed in this session, newest last, for "Previous".
+  const [history, setHistory] = useState<string[]>([]);
+  // A previous card being looked at again; null while on the current card.
+  const [viewing, setViewing] = useState<string | null>(null);
+
+  const due = store ? dueCards(store) : [];
+  const queue = [...due.filter((c) => !skipped.includes(c.id)), ...skipped.flatMap((id) => due.filter((c) => c.id === id))];
+  const current = queue[0];
+  const card = (viewing && store?.cards[viewing]) || current;
 
   const grade = (g: Grade) => {
     if (!card) return;
     gradeCard(card.id, g);
+    if (!viewing) {
+      setHistory((h) => [...h.filter((id) => id !== card.id), card.id]);
+      setDone((d) => d + 1);
+    }
+    setSkipped((s) => s.filter((id) => id !== card.id));
+    setViewing(null);
     setShown(false);
-    setDone((d) => d + 1);
   };
+  /** Next card without rating this one; it comes back at the end of the session. */
+  const skip = () => {
+    if (viewing) {
+      setViewing(null);
+      setShown(false);
+      return;
+    }
+    if (!current || queue.length < 2) return;
+    setSkipped((s) => [...s.filter((id) => id !== current.id), current.id]);
+    setHistory((h) => [...h.filter((id) => id !== current.id), current.id]);
+    setShown(false);
+  };
+  /** Look at the card before this one again (answer shown; rating it again reschedules it). */
+  const previous = () => {
+    const before = viewing ? history.slice(0, history.indexOf(viewing)) : history;
+    const id = [...before].reverse().find((x) => x !== current?.id && store?.cards[x]);
+    if (!id) return;
+    setViewing(id);
+    setShown(true);
+  };
+  const canPrevious = (viewing ? history.slice(0, history.indexOf(viewing)) : history).some((x) => x !== current?.id && store?.cards[x]);
+  const canSkip = !!viewing || queue.length > 1;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -87,6 +124,8 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
         e.preventDefault();
         setShown(true);
       } else if (shown && ["1", "2", "3", "4"].includes(e.key)) grade(Number(e.key) as Grade);
+      else if (e.key === "ArrowRight" || e.key.toLowerCase() === "n") skip();
+      else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "p") previous();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -106,7 +145,7 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
   }
 
   const intervals = previewIntervals(card);
-  const remaining = dueCards(store).length;
+  const remaining = due.length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -118,6 +157,14 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
           End session
         </button>
       </div>
+      {viewing && (
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          <span>Looking at a previous card. Rate it again to reschedule it, or go back.</span>
+          <button className="shrink-0 font-medium underline" onClick={skip}>
+            Back to current
+          </button>
+        </div>
+      )}
       <div className="card min-h-64 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <span className="chip bg-slate-100 text-slate-600">{card.source}</span>
@@ -156,6 +203,15 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
           Show answer (Space)
         </button>
       )}
+      <div className="flex items-center justify-between gap-2">
+        <button className="btn-ghost" onClick={previous} disabled={!canPrevious} title="Previous card (← key)">
+          <ArrowLeft className="h-4 w-4" /> Previous
+        </button>
+        <span className="hidden text-xs text-slate-400 sm:inline">← → to move · Space to reveal · 1–4 to rate</span>
+        <button className="btn-ghost" onClick={skip} disabled={!canSkip} title={viewing ? "Back to the current card" : "Skip without rating; it comes back later in this session (→ key)"}>
+          {viewing ? "Current card" : "Skip"} <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

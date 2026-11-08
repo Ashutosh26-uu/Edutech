@@ -3,7 +3,7 @@
 import { Check, Layers, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
 import { MicButton, SpeakButton } from "@/components/Speak";
 import { TopicNotesView } from "@/components/TopicNotesView";
@@ -57,18 +57,22 @@ function TopicSearch({ initial }: { initial: string }) {
     setLoading(false);
   }, []);
 
+  // The topic lives in the URL (?topic=…), so the browser's back button returns to the previous topic.
+  const router = useRouter();
   useEffect(() => {
+    setQuery(initial);
     if (initial) search(initial);
   }, [initial, search]);
 
   const go = (q: string) => {
-    setQuery(q);
-    search(q);
+    if (!q.trim()) return;
+    if (q === initial) search(q);
+    else router.push(`/learn?topic=${encodeURIComponent(q)}`, { scroll: false });
   };
 
   return (
     <div className="space-y-5">
-      <form onSubmit={(e) => (e.preventDefault(), search(query))} className="flex max-w-2xl gap-2">
+      <form onSubmit={(e) => (e.preventDefault(), go(query))} className="flex max-w-2xl gap-2">
         <input className="input" placeholder="e.g. Fundamental Rights, Profit and Loss, Piaget…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <MicButton onText={go} />
         <button className="btn-primary" disabled={loading}>
@@ -105,6 +109,41 @@ function TopicSearch({ initial }: { initial: string }) {
 
       {data?.result && <TopicView result={data.result} related={data.suggestions} onPick={go} />}
     </div>
+  );
+}
+
+/** Previous / next topic in the same subject, so a subject can be studied start to finish. */
+function TopicSteps({ topic, onPick }: { topic: Topic; onPick: (q: string) => void }) {
+  const list = TOPICS.filter((t) => t.subject === topic.subject);
+  const i = list.findIndex((t) => t.id === topic.id);
+  const prev = i > 0 ? list[i - 1] : null;
+  const next = i >= 0 && i < list.length - 1 ? list[i + 1] : null;
+  if (!prev && !next) return null;
+  const go = (t: Topic) => {
+    onPick(t.name);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  return (
+    <nav className="grid grid-cols-2 gap-3" aria-label={`More ${topic.subject} topics`}>
+      {prev ? (
+        <button onClick={() => go(prev)} className="card-link p-3 text-left">
+          <span className="text-xs text-slate-500">← Previous in {topic.subject}</span>
+          <span className="mt-0.5 block text-sm font-medium text-slate-900">{prev.name}</span>
+        </button>
+      ) : (
+        <span />
+      )}
+      {next ? (
+        <button onClick={() => go(next)} className="card-link p-3 text-right">
+          <span className="text-xs text-slate-500">
+            Next in {topic.subject} ({i + 2}/{list.length}) →
+          </span>
+          <span className="mt-0.5 block text-sm font-medium text-slate-900">{next.name}</span>
+        </button>
+      ) : (
+        <span />
+      )}
+    </nav>
   );
 }
 
@@ -148,6 +187,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
           </ul>
         </div>
         <TopicNotesView topicId={topic.id} />
+        <TopicSteps topic={topic} onPick={onPick} />
         <div className="card">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Practice questions ({questions.length})</h3>

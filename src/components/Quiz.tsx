@@ -112,6 +112,8 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
   const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
+  // Mock tests: questions the user flagged to come back to, as in the real exam's "Mark for review".
+  const [marked, setMarked] = useState<boolean[]>(() => questions.map(() => false));
   const [done, setDone] = useState(false);
   const [scored, setScored] = useState<MCQ[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -198,6 +200,29 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, left, sectionLeft, done, timed]);
 
+  // Keyboard: 1–4 or A–D pick an option, ← / → move between questions (not while typing).
+  useEffect(() => {
+    if (done || !questions.length) return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (el?.closest?.("input, textarea, select, [contenteditable=true]") || e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const pick = ["1", "2", "3", "4"].indexOf(k) >= 0 ? Number(k) - 1 : ["a", "b", "c", "d"].indexOf(k);
+      if (pick >= 0 && pick < questions[idx].options.length) {
+        e.preventDefault();
+        document.querySelectorAll<HTMLButtonElement>("[data-quiz-option]")[pick]?.click();
+      } else if (e.key === "ArrowRight" && idx < last) {
+        e.preventDefault();
+        goTo(idx + 1);
+      } else if (e.key === "ArrowLeft" && idx > first) {
+        e.preventDefault();
+        goTo(idx - 1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
   if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} attemptId={attemptId} />;
@@ -257,7 +282,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
           else if (isRevealed && picked) cls = "border-red-300 bg-red-50";
           else if (picked) cls = "border-brand-500 bg-brand-50";
           return (
-            <button key={i} onClick={() => choose(i)} className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
+            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
               <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600">{LETTERS[i]}</span>
               <span className="min-w-0 whitespace-pre-wrap break-words">{opt}</span>
             </button>
@@ -283,38 +308,64 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         </div>
       )}
 
-      {mode === "mock" && (
-        <div className="space-y-2">
-          {(sections && !cur ? sections : [{ name: cur?.name ?? "", from: first, count: last - first + 1, minutes: 0 }]).map((s) => (
-            <div key={s.from} className="flex flex-wrap items-center gap-1.5">
-              {sections && !cur && <span className="mr-1 w-full text-xs text-slate-500 sm:w-auto">{s.name}</span>}
-              {Array.from({ length: s.count }, (_, k) => s.from + k).map((i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  className={`h-8 w-8 rounded-lg text-xs font-semibold ${i === idx ? "ring-2 ring-brand-500" : ""} ${chosen[i] !== null ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}
-                >
+      {/* Question palette: jump to any question. Mock: answered / marked for review; practice: right / wrong. */}
+      <div className="space-y-2">
+        {(sections && !cur ? sections : [{ name: cur?.name ?? "", from: first, count: last - first + 1, minutes: 0 }]).map((s) => (
+          <div key={s.from} className="flex flex-wrap items-center gap-1.5">
+            {sections && !cur && <span className="mr-1 w-full text-xs text-slate-500 sm:w-auto">{s.name}</span>}
+            {Array.from({ length: s.count }, (_, k) => s.from + k).map((i) => {
+              const state =
+                mode === "practice"
+                  ? revealed[i]
+                    ? chosen[i] === questions[i].answer
+                      ? "bg-emerald-500 text-white"
+                      : "bg-red-500 text-white"
+                    : "bg-slate-100 text-slate-600"
+                  : marked[i]
+                    ? chosen[i] !== null
+                      ? "bg-violet-600 text-white"
+                      : "bg-violet-100 text-violet-800 ring-1 ring-violet-400"
+                    : chosen[i] !== null
+                      ? "bg-brand-600 text-white"
+                      : "bg-slate-100 text-slate-600";
+              return (
+                <button key={i} onClick={() => goTo(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "step" : undefined} className={`relative h-8 w-8 rounded-lg text-xs font-semibold ${state} ${i === idx ? "outline-2 outline-offset-2 outline-brand-500" : ""}`}>
                   {i + 1}
                 </button>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        ))}
+        {mode === "mock" ? (
+          <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
+            <span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-brand-600 align-middle" />Answered</span>
+            <span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-slate-200 align-middle" />Not answered</span>
+            <span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-violet-100 ring-1 ring-violet-400 align-middle" />Marked for review</span>
+            <span><span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-violet-600 align-middle" />Answered &amp; marked</span>
+          </p>
+        ) : (
+          <p className="text-[11px] text-slate-500">Tap a number to jump · keys 1–4 to answer · ← → to move</p>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
         <button className="btn-ghost" disabled={idx === first} onClick={() => goTo(idx - 1)}>
           ← Previous
         </button>
         <div className="flex gap-2">
+          {mode === "mock" && (
+            <button className={`btn-ghost ${marked[idx] ? "border-violet-400 text-violet-700" : ""}`} aria-pressed={marked[idx]} onClick={() => setMarked((m) => m.map((v, k) => (k === idx ? !v : v)))}>
+              {marked[idx] ? "Marked ✓" : "Mark for review"}
+            </button>
+          )}
           {mode === "mock" && chosen[idx] !== null && (
             <button className="btn-ghost" onClick={() => setChosen((c) => c.map((v, k) => (k === idx ? null : v)))}>
               Clear
             </button>
           )}
           {idx < last ? (
-            <button className="btn-primary" disabled={mode === "practice" && !isRevealed} onClick={() => goTo(idx + 1)}>
-              Next →
+            <button className={mode === "practice" && !isRevealed ? "btn-ghost" : "btn-primary"} onClick={() => goTo(idx + 1)}>
+              {mode === "practice" && !isRevealed ? "Skip →" : mode === "mock" ? "Save & next →" : "Next →"}
             </button>
           ) : cur && section < (sections?.length ?? 0) - 1 ? (
             <button
@@ -326,7 +377,17 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
               Next section →
             </button>
           ) : (
-            <button className="btn-primary" disabled={(mode === "practice" && !isRevealed) || submitting} onClick={finish}>
+            <button
+              className="btn-primary"
+              disabled={submitting}
+              onClick={() => {
+                const unanswered = questions.length - answeredCount;
+                const flagged = marked.filter(Boolean).length;
+                if (mode === "mock" && (unanswered || flagged) && !confirm(`Submit the test?\n\n${answeredCount} answered · ${unanswered} not answered · ${flagged} marked for review.\n\nYou can’t change answers after submitting.`)) return;
+                if (mode === "practice" && unanswered && !confirm(`${unanswered} question${unanswered === 1 ? "" : "s"} skipped. See results anyway?`)) return;
+                finish();
+              }}
+            >
               {submitting ? "Submitting…" : mode === "mock" ? `Submit test (${answeredCount}/${questions.length} answered)` : "See results"}
             </button>
           )}
@@ -360,6 +421,8 @@ interface ResultsProps {
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
 export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, attemptId }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
+  // Answer review filter: long mocks are easier to review one kind of answer at a time.
+  const [show, setShow] = useState<"all" | "wrong" | "skipped" | "correct">("all");
   const [lang, setLang] = useLang();
   const bilingual = useMemo(() => hasHindi(results.map((r) => r.question)), [results]);
   const correct = results.filter((r) => r.correct).length;
@@ -397,6 +460,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
     .sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n || b[1].n - a[1].n)
     .slice(0, 5)
     .map(([id]) => TOPIC_BY_ID.get(id)?.name ?? id);
+  // Topics below 50% in this set, for a one-tap practice set on them.
+  const weakIds = [...byTopic].filter(([id, t]) => TOPIC_BY_ID.has(id) && pctOf(t.c, t.n) < 50).map(([id]) => id).slice(0, 8);
 
   const saveMistakes = () => {
     setSaved(addCards(cardsForQuestions(wrongBank.map((r) => r.question))));
@@ -533,6 +598,20 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="flex items-center gap-2 font-semibold">Review answers {bilingual && <LangToggle lang={lang} setLang={setLang} />}</h4>
+          <div className="flex gap-1 text-xs" role="group" aria-label="Show answers">
+            {(
+              [
+                ["all", `All ${results.length}`],
+                ["wrong", `Wrong ${wrong}`],
+                ["skipped", `Skipped ${skipped}`],
+                ["correct", `Correct ${correct}`],
+              ] as const
+            ).map(([k, label]) => (
+              <button key={k} onClick={() => setShow(k)} aria-pressed={show === k} className={`rounded-md px-2 py-1 ${show === k ? "bg-ink text-on-ink" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
           {wrongBank.length > 0 && (
             <button className="btn-ghost text-xs" onClick={saveMistakes} disabled={saved !== null}>
               <BookmarkPlus className="h-3.5 w-3.5" /> {saved === null ? `Add ${wrongBank.length} wrong answer${wrongBank.length === 1 ? "" : "s"} to flashcards` : saved ? `${saved} added to flashcards` : "Already in your flashcards"}
@@ -540,6 +619,9 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           )}
         </div>
         {results.map((r, i) => {
+          if (show === "wrong" && !(r.chosen !== null && !r.correct)) return null;
+          if (show === "skipped" && r.chosen !== null) return null;
+          if (show === "correct" && !r.correct) return null;
           const t = inLang(r.question, lang);
           return (
           <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
@@ -571,11 +653,19 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
             Try new questions
           </button>
         )}
+        {weakIds.length > 0 && (
+          <Link href={`/practice?topics=${weakIds.join(",")}`} className="btn-ghost">
+            Practise weak topics ({weakIds.length})
+          </Link>
+        )}
         {wrong > 0 && (
           <Link href="/mistakes" className="btn-ghost">
             Open my mistake notebook
           </Link>
         )}
+        <Link href="/progress" className="btn-ghost">
+          My progress
+        </Link>
       </div>
     </div>
   );
