@@ -13,7 +13,8 @@
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "bank:index": "node scripts/bank-index.mjs",
     "check:live": "node scripts/check-live.mjs",
-    "check:questions": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/check-questions.mjs"
+    "check:questions": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/check-questions.mjs",
+    "test:helpbot": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-helpbot.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",

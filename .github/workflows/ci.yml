@@ -34,6 +34,9 @@ jobs:
       - name: Question bank, practice sets and generated answers
         run: npm run check:questions
 
+      - name: Help bot answers
+        run: npm run test:helpbot
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |

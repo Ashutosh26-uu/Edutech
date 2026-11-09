@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AccountMenu } from "@/components/AccountMenu";
 import { AccountSync } from "@/components/AccountSync";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
+import { HelpBot } from "@/components/HelpBot";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
@@ -129,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </footer>
         <CommandPalette />
+        <HelpBot />
         <RegisterSW />
         <AccountSync />
         </AccountProvider>
