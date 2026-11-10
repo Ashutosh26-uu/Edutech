@@ -36,7 +36,7 @@ export async function handleVideo(body: { url?: string; transcript?: string }, o
     const last = lines.at(-1)!;
     transcript = { title: "YouTube video", author: "", lengthSeconds: Math.ceil(last.start + last.dur), language: "en", lines };
   } else if (!opts.canFetchCaptions) {
-    return fail(422, "This online version can’t fetch YouTube captions automatically. Paste the video’s transcript below and it will be analysed in your browser.", { needsTranscript: true });
+    return fail(422, "This online version can’t fetch YouTube captions automatically.", { needsTranscript: true });
   } else {
     try {
       transcript = await fetchTranscript(videoId);

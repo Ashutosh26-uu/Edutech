@@ -109,12 +109,13 @@ export async function fetchTranscript(videoId: string): Promise<VideoTranscript>
     }
   }
   if (!tracks.length) {
-    throw new Error("No captions found for this video. Paste the transcript manually instead.");
+    // YouTube often refuses caption requests from cloud servers, so this doesn't mean the video has none.
+    throw new Error("We couldn’t read this video’s captions automatically (YouTube doesn’t always share them with our server).");
   }
   const track = pickTrack(tracks);
   const res = await fetch(track.baseUrl.replace(/&fmt=[^&]*/, ""), { cache: "no-store" });
   const lines = parseTimedText(await res.text());
-  if (!lines.length) throw new Error("YouTube returned an empty transcript. Paste the transcript manually instead.");
+  if (!lines.length) throw new Error("We couldn’t read this video’s captions automatically.");
 
   const d = player?.videoDetails ?? {};
   return {

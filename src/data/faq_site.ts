@@ -467,8 +467,8 @@ export const SITE: Faq[] = [
     qh: "Mera video kaam nahi kar raha",
     ask: ["video not working", "no captions", "transcript not found", "video error", "link not working", "video load nahi ho raha", "captions nahi hai", "paste transcript"],
     keys: ["captions", "transcript", "error", "shorts", "work"],
-    en: "The breakdown needs the video’s captions. If a video has none (or they can’t be fetched), the page asks you to paste the transcript: on YouTube, click **…more** under the title, then **Show transcript**, copy it and tap **Analyse pasted transcript**. Also check the link is a normal YouTube link (watch, youtu.be, shorts or live).",
-    hi: "Breakdown ke liye video ke captions chahiye. Agar captions nahi hain (ya mil nahi rahe), page transcript paste karne ko kahega: YouTube pe title ke neeche **…more** dabao, phir **Show transcript**, copy karo aur **Analyse pasted transcript** dabao. Ye bhi dekho ki link normal YouTube link hai (watch, youtu.be, shorts ya live).",
+    en: "YouTube doesn’t always share a video’s captions with our server, so sometimes the page asks you to paste the transcript. On YouTube (in a browser, not the app), click **…more** under the title, then **Show transcript**, select all the lines and copy them. Paste them on the page and tap **Break it down**: you get the same chapters, notes and quiz. Also check the link is a normal YouTube link (watch, youtu.be, shorts or live).",
+    hi: "YouTube hamesha video ke captions hamare server ko nahi deta, isliye kabhi-kabhi page transcript paste karne ko kehta hai. YouTube pe (browser mein, app mein nahi) title ke neeche **…more** dabao, phir **Show transcript**, saari lines select karke copy karo. Page pe paste karke **Break it down** dabao: wahi chapters, notes aur quiz milenge. Ye bhi dekho ki link normal YouTube link hai (watch, youtu.be, shorts ya live).",
     links: [["Videos", "/video"]],
   },
   {
