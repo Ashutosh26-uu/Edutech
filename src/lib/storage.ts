@@ -148,6 +148,17 @@ function addXp(s: Store, amount: number, what: keyof DayCounts) {
   s.frozenDays = streakInfo(s).frozen;
 }
 
+/** XP for study that isn't a question, card, video or mock (e.g. a focus-timer block). Counts toward the daily goal and streak. */
+export function awardXp(amount: number) {
+  if (!(amount > 0)) return;
+  const s = load();
+  s.xp += amount;
+  const k = dayKey();
+  s.activity[k] = (s.activity[k] ?? 0) + amount;
+  s.frozenDays = streakInfo(s).frozen;
+  save(s);
+}
+
 export function today(s = load()): DayCounts {
   return s.counts[dayKey()] ?? { questions: 0, reviews: 0, videos: 0, mocks: 0 };
 }
@@ -425,6 +436,18 @@ export function consumeTestAccess(examId: string | undefined): boolean {
   else s.credits -= 1;
   save(s);
   return true;
+}
+
+/** XP for skill practice (speed drills, typing tests): adds to the total and today's activity, not to the question counts. */
+export function awardSkillXp(amount: number) {
+  const xp = Math.round(amount);
+  if (!(xp > 0)) return;
+  const s = load();
+  s.xp += xp;
+  const k = dayKey();
+  s.activity[k] = (s.activity[k] ?? 0) + xp;
+  s.frozenDays = streakInfo(s).frozen;
+  save(s);
 }
 
 export function clearAll() {

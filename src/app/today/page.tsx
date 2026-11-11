@@ -4,8 +4,10 @@ import { Check, Flame, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { BadgesSection, BadgeToast } from "@/components/Badges";
 import { DailyQuestion } from "@/components/DailyQuestion";
+import { DailyReminder } from "@/components/DailyReminder";
 import { Heatmap } from "@/components/Heatmap";
 import { WordFactOfDay } from "@/components/WordFactOfDay";
+import { RevisionDueCard } from "@/components/RevisionDueCard";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
@@ -132,6 +134,8 @@ export default function TodayPage() {
       <DailyQuestion store={store} />
 
       <WordFactOfDay store={store} />
+      <RevisionDueCard store={store} />
+      <DailyReminder examId={store.examId} />
 
       {exam ? (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

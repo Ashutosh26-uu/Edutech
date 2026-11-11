@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Stat } from "@/components/Quiz";
+import { MistakePatternSummary } from "@/components/StudyNotes";
 import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { useAccount } from "@/lib/account";
@@ -259,6 +260,7 @@ export default function ProgressPage() {
           )}
         </section>
       </div>
+      <MistakePatternSummary />
     </div>
   );
 }
