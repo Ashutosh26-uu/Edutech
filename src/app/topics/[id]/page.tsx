@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, CheckCircle2, ListChecks } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, ListChecks, Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,6 +10,7 @@ import { NOTES_LOADERS } from "@/data/notes";
 import { absoluteUrl } from "@/data/site";
 import { TOPICS, TOPIC_BY_ID } from "@/data/topics";
 import type { BankQuestion } from "@/lib/bank";
+import { hasFormulaSheet } from "@/lib/formulas";
 import type { Difficulty } from "@/lib/types";
 
 export function generateStaticParams() {
@@ -98,6 +99,11 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost">
               <BookOpen className="h-4 w-4" /> Read on Learn
             </Link>
+            {hasFormulaSheet(topic, notes) && (
+              <Link href={`/formulas/${id}`} className="btn-ghost">
+                <Sigma className="h-4 w-4" /> Formula sheet
+              </Link>
+            )}
             {count > 0 && (
               <Link href={`/practice?topics=${id}`} className="btn-primary">
                 <ListChecks className="h-4 w-4" /> Practise {count} questions
