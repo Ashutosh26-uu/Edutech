@@ -17,7 +17,9 @@
     "test:helpbot": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-helpbot.mjs",
     "test:weekly": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-weekly.mjs",
     "test:habits": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-habits.mjs",
-    "test:revision": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-revision.mjs"
+    "test:revision": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-revision.mjs",
+    "test:reminders": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-reminders.mjs",
+    "test:analysis": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-analysis.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",
@@ -32,6 +34,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "server-only": "^0.0.1",
+    "web-push": "3.6.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -39,6 +42,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/web-push": "3.6.4",
     "autocannon": "^8.0.0",
     "drizzle-kit": "^0.31.11",
     "embedded-postgres": "^18.6.0-beta.19",

@@ -402,6 +402,18 @@ export const SITE: Faq[] = [
     next: ["progress-saved"],
   },
   {
+    id: "reminders",
+    cat: "tools",
+    q: "How do I get daily reminders?",
+    qh: "Roz ka reminder kaise milega?",
+    ask: ["daily reminder", "study reminder", "remind me to study", "reminder kaise lagaye", "roz yaad dilao", "padhai ka reminder", "push notification", "turn off reminders", "reminder band kaise kare", "set reminder time"],
+    keys: ["reminder", "remind", "reminders", "yaad"],
+    en: "Open **Today** and turn on **Daily reminder**, then allow notifications when your browser asks. Pick a time (7 am, 1 pm, 6 pm, 7 pm, 8 pm or 9 pm, India time) and you get one notification a day when the question of the day is ready. Turn the same switch off to stop. On iPhone, first add StudyClip to your Home Screen (Share → **Add to Home Screen**, iOS 16.4+) and turn it on from there. If notifications are blocked, allow them in your browser’s site settings.",
+    hi: "**Today** kholo aur **Daily reminder** on karo, phir browser pooche to notifications allow karo. Time chuno (7 am, 1 pm, 6 pm, 7 pm, 8 pm ya 9 pm, India time); roz ek notification aayega jab aaj ka question ready hoga. Band karne ke liye wahi switch off karo. iPhone pe pehle StudyClip ko Home Screen pe add karo (Share → **Add to Home Screen**, iOS 16.4+) aur wahan se on karo. Notifications block hain to browser ki site settings mein allow karo.",
+    links: [["Today", "/today"]],
+    next: ["streak", "app"],
+  },
+  {
     id: "progress",
     cat: "tools",
     q: "Where can I see my progress?",

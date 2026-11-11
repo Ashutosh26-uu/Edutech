@@ -176,9 +176,11 @@ html.dark {
     background: transparent;
   }
 
-  /* Each page eases in as it mounts. */
+  /* Each page eases in as it mounts. "backwards" (not "both") so no transform is kept once the
+     animation ends: a kept transform, even an identity one, makes every position:fixed overlay
+     inside the page (exam mode, share sheets) size itself to the page instead of the screen. */
   main > * {
-    animation: rise 0.3s ease-out both;
+    animation: rise 0.3s ease-out backwards;
   }
 
   @media (prefers-reduced-motion: reduce) {

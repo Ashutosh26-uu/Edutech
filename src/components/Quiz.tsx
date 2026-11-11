@@ -7,7 +7,11 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { RichText } from "@/components/RichText";
 import { ReportButton, StandingCard, type Standing } from "@/components/QualityWidgets";
 import { ScoreCardButton } from "@/components/ScoreCard";
+import { ExamView } from "@/components/ExamMode";
+import { MistakePatternCard, MistakeTagPicker, NoteBox, NoteButton } from "@/components/StudyNotes";
 import { cardsForQuestions } from "@/lib/cards";
+import { attemptStrategy, guessCost, paletteCounts, paletteState, sectionTimes, type AnalysisItem } from "@/lib/mockAnalysis";
+import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, toggleBookmark } from "@/lib/storage";
@@ -56,6 +60,10 @@ interface Props {
   submit?: (chosen: (number | null)[], times: number[]) => Promise<MCQ[]>;
   /** What the shareable score card names (exam or topic) and the exam its link points to. */
   share?: ShareInfo;
+  /** Timed mocks: the full-screen layout of a computer-based test (see ExamMode). */
+  examMode?: boolean;
+  /** Name shown as the candidate in exam mode. */
+  candidate?: string;
 }
 
 /** Title and exam for the shareable score card on the results screen. */
@@ -117,8 +125,10 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share }: Props) {
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate }: Props) {
   const [idx, setIdx] = useState(0);
+  // Questions opened at least once, for "Not visited" vs "Not answered" in exam mode.
+  const [visited, setVisited] = useState<boolean[]>(() => questions.map((_, i) => i === 0));
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
   const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
   // Mock tests: questions the user flagged to come back to, as in the real exam's "Mark for review".
@@ -151,7 +161,9 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const goTo = (i: number) => {
     tick();
     setIdx(i);
+    setVisited((v) => (v[i] ? v : v.map((x, k) => x || k === i)));
   };
+  const exam = examMode && mode === "mock" && timed;
 
   const results: AnswerResult[] = useMemo(
     () => (scored ?? questions).map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer, seconds: timed ? Math.round(times.current[i]) : undefined })),
@@ -209,6 +221,13 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, left, sectionLeft, done, timed]);
 
+  // Exam mode leaves full screen once the paper is submitted (or the test is left).
+  useEffect(() => {
+    if (!exam) return;
+    if (done) exitFullscreen();
+    return () => exitFullscreen();
+  }, [exam, done]);
+
   // Keyboard: 1–4 or A–D pick an option, ← / → move between questions (not while typing).
   useEffect(() => {
     if (done || !questions.length) return;
@@ -255,6 +274,56 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     </span>
   );
 
+  if (exam) {
+    const setMark = (on: boolean) => setMarked((m) => (m[idx] === on ? m : m.map((v, k) => (k === idx ? on : v))));
+    const next = () => idx < last && goTo(idx + 1);
+    const moreSections = !!cur && section < (sections?.length ?? 0) - 1;
+    const submitExam = () => {
+      if (moreSections) {
+        if (confirm(`Submit ${cur!.name}? You can’t come back to it. ${sectionAnswered}/${cur!.count} answered.`)) nextSection();
+        return;
+      }
+      const c = paletteCounts(questions.map((_, i) => paletteState(visited[i], chosen[i] !== null, marked[i])));
+      const msg = `Submit the test?\n\nAnswered: ${c.answered + c["answered-marked"]}\nNot answered: ${c["not-answered"]}\nNot visited: ${c["not-visited"]}\nMarked for review: ${c.marked + c["answered-marked"]}\n\nYou can’t change answers after submitting.`;
+      if (confirm(msg)) finish();
+    };
+    return (
+      <ExamView
+        title={share?.title || "Mock test"}
+        candidate={candidate}
+        questions={questions}
+        idx={idx}
+        chosen={chosen}
+        marked={marked}
+        visited={visited}
+        lang={lang}
+        langToggle={bilingual ? <LangToggle lang={lang} setLang={setLang} /> : undefined}
+        sections={sections}
+        sectional={!!cur}
+        openSection={section}
+        first={first}
+        last={last}
+        secondsLeft={cur && sectionLeft !== null ? sectionLeft : left}
+        timerLabel={cur ? `${cur.name} · time left` : "Time left"}
+        submitting={submitting}
+        submitLabel={moreSections ? "Submit section" : "Submit"}
+        error={submitError}
+        onChoose={choose}
+        onGoTo={goTo}
+        onMarkNext={() => {
+          setMark(true);
+          next();
+        }}
+        onClear={() => setChosen((c) => c.map((v, k) => (k === idx ? null : v)))}
+        onSaveNext={() => {
+          setMark(false);
+          next();
+        }}
+        onSubmit={submitExam}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* On timed tests the counter and clock stay in view while the question scrolls. */}
@@ -299,12 +368,16 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         })}
       </div>
 
+      {/* Practice: the learner's own note on this question, whenever it comes up. */}
+      {mode === "practice" && <NoteBox question={q} />}
+
       {isRevealed && (
         <div className={`rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
             <span className="flex shrink-0 gap-1">
               <ReportButton question={q} />
+              <NoteButton question={q} />
               <BookmarkButton question={q} />
             </span>
           </div>
@@ -448,6 +521,29 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   const slowest = [...results].filter((r) => (r.seconds ?? 0) > 0).sort((a, b) => (b.seconds ?? 0) - (a.seconds ?? 0)).slice(0, 3);
   // Generated Quant questions (ids ending in -g…) cannot be replayed, so they make no cards.
   const wrongBank = results.filter((r) => r.chosen !== null && !r.correct && !/-g[0-9a-z]+$/.test(r.question.id));
+  const wrongIds = results.filter((r) => r.chosen !== null && !r.correct && r.question.topicId).map((r) => r.question.id);
+
+  // Deeper mock analysis from the per-question seconds (timed tests only).
+  const items: AnalysisItem[] = results.map((r) => ({ chosen: r.chosen, correct: r.correct, seconds: r.seconds, difficulty: r.question.difficulty }));
+  const strategy = timed && timeAll > 0 ? attemptStrategy(items) : null;
+  const guesses = timed && negativeMarking > 0 ? guessCost(items, negativeMarking, marks) : null;
+  const secTimes = timed && sections && sections.length > 1 ? sectionTimes(items, sections, negativeMarking, marks) : null;
+  // Jump from a question number in the analysis to its answer in the review.
+  const jump = (i: number) => {
+    setShow("all");
+    requestAnimationFrame(() => document.getElementById(`review-${i}`)?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
+  const qChips = (ids: number[]) => (
+    <span className="mt-1.5 flex flex-wrap gap-1">
+      {ids.slice(0, 20).map((i) => (
+        <button key={i} type="button" onClick={() => jump(i)} className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-200">
+          Q{i + 1}
+          {results[i].seconds ? <span className="text-slate-500"> · {results[i].seconds}s</span> : null}
+        </button>
+      ))}
+      {ids.length > 20 && <span className="text-xs text-slate-500">+{ids.length - 20} more</span>}
+    </span>
+  );
 
   const byTopic = new Map<string, { c: number; n: number; s: number }>();
   const byTier = new Map<Difficulty, { c: number; n: number }>();
@@ -542,9 +638,40 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         </div>
       )}
 
+      {strategy && (
+        <div className="card">
+          <h4 className="mb-3 font-semibold">Attempt strategy</h4>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="text-sm">
+              <p className="font-medium text-red-700">Should have skipped · {strategy.shouldSkip.length}</p>
+              <p className="text-xs text-slate-500">
+                Over 2× your average ({Math.round(strategy.avg)}s) and still wrong{strategy.shouldSkip.length > 0 && <>: {formatTime(Math.round(strategy.wastedSeconds))} spent for no marks</>}.
+              </p>
+              {strategy.shouldSkip.length > 0 ? qChips(strategy.shouldSkip) : <p className="mt-1.5 text-xs text-emerald-700">None. You let go of the hard ones in time.</p>}
+            </div>
+            <div className="text-sm">
+              <p className="font-medium text-amber-700">Missed easy marks · {strategy.missedEasy.length}</p>
+              <p className="text-xs text-slate-500">Easy or moderate questions you left blank.</p>
+              {strategy.missedEasy.length > 0 ? qChips(strategy.missedEasy) : <p className="mt-1.5 text-xs text-emerald-700">None skipped.</p>}
+            </div>
+          </div>
+          {guesses && (
+            <p className={`mt-4 rounded-lg p-3 text-sm ${guesses.fastWrong.length ? "bg-amber-50 text-amber-900" : "bg-slate-100 text-slate-700"}`}>
+              {guesses.fastWrong.length ? (
+                <>
+                  <b>If you had skipped the wrong guesses:</b> {guesses.fastWrong.length} wrong answer{guesses.fastWrong.length === 1 ? " was" : "s were"} given in under 15 s and cost{guesses.fastWrong.length === 1 ? "s" : ""} you {guesses.cost} mark{guesses.cost === 1 ? "" : "s"} of negative marking. Your score would be <b>{guesses.scoreWithout}</b> instead of {guesses.score}.
+                </>
+              ) : (
+                <>No quick wrong guesses: none of your wrong answers took under 15 s.</>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       {sections && sections.length > 1 && (
         <div className="card">
-          <h4 className="mb-3 font-semibold">Section-wise</h4>
+          <h4 className="mb-3 font-semibold">{secTimes ? "Section-wise: time vs marks" : "Section-wise"}</h4>
           {/* Four columns do not fit a phone: the table scrolls sideways inside the card. */}
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
             <table className="min-w-[28rem]">
@@ -554,10 +681,11 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
                 <th className="pb-2 font-medium">{marks > 1 ? "Marks" : "Score"}</th>
                 <th className="pb-2 font-medium">Correct / Wrong / Skipped</th>
                 {timed && <th className="pb-2 font-medium">Time</th>}
+                {secTimes && <th className="pb-2 font-medium">Marks/min</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {sections.map((s) => {
+              {sections.map((s, k) => {
                 const rs = results.slice(s.from, s.from + s.count);
                 const c = rs.filter((r) => r.correct).length;
                 const w = rs.filter((r) => r.chosen !== null && !r.correct).length;
@@ -571,12 +699,14 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
                       {c} / {w} / {rs.length - c - w}
                     </td>
                     {timed && <td className="py-2 text-slate-600">{formatTime(sum(rs.map((r) => r.seconds ?? 0)))}</td>}
+                    {secTimes && <td className="py-2 text-slate-600 tabular-nums">{secTimes.rows[k].seconds > 0 ? secTimes.rows[k].perMin : "–"}</td>}
                   </tr>
                 );
               })}
             </tbody>
             </table>
           </div>
+          {secTimes?.suggestion && <p className="mt-3 text-sm text-slate-700">{secTimes.suggestion}</p>}
         </div>
       )}
 
@@ -625,6 +755,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         </div>
       )}
 
+      <MistakePatternCard questionIds={wrongIds} />
+
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="flex items-center gap-2 font-semibold">Review answers {bilingual && <LangToggle lang={lang} setLang={setLang} />}</h4>
@@ -654,9 +786,9 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           if (show === "correct" && !r.correct) return null;
           const t = inLang(r.question, lang);
           return (
-          <div key={r.question.id} className={`rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
+          <div key={r.question.id} id={`review-${i}`} className={`scroll-mt-20 rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <div className="font-medium whitespace-pre-line text-slate-900">
-              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} /> <ReportButton question={r.question} />
+              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} /> <NoteButton question={r.question} /> <ReportButton question={r.question} />
             </div>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : t.options[r.chosen]}</b>
@@ -673,6 +805,8 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
                 <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}
               </button>
             )}
+            {r.chosen !== null && !r.correct && <MistakeTagPicker question={r.question} />}
+            <NoteBox question={r.question} className="mt-2" />
           </div>
           );
         })}
