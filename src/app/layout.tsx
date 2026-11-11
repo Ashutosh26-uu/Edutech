@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AccountMenu } from "@/components/AccountMenu";
 import { AccountSync } from "@/components/AccountSync";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
+import { FocusPill } from "@/components/FocusPill";
 import { HelpBot } from "@/components/HelpBot";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
@@ -37,6 +38,8 @@ const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
       ["Learn topics", "/learn"],
       ["All topics", "/topics"],
       ["Flashcards", "/review"],
+      ["Syllabus tracker", "/tracker"],
+      ["Focus timer", "/focus"],
       ["Exam tomorrow", "/last-minute"],
       ["Interview prep", "/interview"],
       ["Resume builder", "/resume"],
@@ -138,6 +141,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <RegisterSW />
         <AccountSync />
         <SiteEvents />
+        <FocusPill />
         </AccountProvider>
       </body>
     </html>
