@@ -2,6 +2,7 @@
 
 import { Download, Image as ImageIcon, Loader2, MessageCircle, Share2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * Shareable score card: a 1080×1350 PNG (portrait, fits a WhatsApp or Instagram status) drawn on a
@@ -339,7 +340,9 @@ function ScoreCardSheet({ summary, onClose }: { summary: ScoreSummary; onClose: 
     }
   };
 
-  return (
+  // Rendered under <body>: an ancestor with a transform or filter would otherwise pin this "fixed"
+  // sheet to that ancestor instead of the screen (it opened far down the page on phones).
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
       <div
         ref={dialog}
@@ -385,6 +388,7 @@ function ScoreCardSheet({ summary, onClose }: { summary: ScoreSummary; onClose: 
         </div>
         {note && <p className="text-xs text-slate-600">{note}</p>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
