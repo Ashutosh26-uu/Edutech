@@ -78,14 +78,15 @@ export const testAttempts = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     examId: text("exam_id").notNull(),
-    kind: text("kind", { enum: ["full", "topic", "section"] }).notNull(),
+    // "weekly" is the Sunday All-India Mock (lib/weekly.ts): one shared paper, free, one attempt per week.
+    kind: text("kind", { enum: ["full", "topic", "section", "weekly"] }).notNull(),
     topicIds: text("topic_ids").array().notNull(),
     questions: jsonb("questions").$type<MCQ[]>().notNull(),
     /** Paper sections of a full mock on an exam pattern; null for the generic mock and topic tests. */
     sections: jsonb("sections").$type<AttemptSection[]>(),
     /** Whether each section is locked to its own timer. */
     sectional: boolean("sectional").notNull().default(false),
-    paidWith: text("paid_with", { enum: ["free", "credit"] }).notNull(),
+    paidWith: text("paid_with", { enum: ["free", "credit", "weekly"] }).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),

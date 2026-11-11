@@ -87,7 +87,7 @@ function ScoreTrend({ points }: { points: { at: number; pct: number; label: stri
 interface AttemptRow {
   id: string;
   examId: string;
-  kind: "full" | "topic" | "section";
+  kind: "full" | "topic" | "section" | "weekly";
   score: number;
   total: number;
   marks: number;
@@ -166,7 +166,7 @@ export default function ProgressPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <SubjectAccuracy topics={topics} />
-        <ScoreTrend points={synced ? remote.attempts.map((a) => ({ at: a.submittedAt, pct: a.total ? (a.score / a.total) * 100 : 0, label: `${EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · ${a.kind === "full" ? "full mock" : a.kind === "section" ? "section test" : "topic test"}` })) : data.mocks.map((m) => ({ at: m.takenAt, pct: m.maxScore ? (m.score / m.maxScore) * 100 : 0, label: `${EXAM_BY_ID.get(m.examId)?.name ?? m.examId} · mock` }))} />
+        <ScoreTrend points={synced ? remote.attempts.map((a) => ({ at: a.submittedAt, pct: a.total ? (a.score / a.total) * 100 : 0, label: `${EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · ${a.kind === "full" ? "full mock" : a.kind === "weekly" ? "Sunday All-India Mock" : a.kind === "section" ? "section test" : "topic test"}` })) : data.mocks.map((m) => ({ at: m.takenAt, pct: m.maxScore ? (m.score / m.maxScore) * 100 : 0, label: `${EXAM_BY_ID.get(m.examId)?.name ?? m.examId} · mock` }))} />
         <section className="card">
           <h2 className="font-semibold text-slate-900">Focus on these topics</h2>
           {weak.length ? (
@@ -201,7 +201,7 @@ export default function ProgressPage() {
                 {remote.attempts.slice(0, 10).map((a) => (
                   <li key={a.id} className="flex items-center justify-between gap-2 py-2">
                     <span>
-                      {EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · {a.kind === "full" ? "full mock" : a.kind === "section" ? "section test" : "topic test"} · <span className="text-slate-500">{new Date(a.submittedAt).toLocaleDateString()}</span>
+                      {EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · {a.kind === "full" ? "full mock" : a.kind === "weekly" ? "Sunday All-India Mock" : a.kind === "section" ? "section test" : "topic test"} · <span className="text-slate-500">{new Date(a.submittedAt).toLocaleDateString()}</span>
                     </span>
                     <span className="flex items-center gap-3">
                       <span className="font-semibold">

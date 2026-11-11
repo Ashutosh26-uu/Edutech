@@ -18,6 +18,7 @@ import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
+import { isWeeklyExam } from "@/lib/weekly";
 
 export default function PracticePage() {
   return (
@@ -69,6 +70,8 @@ function PracticeView() {
   const isSectionTest = isTimed && !!planSection;
   const isTopicTest = isTimed && !isSectionTest && requestedTopics.length > 0;
   const isFullMock = isTimed && !isSectionTest && !isTopicTest;
+  // The Sunday All-India Mock: a full mock on the week's shared paper, free, one attempt a week.
+  const isWeekly = isFullMock && params.get("weekly") === "1" && !!exam && isWeeklyExam(exam.id);
   const topicIds = isSectionTest ? planSection!.topicIds : isTopicTest ? requestedTopics : (isTimed || isSmart) && exam ? examTopicIds(exam) : requestedTopics;
   const size = isSectionTest ? planSection!.questions : isTopicTest ? TOPIC_TEST_SIZE : isFullMock ? (plan ? totalQuestions(plan.sections) : MOCK_SIZE) : PRACTICE_SIZE;
 
@@ -108,7 +111,7 @@ function PracticeView() {
         .map((b) => b.question)
         .filter((q) => !requestedTopics.length || (q.topicId && requestedTopics.includes(q.topicId)));
       if (!saved.length) return setError("No saved questions yet. Tap ☆ Save on any question after answering it.");
-      return setQuestions(shuffle(saved).slice(0, 20).map(shuffleOptions));
+      return setQuestions(shuffle(saved).slice(0, 20).map((q) => shuffleOptions(q)));
     }
     if (isMistakes) {
       if (!server) return setError("The mistake notebook needs an account. Log in on the full site to use it.");
@@ -165,12 +168,12 @@ function PracticeView() {
     fetch("/api/tests", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { attempts: { examId: string; kind: string; score: number; total: number; marks: number }[] } | null) => {
-        const kind = isSectionTest ? "section" : isTopicTest ? "topic" : "full";
+        const kind = isWeekly ? "weekly" : isSectionTest ? "section" : isTopicTest ? "topic" : "full";
         const last = d?.attempts.find((a) => a.examId === exam?.id && a.kind === kind);
         setPrevious(last ? { score: last.score * last.marks, total: last.total * last.marks } : null);
       })
       .catch(() => setPrevious(null));
-    const { status, data } = await postJson("/api/tests/start", { examId: exam?.id, topicIds: isTopicTest ? requestedTopics : undefined, section: isSectionTest ? section : undefined });
+    const { status, data } = await postJson("/api/tests/start", { examId: exam?.id, topicIds: isTopicTest ? requestedTopics : undefined, section: isSectionTest ? section : undefined, weekly: isWeekly || undefined });
     setStarting(false);
     if (status === 401) return loginFirst();
     if (status === 402) return setPhase("paywall");
@@ -229,6 +232,8 @@ function PracticeView() {
     ? "My saved questions"
     : isMistakes
     ? `My mistakes${requestedTopics.length === 1 ? `: ${topicName}` : ""}`
+    : isWeekly
+    ? `${exam?.name} · Sunday All-India Mock`
     : isSectionTest
       ? `${exam?.name} · ${section} section test`
       : isTopicTest
@@ -248,6 +253,7 @@ function PracticeView() {
   const sections = serverTest?.sections ?? localSections ?? undefined;
   const sectional = serverTest?.sectional ?? (!!localSections && !!plan?.pattern.sectional);
 
+  const weeklyNote = isWeekly ? "Same paper for every student this week · free · one attempt · " : "";
   const description = challenge
     ? `${challenge.ids.length} questions · ${challenge.by} scored ${challenge.score}/${challenge.ids.length}. Answer them all, then compare.`
     : isSaved
@@ -257,7 +263,7 @@ function PracticeView() {
     : isSectionTest
       ? `${planSection!.questions} questions · ${planSection!.minutes} minutes, as in the ${plan!.pattern.paper} paper${marking} · answers revealed after you submit`
       : isFullMock && plan
-        ? `${totalQuestions(plan.sections)} questions · ${totalMinutes(plan.sections)} minutes · ${plan.sections.map((s) => `${s.subject} ${s.questions}`).join(", ")}${plan.pattern.sectional ? " · sectional timing" : ""}${marking}`
+        ? `${weeklyNote}${totalQuestions(plan.sections)} questions · ${totalMinutes(plan.sections)} minutes · ${plan.sections.map((s) => `${s.subject} ${s.questions}`).join(", ")}${plan.pattern.sectional ? " · sectional timing" : ""}${marking}`
         : isTimed
           ? `Up to ${size} questions from easy to very hard · 1 minute per question · answers revealed after you submit${marking}`
           : isSmart
@@ -267,7 +273,11 @@ function PracticeView() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        {exam ? (
+        {isWeekly ? (
+          <Link href="/mock-sunday" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> Sunday All-India Mock
+          </Link>
+        ) : exam ? (
           <Link href={`/exams/${exam.id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" /> {exam.name} syllabus
           </Link>
@@ -287,16 +297,24 @@ function PracticeView() {
         {phase === "start" ? (
           !account.ready ? (
             <p className="text-sm text-slate-500">Loading…</p>
+          ) : isWeekly && !server ? (
+            <div className="mx-auto max-w-sm space-y-3 py-6 text-center">
+              <h2 className="text-lg font-semibold">Available on the full site</h2>
+              <p className="text-sm text-slate-600">The Sunday All-India Mock ranks you against every student who takes it, so it needs an account on the full StudyClip site.</p>
+              <Link href="/mock-sunday" className="btn-ghost">
+                Sunday mock schedule
+              </Link>
+            </div>
           ) : server && !account.user ? (
             <div className="mx-auto max-w-sm space-y-4 py-6 text-center">
-              <h2 className="text-lg font-semibold">Log in to take timed tests</h2>
-              <p className="text-sm text-slate-600">Your first test for every exam is free. Your score, time analysis and mistakes are saved to your account.</p>
+              <h2 className="text-lg font-semibold">{isWeekly ? "Log in to take the All-India mock" : "Log in to take timed tests"}</h2>
+              <p className="text-sm text-slate-600">{isWeekly ? "It’s free and doesn’t use your free test or credits. Your rank is saved to your account." : "Your first test for every exam is free. Your score, time analysis and mistakes are saved to your account."}</p>
               <button className="btn-primary w-full py-2.5" onClick={loginFirst}>
                 Log in or sign up
               </button>
             </div>
           ) : (
-            <StartScreen access={testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+            <StartScreen access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
           )
         ) : phase === "paywall" ? (
           <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
@@ -333,7 +351,7 @@ function PracticeView() {
   );
 }
 
-function StartScreen({ access, credits, sectional, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none"; credits: number; sectional: boolean; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
+function StartScreen({ access, credits, sectional, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
@@ -345,7 +363,7 @@ function StartScreen({ access, credits, sectional, onStart, onPaywall, busy, err
       <div>
         <h2 className="text-lg font-semibold">Ready when you are</h2>
         <p className="mt-1 text-sm text-slate-600">
-          The timer starts as soon as you begin. {access === "free" ? "This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
+          The timer starts as soon as you begin. {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
         </p>
         {sectional && <p className="mt-2 text-sm text-amber-700">Sectional timing: each section has its own clock and closes when it ends. You can’t go back to a closed section.</p>}
       </div>
