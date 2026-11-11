@@ -17,7 +17,8 @@
     "test:helpbot": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-helpbot.mjs",
     "test:weekly": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-weekly.mjs",
     "test:habits": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-habits.mjs",
-    "test:reminders": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-reminders.mjs"
+    "test:reminders": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-reminders.mjs",
+    "test:analysis": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-analysis.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",

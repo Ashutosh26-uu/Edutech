@@ -46,6 +46,9 @@ jobs:
       - name: Daily reminder hours and cron auth
         run: npm run test:reminders
 
+      - name: Mock analysis, exam palette and error coach
+        run: npm run test:analysis
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |
