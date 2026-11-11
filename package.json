@@ -17,6 +17,7 @@
     "test:helpbot": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-helpbot.mjs",
     "test:weekly": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-weekly.mjs",
     "test:habits": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-habits.mjs",
+    "test:daily-learning": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-daily-learning.mjs",
     "test:skills": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-skills.mjs",
     "test:revision": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-revision.mjs",
     "test:reminders": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-reminders.mjs",

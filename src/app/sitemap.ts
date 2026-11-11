@@ -7,7 +7,7 @@ import { formulaTopics } from "@/lib/formulas";
 // Built once at build time, so it also works in the static export.
 export const dynamic = "force-static";
 
-const PAGES = ["/", "/exams", "/topics", "/today", "/review", "/last-minute", "/formulas", "/drills", "/typing", "/interview", "/resume", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund"];
+const PAGES = ["/", "/exams", "/topics", "/today", "/listen", "/review", "/last-minute", "/formulas", "/drills", "/typing", "/interview", "/resume", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [

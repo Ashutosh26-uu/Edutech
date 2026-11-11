@@ -28,6 +28,7 @@ const MORE = [
   { href: "/tracker", label: "Syllabus tracker" },
   { href: "/focus", label: "Focus timer" },
   { href: "/saved", label: "Saved questions" },
+  { href: "/listen", label: "Audio revision" },
   { href: "/interview", label: "Interview prep" },
   { href: "/resume", label: "Resume builder" },
   { href: "/pricing", label: "Pricing" },

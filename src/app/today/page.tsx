@@ -6,6 +6,7 @@ import { BadgesSection, BadgeToast } from "@/components/Badges";
 import { DailyQuestion } from "@/components/DailyQuestion";
 import { DailyReminder } from "@/components/DailyReminder";
 import { Heatmap } from "@/components/Heatmap";
+import { WordFactOfDay } from "@/components/WordFactOfDay";
 import { RevisionDueCard } from "@/components/RevisionDueCard";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -132,6 +133,7 @@ export default function TodayPage() {
 
       <DailyQuestion store={store} />
 
+      <WordFactOfDay store={store} />
       <RevisionDueCard store={store} />
       <DailyReminder examId={store.examId} />
 

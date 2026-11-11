@@ -2,6 +2,7 @@ import { ArrowLeft, BookOpen, CheckCircle2, ListChecks, Sigma } from "lucide-rea
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PrintPracticeSheet } from "@/components/PrintPracticeSheet";
 import { RichText } from "@/components/RichText";
 import { TopicNotesContent } from "@/components/TopicNotesContent";
 import { BANK_LOADERS, BANK_SIZES } from "@/data/bank";
@@ -224,6 +225,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost mt-2 w-full">
               Read on Learn
             </Link>
+            {count > 0 && <PrintPracticeSheet topicId={id} topicName={topic.name} />}
           </section>
         </aside>
       </div>
