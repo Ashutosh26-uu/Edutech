@@ -37,6 +37,9 @@ jobs:
       - name: Help bot answers
         run: npm run test:helpbot
 
+      - name: Streaks, question of the day and badges
+        run: npm run test:habits
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |

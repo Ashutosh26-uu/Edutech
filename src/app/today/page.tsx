@@ -1,12 +1,15 @@
 "use client";
 
-import { Check, Flame } from "lucide-react";
+import { Check, Flame, Snowflake } from "lucide-react";
 import Link from "next/link";
+import { BadgesSection, BadgeToast } from "@/components/Badges";
+import { DailyQuestion } from "@/components/DailyQuestion";
 import { Heatmap } from "@/components/Heatmap";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
-import { dayKey, dueCards, level, setDailyGoal, setExam, setExamDate, streak, today } from "@/lib/storage";
+import { dayKey, dueCards, level, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
+import { MAX_FREEZES, FREEZE_EVERY } from "@/lib/streak";
 import { useStore } from "@/lib/useStore";
 
 const DAY = 86_400_000;
@@ -28,6 +31,7 @@ export default function TodayPage() {
   const xpToday = store.activity[dayKey()] ?? 0;
   const goalPct = Math.min(100, Math.round((xpToday / store.dailyGoal) * 100));
   const lvl = level(store.xp);
+  const st = streakInfo(store);
   const days = store.examDate ? Math.ceil((new Date(store.examDate + "T00:00:00").getTime() - Date.now()) / DAY) : null;
   const due = dueCards(store).length;
   const focus = exam ? focusTopics(examTopicIds(exam), store.topics, 3) : [];
@@ -97,9 +101,19 @@ export default function TodayPage() {
         </div>
         <div className="card flex items-center gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange-50 text-orange-500 dark:bg-orange-500/10"><Flame className="h-6 w-6" strokeWidth={1.75} /></span>
-          <div className="text-sm">
-            <div className="text-2xl font-semibold text-slate-900">{streak(store)} day streak</div>
-            <div className="text-slate-600">Study a little every day to keep it going.</div>
+          <div className="min-w-0 text-sm">
+            <div className="text-2xl font-semibold text-slate-900">{st.count} day streak</div>
+            <div className="text-slate-600">{st.pendingFreeze ? "You missed yesterday. Study today and a freeze saves your streak." : "Study a little every day to keep it going."}</div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500" title={`Earn a streak freeze for every ${FREEZE_EVERY} days in a row, up to ${MAX_FREEZES}. Each one covers a single missed day.`}>
+              <span className="flex shrink-0" aria-hidden>
+                {Array.from({ length: MAX_FREEZES }, (_, i) => (
+                  <Snowflake key={i} className={`h-3.5 w-3.5 ${i < st.freezes ? "text-sky-500" : "text-slate-300"}`} strokeWidth={2.25} />
+                ))}
+              </span>
+              <span>
+                {st.freezes} freeze{st.freezes === 1 ? "" : "s"}: covers one missed day. Earn 1 per {FREEZE_EVERY}-day streak.
+              </span>
+            </div>
           </div>
         </div>
         <div className="card text-sm">
@@ -113,6 +127,8 @@ export default function TodayPage() {
           <div className="mt-1 text-xs text-slate-500">{lvl.span - lvl.into} XP to level {lvl.level + 1}</div>
         </div>
       </div>
+
+      <DailyQuestion store={store} />
 
       {exam ? (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -175,10 +191,13 @@ export default function TodayPage() {
         <div className="card text-sm text-slate-700">Pick your exam above to get a personalised daily plan.</div>
       )}
 
+      <BadgesSection store={store} />
+
       <section className="card">
         <h2 className="mb-3 font-semibold text-slate-900">Your study activity</h2>
         <Heatmap activity={store.activity} />
       </section>
+      <BadgeToast store={store} />
     </div>
   );
 }
