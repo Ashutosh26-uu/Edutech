@@ -94,7 +94,10 @@ export default function AdminReportsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <Link href="/admin/messages" className="text-sm text-brand-700 hover:underline">Contact messages →</Link>
+        <div className="flex gap-4">
+          <Link href="/admin/messages" className="text-sm text-brand-700 hover:underline">Contact messages →</Link>
+          <Link href="/admin/stats" className="text-sm text-brand-700 hover:underline">Visitor stats →</Link>
+        </div>
         <h1 className="text-2xl font-semibold">Question reports</h1>
         <p className="text-sm text-slate-600">Fix a question in its bank file, deploy, then mark its reports resolved.</p>
       </div>

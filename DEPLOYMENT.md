@@ -62,6 +62,20 @@ Every bank question has a **Report** button (signed in or not, 20 reports per ho
 
 Result screens of server-scored tests show **rank and percentile** among everyone who took the same kind of test (each user's best attempt counts; topic and section tests compare only the same topics).
 
+## Invites, leaderboards and visitor stats
+
+All three need migration `0006_growth` (`npm run db:migrate`). It adds `users.referral_code` (unique), `users.display_name` (unique, case-insensitive) and `users.leaderboard` (default off), the `referrals` and `event_counts` tables, and the `attempts_week_idx` index on `test_attempts (exam_id, submitted_at)`.
+
+**Invite a friend** (`/invite`, linked from the account menu). Each account gets an 8-character invite code (random, created on first visit) and a link `/login?tab=signup&ref=CODE`. The login page keeps the code in the browser and sends it (`POST /api/referral`) once the new account is signed in. Rules:
+- Only an account created in the last 7 days with no submitted timed test can claim a code, never its own, and only once (`referrals.new_user_id` is the primary key). An address that delivers to the inviter's inbox, or to a friend's already counted (`+tags`, Gmail dots), is refused.
+- The reward is paid when the new account, with a verified email, submits a timed test with at least 5 answered questions: +1 test credit to the new user and +1 to the inviter. It is claimed with a conditional `UPDATE … WHERE rewarded_at IS NULL`, so it happens once however many submits race.
+- An inviter earns credits for at most 20 friends (the inviter's row is locked while the cap is checked). Friends past the cap still get their own credit.
+- Change the limits in `src/server/referral.ts` (`INVITE_CAP`, `MIN_ANSWERED`, `CLAIM_WINDOW_MS`).
+
+**Weekly leaderboards** (`/leaderboard?exam=<id>`, linked from every exam page). Opt-in: a user sets a display name (3–20 letters, numbers or spaces, unique, with a small blocked-words list) and ticks "Show me on leaderboards" (off by default). Points for a week (Monday 00:00 to Sunday 23:59, India time) are the sum of the score percentages of the user's **best 5** timed tests on that exam submitted that week; a negative score counts as 0 and late submissions (past the deadline plus the 2-minute grace) do not count. Summing the best 5 rewards practising through the week, while the cap stops anyone buying the top spot with unlimited credits. The page shows the top 50 (ties share a rank) and the viewer's own rank if they opted in. Only display names and points are sent; never emails or ids. `GET /api/leaderboard` is public and rate-limited to 60 requests a minute per IP.
+
+**Visitor stats** (`/admin/stats`, for `ADMIN_EMAILS`). The site sends `POST /api/event` with an event name and the page path on each page view and a few actions (practice and test start, test submit, sign-up, purchase click, help bot opened, share click). The server keeps only daily counters per event and path (`event_counts`, days in India time); no cookies, IPs or user ids are stored. Query strings are dropped and ids in paths become `:id`. Unknown event names are rejected, each IP may send 120 events a minute (in-memory limit, or Upstash when set), and nothing is sent from localhost or the static build. The admin page shows views per day, top pages and event totals for the last 7 or 30 days.
+
 ## Contact messages
 
 The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Set `ADMIN_EMAILS` (comma-separated account emails) and the listed accounts can read and mark messages at `/admin/messages`. Without it, read them in the Neon console's SQL editor:

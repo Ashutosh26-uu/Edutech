@@ -3,6 +3,7 @@
 import type { AccountState } from "./account";
 import { PRODUCTS, type ProductId } from "./products";
 import { recordPurchase } from "./storage";
+import { track } from "./track";
 
 /**
  * Checkout. On a server deployment the backend decides the mode (see /api/config):
@@ -40,6 +41,7 @@ async function post(path: string, body: object) {
 export async function buy(account: AccountState, productId: ProductId, examId?: string): Promise<CheckoutResult> {
   const product = PRODUCTS[productId];
   if (product.needsExam && !examId) return { ok: false, error: "Choose your exam first." };
+  track("purchase_click");
 
   if (account.mode === "local") {
     recordPurchase(

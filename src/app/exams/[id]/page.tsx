@@ -52,6 +52,9 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
               <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
                 <Clock className="h-4 w-4" /> Exam tomorrow?
               </Link>
+              <Link href={`/leaderboard?exam=${exam.id}`} className="btn-ghost">
+                <Trophy className="h-4 w-4" /> Leaderboard
+              </Link>
               <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
                 <Sparkles className="h-4 w-4" /> Smart practice
               </Link>

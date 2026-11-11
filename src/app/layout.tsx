@@ -8,6 +8,7 @@ import { HelpBot } from "@/components/HelpBot";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
+import { SiteEvents } from "@/components/SiteEvents";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { EXAM_BY_ID, EXAMS } from "@/data/exams";
 import { COMPANY } from "@/data/site";
@@ -58,6 +59,8 @@ const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
       ["Log in", "/login"],
       ["Create account", "/login?tab=signup"],
       ["My progress", "/progress"],
+      ["Leaderboards", "/leaderboard"],
+      ["Invite friends", "/invite"],
       ["Pricing", "/pricing"],
     ],
   },
@@ -134,6 +137,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <HelpBot />
         <RegisterSW />
         <AccountSync />
+        <SiteEvents />
         </AccountProvider>
       </body>
     </html>

@@ -10,6 +10,8 @@ export interface SessionUser {
   email: string;
   name: string | null;
   credits: number;
+  /** From Neon Auth: whether the account confirmed its email with the emailed code. */
+  emailVerified: boolean;
 }
 
 /**
@@ -24,13 +26,14 @@ export async function getUser(_req: NextRequest): Promise<SessionUser | null> {
 
   const cols = { id: schema.users.id, email: schema.users.email, name: schema.users.name, credits: schema.users.credits };
   const [existing] = await db.select(cols).from(schema.users).where(eq(schema.users.id, authUser.id)).limit(1);
-  if (existing) return existing;
+  const emailVerified = !!authUser.emailVerified;
+  if (existing) return { ...existing, emailVerified };
   const [created] = await db
     .insert(schema.users)
     .values({ id: authUser.id, email: authUser.email.toLowerCase(), name: authUser.name || null })
     .onConflictDoUpdate({ target: schema.users.id, set: { email: authUser.email.toLowerCase() } })
     .returning(cols);
-  return created;
+  return { ...created, emailVerified };
 }
 
 export async function requireUser(req: NextRequest): Promise<SessionUser> {

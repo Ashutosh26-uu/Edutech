@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, UserRound } from "lucide-react";
+import { Gift, LogOut, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/lib/account";
@@ -46,6 +46,12 @@ export function AccountMenu() {
           </div>
           <Link href="/pricing" onClick={() => setOpen(false)} className="block rounded-md px-2.5 py-2 text-slate-700 hover:bg-slate-100">
             Buy tests or revision
+          </Link>
+          <Link href="/invite" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-md px-2.5 py-2 text-slate-700 hover:bg-slate-100">
+            <Gift className="h-4 w-4" /> Invite friends, get free tests
+          </Link>
+          <Link href="/leaderboard" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-md px-2.5 py-2 text-slate-700 hover:bg-slate-100">
+            <Trophy className="h-4 w-4" /> Weekly leaderboards
           </Link>
           <button
             onClick={async () => {

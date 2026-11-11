@@ -57,7 +57,10 @@ export default function AdminMessagesPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href="/admin/reports" className="text-sm text-brand-700 hover:underline">Question reports →</Link>
+          <div className="flex gap-4">
+            <Link href="/admin/reports" className="text-sm text-brand-700 hover:underline">Question reports →</Link>
+            <Link href="/admin/stats" className="text-sm text-brand-700 hover:underline">Visitor stats →</Link>
+          </div>
           <h1 className="text-2xl font-semibold text-slate-900">Contact messages</h1>
           <p className="mt-1 text-sm text-slate-600">Reply by email, then mark the message answered. Reference numbers are the first 8 characters of the id.</p>
         </div>

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { MCQ } from "@/lib/types";
 
 /** A section of a full mock: questions [from, from + count) of the attempt, with its own minutes. */
@@ -19,8 +19,36 @@ export const users = pgTable(
     name: text("name"),
     credits: integer("credits").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Invite code for the share link (/login?tab=signup&ref=CODE), created the first time it is needed. */
+    referralCode: text("referral_code").unique(),
+    /** Public name on the weekly leaderboards. Never the email. */
+    displayName: text("display_name"),
+    /** Opt-in: show this user on the leaderboards (needs a display name too). */
+    leaderboard: boolean("leaderboard").notNull().default(false),
   },
-  (t) => [check("credits_non_negative", sql`${t.credits} >= 0`)],
+  (t) => [check("credits_non_negative", sql`${t.credits} >= 0`), uniqueIndex("users_display_name_idx").on(sql`lower(${t.displayName})`)],
+);
+
+/**
+ * Who invited whom. One row per new user (the primary key), so an account can only ever be
+ * invited once. `rewardedAt` is set, exactly once, when the new user verifies their email and
+ * submits their first timed test; `inviterCredited` records whether the inviter was still under
+ * the cap and got their credit too.
+ */
+export const referrals = pgTable(
+  "referrals",
+  {
+    newUserId: uuid("new_user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    inviterId: uuid("inviter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
+    inviterCredited: boolean("inviter_credited").notNull().default(false),
+  },
+  (t) => [index("referrals_inviter_idx").on(t.inviterId, t.rewardedAt)],
 );
 
 /** One free timed test per user per exam. The primary key makes claiming it race-free. */
@@ -99,7 +127,8 @@ export const testAttempts = pgTable(
     score: real("score"),
   },
   // attempts_rank_idx: ranking a submitted test against everyone else's on the same exam and kind.
-  (t) => [index("attempts_user_idx").on(t.userId, t.startedAt), index("attempts_rank_idx").on(t.examId, t.kind, t.submittedAt)],
+  // attempts_week_idx: the weekly leaderboard, every submitted test on an exam within a week.
+  (t) => [index("attempts_user_idx").on(t.userId, t.startedAt), index("attempts_rank_idx").on(t.examId, t.kind, t.submittedAt), index("attempts_week_idx").on(t.examId, t.submittedAt)],
 );
 
 /**
@@ -206,3 +235,18 @@ export const questionStats = pgTable("question_stats", {
   pick3: integer("pick3").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Privacy-friendly visitor stats: one counter per day (Asia/Kolkata), event and path. No IPs,
+ * user ids or cookies are stored. Written by POST /api/event, read on /admin/stats.
+ */
+export const eventCounts = pgTable(
+  "event_counts",
+  {
+    day: date("day").notNull(),
+    name: text("name").notNull(),
+    path: text("path").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.name, t.path] })],
+);

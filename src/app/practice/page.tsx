@@ -18,6 +18,7 @@ import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
+import { track } from "@/lib/track";
 import { isWeeklyExam } from "@/lib/weekly";
 
 export default function PracticePage() {
@@ -148,7 +149,10 @@ function PracticeView() {
 
   useEffect(() => {
     if (!account.ready) return;
-    if ((key || isMistakes || isSaved || challenge) && phase === "running" && !(isTimed && server)) loadQuestions();
+    if ((key || isMistakes || isSaved || challenge) && phase === "running" && !(isTimed && server)) {
+      loadQuestions();
+      track(isTimed ? "mock_start" : "practice_start");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, isMistakes, isSaved, loadQuestions, round, phase, isTimed, server, account.ready]);
 
@@ -184,11 +188,13 @@ function PracticeView() {
     setPhase("running");
     setRound((r) => r + 1);
     account.refresh();
+    track("mock_start");
   };
 
   const submitToServer = async (chosen: (number | null)[], times: number[]): Promise<MCQ[]> => {
     const { status, data } = await postJson("/api/tests/submit", { attemptId: serverTest!.attemptId, answers: chosen, times });
     if (status !== 200) throw new Error(data.error ?? "Could not submit the test.");
+    track("mock_submit");
     return data.questions;
   };
 

@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogoMark } from "@/components/Logo";
+import { rememberRef } from "@/components/SiteEvents";
 import { useAccount } from "@/lib/account";
+import { track } from "@/lib/track";
 
 export default function LoginPage() {
   return (
@@ -33,6 +35,12 @@ function LoginForm() {
     if (account.user) router.replace(next);
   }, [account.user, next, router]);
 
+  // An invite link (/login?tab=signup&ref=CODE): keep the code until the new account signs in.
+  const invited = !!params.get("ref");
+  useEffect(() => {
+    rememberRef(params.get("ref"));
+  }, [params]);
+
   if (account.mode === "local") {
     return (
       <div className="card mx-auto max-w-md text-center text-sm text-slate-600">
@@ -50,6 +58,7 @@ function LoginForm() {
     setError("");
     const clean = email.trim().toLowerCase();
     const result = tab === "login" ? await account.login(clean, password) : await account.signup(clean, password, name || undefined);
+    if (tab === "signup" && (result === "verify" || result === null)) track("signup");
     if (result === "verify") {
       setBusy(false);
       return setVerifying(clean);
@@ -84,6 +93,9 @@ function LoginForm() {
         <LogoMark className="mx-auto h-10 w-10" />
         <h1 className="text-2xl font-semibold">{tab === "login" ? "Welcome back" : "Create your account"}</h1>
         <p className="text-sm text-slate-600">{tab === "login" ? "Log in to use your tests and revision packs." : "Free to join. Get one free timed test for every exam."}</p>
+        {invited && tab === "signup" && (
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">You were invited by a friend. Verify your email and finish your first timed test, and you both get 1 extra test credit.</p>
+        )}
       </div>
       <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-surface p-0.5 text-sm">
         {(["login", "signup"] as const).map((t) => (
