@@ -289,6 +289,16 @@ export const CATEGORIES = [...new Set(EXAMS.map((e) => e.category))];
 
 export const FEATURED_EXAMS = EXAMS.filter((e) => e.featured);
 
+/** Exams whose name, full name, conducting body or category contain every word of the query. */
+export function searchExams(query: string, list: Exam[] = EXAMS): Exam[] {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return list;
+  return list.filter((e) => {
+    const hay = `${e.name} ${e.fullName} ${e.conductedBy} ${e.category}`.toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
+}
+
 export function examTopicIds(exam: Exam): string[] {
   return [...new Set(exam.subjects.flatMap((s) => s.topicIds))];
 }

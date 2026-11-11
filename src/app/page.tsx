@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarCheck, Check, Clock, Layers, ListVideo, Mic, NotebookPen, Target } from "lucide-react";
 import Link from "next/link";
+import { HomeTop } from "@/components/HomeTop";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
@@ -22,35 +23,37 @@ const STEPS = [
 export default function Home() {
   return (
     <div className="-mt-10 space-y-24">
-      {/* Hero */}
-      <section className="relative -mx-4 overflow-hidden px-4 pb-4 pt-16 sm:pt-20">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
-        <div className="relative grid items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
-          <div>
-            <Link href="/exams" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600 hover:border-slate-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              For SSC, banking, railway, UPSC and CTET aspirants
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-            <h1 className="mt-5 text-4xl font-semibold leading-[1.1] sm:text-5xl">Learn from long lectures without watching every minute.</h1>
-            <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-slate-600">
-              Paste a YouTube link. StudyClip splits the lecture into chapters, marks what matters for your exam, and turns it into notes, quizzes and flashcards.
-            </p>
-            <div className="mt-8 max-w-lg">
-              <VideoLinkForm size="lg" />
+      {/* Personal top (exam picker or dashboard), with the generic hero for new visitors */}
+      <HomeTop>
+        <section className="relative -mx-4 overflow-hidden px-4 pb-4 pt-16 sm:pt-20">
+          <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+          <div className="relative grid items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
+            <div>
+              <Link href="/exams" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600 hover:border-slate-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                For SSC, banking, railway, UPSC and CTET aspirants
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+              <h1 className="mt-5 text-4xl font-semibold leading-[1.1] sm:text-5xl">Learn from long lectures without watching every minute.</h1>
+              <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-slate-600">
+                Paste a YouTube link. StudyClip splits the lecture into chapters, marks what matters for your exam, and turns it into notes, quizzes and flashcards.
+              </p>
+              <div className="mt-8 max-w-lg">
+                <VideoLinkForm size="lg" />
+              </div>
+              <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+                {["Free to use", "Works with any captioned lecture", "No sign-up"].map((t) => (
+                  <li key={t} className="flex items-center gap-1.5">
+                    <Check className="h-4 w-4 text-emerald-600" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-              {["Free to use", "Works with any captioned lecture", "No sign-up"].map((t) => (
-                <li key={t} className="flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-emerald-600" />
-                  {t}
-                </li>
-              ))}
-            </ul>
+            <ProductPreview />
           </div>
-          <ProductPreview />
-        </div>
-      </section>
+        </section>
+      </HomeTop>
 
       {/* Last-minute offer */}
       <section className="-mt-12 flex flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 bg-surface p-5 sm:flex-row sm:items-center">

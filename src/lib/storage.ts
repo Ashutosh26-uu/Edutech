@@ -216,6 +216,11 @@ export function setExamDate(date: string | undefined) {
   save(s);
 }
 
+/** Whole days from now until the exam date (0 on the day, negative once passed), or null if no date is set. */
+export function daysUntilExam(examDate: string | undefined, now = Date.now()): number | null {
+  return examDate ? Math.ceil((new Date(examDate + "T00:00:00").getTime() - now) / 86_400_000) : null;
+}
+
 export function setDailyGoal(goal: number) {
   const s = load();
   s.dailyGoal = goal;

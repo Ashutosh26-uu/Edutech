@@ -6,7 +6,7 @@ import { Heatmap } from "@/components/Heatmap";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
-import { dayKey, dueCards, level, setDailyGoal, setExam, setExamDate, streak, today } from "@/lib/storage";
+import { dayKey, daysUntilExam, dueCards, level, setDailyGoal, setExam, setExamDate, streak, today } from "@/lib/storage";
 import { useStore } from "@/lib/useStore";
 
 const DAY = 86_400_000;
@@ -28,7 +28,7 @@ export default function TodayPage() {
   const xpToday = store.activity[dayKey()] ?? 0;
   const goalPct = Math.min(100, Math.round((xpToday / store.dailyGoal) * 100));
   const lvl = level(store.xp);
-  const days = store.examDate ? Math.ceil((new Date(store.examDate + "T00:00:00").getTime() - Date.now()) / DAY) : null;
+  const days = daysUntilExam(store.examDate);
   const due = dueCards(store).length;
   const focus = exam ? focusTopics(examTopicIds(exam), store.topics, 3) : [];
   const lastMock = store.mocks.find((m) => m.examId === exam?.id)?.takenAt ?? 0;
