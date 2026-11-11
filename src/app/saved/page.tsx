@@ -4,6 +4,7 @@ import { ArrowLeft, BookmarkPlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { BookmarkButton, DifficultyChip, Stat } from "@/components/Quiz";
+import { NoteBox, NoteButton } from "@/components/StudyNotes";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { useAccount } from "@/lib/account";
 import { cardsForQuestions } from "@/lib/cards";
@@ -97,10 +98,12 @@ export default function SavedPage() {
                         <button className="font-medium text-brand-700" onClick={() => setOpen(shown ? null : b.id)}>
                           {shown ? "Hide answer" : "Show answer"}
                         </button>
-                        <span className="ml-auto">
+                        <span className="ml-auto flex gap-1">
+                          <NoteButton question={b.question} />
                           <BookmarkButton question={b.question} />
                         </span>
                       </div>
+                      <NoteBox question={b.question} />
                     </li>
                   );
                 })}

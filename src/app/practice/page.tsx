@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChallengeBox, readChallenge } from "@/components/Challenge";
+import { ExamModeSwitch, useExamModePref } from "@/components/ExamMode";
 import { TestPaywall } from "@/components/Paywall";
 import { Quiz, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -13,6 +14,7 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
 import { topicWeights } from "@/lib/adaptive";
 import { api, IS_STATIC } from "@/lib/api";
+import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
@@ -85,7 +87,14 @@ function PracticeView() {
   const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
   const [finished, setFinished] = useState<AnswerResult[] | null>(null);
+  // Exam mode (CBT-style full-screen layout) for timed tests; the choice is remembered.
+  const [examMode, setExamMode] = useExamModePref();
   const key = topicIds.join(",");
+
+  // Full screen is requested on the Start click; leave it if the test didn't start after all.
+  useEffect(() => {
+    if (phase !== "running" || error) exitFullscreen();
+  }, [phase, error]);
 
   // Smart practice weights come from the account's progress when signed in, else this browser's.
   const statsForWeights = useCallback(async (): Promise<Record<string, TopicStat>> => {
@@ -320,7 +329,7 @@ function PracticeView() {
               </button>
             </div>
           ) : (
-            <StartScreen access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+            <StartScreen access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
           )
         ) : phase === "paywall" ? (
           <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
@@ -343,6 +352,8 @@ function PracticeView() {
             attemptId={isTimed ? serverTest?.attemptId : undefined}
             onFinish={onFinish}
             share={{ title: challenge ? "Challenge set" : title, examId: exam?.id }}
+            examMode={isTimed && examMode}
+            candidate={account.user?.name ?? undefined}
             onRestart={() => {
               setServerTest(null);
               setLocalSections(null);
@@ -358,7 +369,7 @@ function PracticeView() {
   );
 }
 
-function StartScreen({ access, credits, sectional, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
+function StartScreen({ access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
@@ -374,7 +385,16 @@ function StartScreen({ access, credits, sectional, onStart, onPaywall, busy, err
         </p>
         {sectional && <p className="mt-2 text-sm text-amber-700">Sectional timing: each section has its own clock and closes when it ends. You can’t go back to a closed section.</p>}
       </div>
-      <button className="btn-primary w-full py-2.5" onClick={onStart} disabled={busy}>
+      <ExamModeSwitch on={examMode} onChange={setExamMode} />
+      <button
+        className="btn-primary w-full py-2.5"
+        onClick={() => {
+          // Full screen needs the click itself, so it is asked for here rather than once the test loads.
+          if (examMode) enterFullscreen();
+          onStart();
+        }}
+        disabled={busy}
+      >
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} Start test
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
