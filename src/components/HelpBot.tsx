@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { BotContext, BotLink, Lang } from "@/lib/helpbot";
+import { track } from "@/lib/track";
 
 type Engine = typeof import("@/lib/helpbot");
 
@@ -147,7 +148,10 @@ export function HelpBot() {
     <div className="print:hidden">
       {!open && (
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            track("helpbot_open");
+          }}
           aria-label="Open help chat"
           className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-on-ink shadow-lg transition hover:opacity-90"
         >
