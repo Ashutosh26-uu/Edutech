@@ -197,7 +197,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
               </button>
             )}
           </div>
-          {practising ? <Quiz key={topic.id} questions={questions} mode="practice" /> : <p className="text-sm text-slate-600">Answer one question at a time with instant explanations.</p>}
+          {practising ? <Quiz key={topic.id} questions={questions} mode="practice" share={{ title: topic.name }} /> : <p className="text-sm text-slate-600">Answer one question at a time with instant explanations.</p>}
         </div>
       </div>
       <aside className="space-y-5">
