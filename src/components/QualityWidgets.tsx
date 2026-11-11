@@ -65,7 +65,7 @@ export function ReportButton({ question }: { question: MCQ }) {
   );
 }
 
-interface Standing {
+export interface Standing {
   rank: number;
   takers: number;
   percentile: number | null;
@@ -73,17 +73,23 @@ interface Standing {
 }
 
 /** Rank and percentile of a server-scored test, shown on its result screen. */
-export function StandingCard({ attemptId }: { attemptId: string }) {
+export function StandingCard({ attemptId, onLoad }: { attemptId: string; onLoad?: (s: Standing) => void }) {
   const [standing, setStanding] = useState<Standing | null>(null);
   useEffect(() => {
     let on = true;
     fetch(`/api/tests/${attemptId}/standing`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => on && d && setStanding(d))
+      .then((d) => {
+        if (!on || !d) return;
+        setStanding(d);
+        onLoad?.(d);
+      })
       .catch(() => {});
     return () => {
       on = false;
     };
+    // onLoad is a state setter from the results screen; refetching when it changes is not wanted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attemptId]);
   if (!standing) return null;
   return (

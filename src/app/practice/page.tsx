@@ -318,6 +318,7 @@ function PracticeView() {
             submit={isTimed && serverTest ? submitToServer : undefined}
             attemptId={isTimed ? serverTest?.attemptId : undefined}
             onFinish={onFinish}
+            share={{ title: challenge ? "Challenge set" : title, examId: exam?.id }}
             onRestart={() => {
               setServerTest(null);
               setLocalSections(null);
