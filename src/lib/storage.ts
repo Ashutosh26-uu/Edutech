@@ -148,6 +148,17 @@ function addXp(s: Store, amount: number, what: keyof DayCounts) {
   s.frozenDays = streakInfo(s).frozen;
 }
 
+/** XP for study that isn't a question, card, video or mock (e.g. a focus-timer block). Counts toward the daily goal and streak. */
+export function awardXp(amount: number) {
+  if (!(amount > 0)) return;
+  const s = load();
+  s.xp += amount;
+  const k = dayKey();
+  s.activity[k] = (s.activity[k] ?? 0) + amount;
+  s.frozenDays = streakInfo(s).frozen;
+  save(s);
+}
+
 export function today(s = load()): DayCounts {
   return s.counts[dayKey()] ?? { questions: 0, reviews: 0, videos: 0, mocks: 0 };
 }

@@ -76,6 +76,22 @@ All three need migration `0006_growth` (`npm run db:migrate`). It adds `users.re
 
 **Visitor stats** (`/admin/stats`, for `ADMIN_EMAILS`). The site sends `POST /api/event` with an event name and the page path on each page view and a few actions (practice and test start, test submit, sign-up, purchase click, help bot opened, share click). The server keeps only daily counters per event and path (`event_counts`, days in India time); no cookies, IPs or user ids are stored. Query strings are dropped and ids in paths become `:id`. Unknown event names are rejected, each IP may send 120 events a minute (in-memory limit, or Upstash when set), and nothing is sent from localhost or the static build. The admin page shows views per day, top pages and event totals for the last 7 or 30 days.
 
+## Daily study reminders (Web Push)
+
+Opt-in browser notifications from the **Daily reminder** card on `/today`. The feature stays hidden and off until it is configured: without `NEXT_PUBLIC_VAPID_PUBLIC_KEY` the card is not shown, without `CRON_SECRET` `/api/push/send` answers 404, and the static build never shows it.
+
+1. Generate a VAPID key pair once: `npx web-push generate-vapid-keys`.
+2. Set four env vars in Netlify (production context): `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (public key), `VAPID_PRIVATE_KEY` (private key), `VAPID_SUBJECT` (`mailto:` your support address) and `CRON_SECRET` (`openssl rand -base64 32`). The public key is built into the page, so redeploy after setting it. Keep the same key pair afterwards: changing it breaks every existing subscription.
+3. Run migration `0007_reminders` (`npm run db:migrate`). It adds the `push_subscriptions` table.
+
+How it works: turning the card on asks for notification permission (only on that click), subscribes the browser and sends the subscription with the chosen time (7 am, 1 pm, 6 pm, 7 pm, 8 pm or 9 pm India time; default 7 pm) and exam to `POST /api/push/subscribe` (same-origin only, 4 KB body cap, 20 requests an hour per IP; signed-in users are linked to the row). Turning it off unsubscribes and calls `DELETE /api/push/subscribe`. The Netlify scheduled function `netlify/functions/send-reminders.mts` runs at minute 30 of every UTC hour (`30 * * * *`), which is the top of the hour in India (UTC+5:30), so a 7 pm reminder goes out at 7:00 pm IST, and calls `POST /api/push/send` with `Authorization: Bearer $CRON_SECRET`. The sender claims the rows due this India hour that were not sent today, marks them sent first (so retries never double-send), and pushes in batches of 50. Expired subscriptions (404/410) are deleted; other errors count as failures and the row is deleted after 5 in a row. Scheduled functions run only on the published production deploy; check them under Logs → Functions → `send-reminders`, or trigger one by hand:
+
+```bash
+curl -X POST https://<your-domain>/api/push/send -H "Authorization: Bearer $CRON_SECRET"
+```
+
+On iPhone and iPad, Web Push works only from a site added to the Home Screen (iOS 16.4+); the card says so in Safari.
+
 ## Contact messages
 
 The Contact page form saves messages in the `contact_messages` table (support, refunds, privacy requests and grievances). Run `npm run db:migrate` once after deploying it. Set `ADMIN_EMAILS` (comma-separated account emails) and the listed accounts can read and mark messages at `/admin/messages`. Without it, read them in the Neon console's SQL editor:

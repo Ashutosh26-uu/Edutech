@@ -237,6 +237,10 @@ const CASES = [
   ["hindi typing practice", "typing-test"],
   ["quant formulas", "formula-sheets"],
   ["formula sheet pdf download", "formula-sheets"],
+  ["how do i get daily reminders", "reminders"],
+  ["roz padhai ka reminder chahiye", "reminders"],
+  ["notification band kaise kare reminder", "reminders"],
+  ["remind me to study every day", "reminders"],
   // Nonsense
   ["asdfgh qwerty", "?"],
   ["what is the capital of mars", "topic:geo-solar-system"],

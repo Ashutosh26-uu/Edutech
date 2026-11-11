@@ -25,6 +25,8 @@ const MORE = [
   { href: "/drills", label: "Speed drills" },
   { href: "/typing", label: "Typing test" },
   { href: "/formulas", label: "Formula sheets" },
+  { href: "/tracker", label: "Syllabus tracker" },
+  { href: "/focus", label: "Focus timer" },
   { href: "/saved", label: "Saved questions" },
   { href: "/interview", label: "Interview prep" },
   { href: "/resume", label: "Resume builder" },
