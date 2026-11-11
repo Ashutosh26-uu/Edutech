@@ -144,6 +144,45 @@ export function saveVideo(v: SavedVideo) {
   save(s);
 }
 
+// Transcripts the user pasted, kept in this browser so a video opens again without pasting twice.
+// They live under their own key: they are large, and never part of account sync.
+const TRANSCRIPTS_KEY = "studyclip:transcripts";
+const TRANSCRIPTS_KEPT = 12;
+const TRANSCRIPT_MAX_CHARS = 300_000;
+
+function loadTranscripts(): { videoId: string; text: string }[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(TRANSCRIPTS_KEY) ?? "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function pastedTranscript(videoId: string): string | undefined {
+  return loadTranscripts().find((t) => t.videoId === videoId)?.text;
+}
+
+export function rememberTranscript(videoId: string, text: string) {
+  if (text.length > TRANSCRIPT_MAX_CHARS) return;
+  let list = [{ videoId, text }, ...loadTranscripts().filter((t) => t.videoId !== videoId)].slice(0, TRANSCRIPTS_KEPT);
+  // If the browser's storage is full, drop the oldest transcripts until it fits.
+  while (list.length) {
+    try {
+      localStorage.setItem(TRANSCRIPTS_KEY, JSON.stringify(list));
+      return;
+    } catch {
+      list = list.slice(0, -1);
+    }
+  }
+}
+
+export function forgetTranscript(videoId: string) {
+  try {
+    localStorage.setItem(TRANSCRIPTS_KEY, JSON.stringify(loadTranscripts().filter((t) => t.videoId !== videoId)));
+  } catch {}
+}
+
 export function recordAnswers(results: { topicId?: string; correct: boolean }[]) {
   const s = load();
   for (const r of results) {

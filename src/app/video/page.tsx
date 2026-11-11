@@ -10,7 +10,7 @@ import { YouTubePlayer, type PlayerHandle } from "@/components/YouTubePlayer";
 import { api } from "@/lib/api";
 import { cardsForVideo } from "@/lib/cards";
 import { downloadText, notesMarkdown, printNotes } from "@/lib/exportNotes";
-import { addCards, addVideoNote, deleteVideoNote, saveVideo } from "@/lib/storage";
+import { addCards, addVideoNote, deleteVideoNote, forgetTranscript, pastedTranscript, rememberTranscript, saveVideo } from "@/lib/storage";
 import type { Chapter, Importance, TranscriptLine, VideoBreakdown } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
 import { formatTime, parsePastedTranscript } from "@/lib/youtube";
@@ -41,17 +41,25 @@ function VideoView() {
   const startAt = Number(params.get("t")) || 0;
   const [state, setState] = useState<State>({ status: "idle" });
   const [pasted, setPasted] = useState("");
+  // True when the breakdown on screen came from a transcript pasted earlier in this browser.
+  const [fromSaved, setFromSaved] = useState(false);
 
   const analyse = useCallback(
-    async (transcript?: string) => {
+    async (typed?: string) => {
       if (!videoId) return;
       setState({ status: "loading" });
+      // A transcript pasted for this video before is reused, so nobody pastes the same one twice.
+      const saved = typed ? undefined : pastedTranscript(videoId);
+      const transcript = typed ?? saved;
       try {
         const { ok, json } = await api("video", { url: videoId, transcript });
         if (!ok) {
+          if (saved) forgetTranscript(videoId);
           setState({ status: "error", message: json.error, needsTranscript: !!json.needsTranscript });
           return;
         }
+        if (typed) rememberTranscript(videoId, typed);
+        setFromSaved(!!saved);
         setState({ status: "done", data: { ...json, transcript: json.transcript ?? [] } });
         saveVideo({ videoId, title: json.title, chapters: json.chapters.length, savedAt: Date.now() });
       } catch {
@@ -90,6 +98,22 @@ function VideoView() {
       )}
       {state.status === "error" && state.needsTranscript && videoId && <PasteTranscript videoId={videoId} message={state.message} pasted={pasted} setPasted={setPasted} onAnalyse={() => analyse(pasted)} />}
 
+      {state.status === "done" && fromSaved && videoId && (
+        <p className="text-xs text-slate-500">
+          Using the transcript you pasted earlier.{" "}
+          <button
+            className="font-medium text-brand-700 hover:underline"
+            onClick={() => {
+              forgetTranscript(videoId);
+              setPasted("");
+              setFromSaved(false);
+              analyse();
+            }}
+          >
+            Paste a different one
+          </button>
+        </p>
+      )}
       {state.status === "done" && <Breakdown data={state.data} startAt={startAt} />}
     </div>
   );
