@@ -438,6 +438,18 @@ export function consumeTestAccess(examId: string | undefined): boolean {
   return true;
 }
 
+/** XP for skill practice (speed drills, typing tests): adds to the total and today's activity, not to the question counts. */
+export function awardSkillXp(amount: number) {
+  const xp = Math.round(amount);
+  if (!(xp > 0)) return;
+  const s = load();
+  s.xp += xp;
+  const k = dayKey();
+  s.activity[k] = (s.activity[k] ?? 0) + xp;
+  s.frozenDays = streakInfo(s).frozen;
+  save(s);
+}
+
 export function clearAll() {
   save(structuredClone(EMPTY));
 }

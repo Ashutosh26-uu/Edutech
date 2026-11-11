@@ -22,6 +22,9 @@ const LINKS = [
 /** Extra pages listed in the phone menu, where there is room for them. */
 const MORE = [
   { href: "/mock-sunday", label: "Sunday mock" },
+  { href: "/drills", label: "Speed drills" },
+  { href: "/typing", label: "Typing test" },
+  { href: "/formulas", label: "Formula sheets" },
   { href: "/tracker", label: "Syllabus tracker" },
   { href: "/focus", label: "Focus timer" },
   { href: "/saved", label: "Saved questions" },

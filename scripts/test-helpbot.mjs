@@ -230,6 +230,13 @@ const CASES = [
   ["free me kitne test milenge", "free-test"],
   ["password change", "forgot-password"],
   ["streak wapas kaise laye", "streak"],
+  // Skill tools
+  ["calculation speed kaise badhaye", "speed-drills"],
+  ["tables practice", "speed-drills"],
+  ["typing test", "typing-test"],
+  ["hindi typing practice", "typing-test"],
+  ["quant formulas", "formula-sheets"],
+  ["formula sheet pdf download", "formula-sheets"],
   ["how do i get daily reminders", "reminders"],
   ["roz padhai ka reminder chahiye", "reminders"],
   ["notification band kaise kare reminder", "reminders"],
