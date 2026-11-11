@@ -13,7 +13,7 @@ import type { MCQ } from "@/lib/types";
 
 interface Attempt {
   examId: string;
-  kind: "full" | "topic" | "section";
+  kind: "full" | "topic" | "section" | "weekly";
   negativeMarking: number;
   marks: number;
   questions: MCQ[];
@@ -52,7 +52,7 @@ function TestAnalysis() {
 
   const exam = EXAM_BY_ID.get(attempt.examId);
   const results: AnswerResult[] = attempt.questions.map((q, i) => ({ question: q, chosen: attempt.answers[i] ?? null, correct: attempt.answers[i] === q.answer, seconds: attempt.times?.[i] }));
-  const title = attempt.kind === "full" ? "Full mock test" : attempt.kind === "section" ? `${attempt.sections?.[0]?.name ?? "Section"} test` : `${attempt.questions[0]?.topicId ? (TOPIC_BY_ID.get(attempt.questions[0].topicId)?.name ?? "Topic") : "Topic"} test`;
+  const title = attempt.kind === "full" ? "Full mock test" : attempt.kind === "weekly" ? "Sunday All-India Mock" : attempt.kind === "section" ? `${attempt.sections?.[0]?.name ?? "Section"} test` : `${attempt.questions[0]?.topicId ? (TOPIC_BY_ID.get(attempt.questions[0].topicId)?.name ?? "Topic") : "Topic"} test`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -66,7 +66,7 @@ function TestAnalysis() {
         {attempt.submittedAt && <p className="text-sm text-slate-600">Taken on {new Date(attempt.submittedAt).toLocaleString()}</p>}
       </div>
       <div className="card">
-        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} />
+        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} share={{ title: `${exam?.name ?? attempt.examId} · ${title}`, examId: exam?.id }} />
       </div>
     </div>
   );

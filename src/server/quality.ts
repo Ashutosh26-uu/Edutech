@@ -1,7 +1,8 @@
 import "server-only";
-import { and, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lt, ne, sql, type SQL } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { findQuestions } from "@/lib/bank";
+import { windowAt, type WeekWindow } from "@/lib/weekly";
 import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
@@ -70,26 +71,31 @@ export const picksFromTest = (questions: MCQ[], answers: (number | null)[]): Pic
 export const MIN_FOR_PERCENTILE = 5;
 
 /**
- * Where a submitted test stands: its score against every other user's best score on the same
- * exam and kind of test (same number of questions; for topic and section tests, the same topics).
+ * Weekly (Sunday All-India Mock) attempts that count for a week's rank: started inside that
+ * Sunday's window and submitted on time (within the grace period after their deadline).
  */
-export async function getStanding(user: SessionUser, attemptId: string) {
+export function weeklyRankFilter(examId: string, w: WeekWindow): SQL {
   const t = schema.testAttempts;
-  const [mine] = await db
-    .select({ examId: t.examId, kind: t.kind, topicIds: t.topicIds, score: t.score, submittedAt: t.submittedAt, n: sql<number>`jsonb_array_length(${t.questions})` })
-    .from(t)
-    .where(and(eq(t.id, attemptId), eq(t.userId, user.id)))
-    .limit(1);
-  if (!mine) throw new HttpError(404, "Test not found.");
-  if (!mine.submittedAt || mine.score === null) throw new HttpError(409, "Submit the test to see your rank.");
-  const sameTopics = mine.kind === "full" ? sql`true` : sql`${t.topicIds} = ${mine.topicIds}`;
+  return and(
+    eq(t.examId, examId),
+    eq(t.kind, "weekly"),
+    isNotNull(t.submittedAt),
+    gte(t.startedAt, new Date(w.opensAt)),
+    lt(t.startedAt, new Date(w.closesAt)),
+    sql`${t.submittedAt} <= ${t.deadlineAt} + interval '2 minutes'`,
+  )!;
+}
+
+/** Rank and percentile of a score against the best score of every other user whose attempts match `where`. */
+export async function rankAgainst(where: SQL, score: number, userId: string) {
+  const t = schema.testAttempts;
   const [row] = await db
-    .select({ others: sql<number>`count(*)::int`, above: sql<number>`count(*) filter (where best > ${mine.score})::int`, below: sql<number>`count(*) filter (where best < ${mine.score})::int` })
+    .select({ others: sql<number>`count(*)::int`, above: sql<number>`count(*) filter (where best > ${score})::int`, below: sql<number>`count(*) filter (where best < ${score})::int` })
     .from(
       db
         .select({ userId: t.userId, best: sql<number>`max(${t.score})`.as("best") })
         .from(t)
-        .where(and(eq(t.examId, mine.examId), eq(t.kind, mine.kind), isNotNull(t.submittedAt), ne(t.userId, user.id), sql`jsonb_array_length(${t.questions}) = ${mine.n}`, sameTopics))
+        .where(and(where, ne(t.userId, userId)))
         .groupBy(t.userId)
         .as("b"),
     );
@@ -101,6 +107,28 @@ export async function getStanding(user: SessionUser, attemptId: string) {
     percentile: row.others ? Math.round(((row.below + (row.others - row.above - row.below) / 2) / row.others) * 1000) / 10 : null,
     enough: takers >= MIN_FOR_PERCENTILE,
   };
+}
+
+/**
+ * Where a submitted test stands: its score against every other user's best score on the same
+ * exam and kind of test (same number of questions; for topic and section tests, the same topics).
+ * A Sunday mock ranks only against the same week's attempts, and is provisional until it closes.
+ */
+export async function getStanding(user: SessionUser, attemptId: string) {
+  const t = schema.testAttempts;
+  const [mine] = await db
+    .select({ examId: t.examId, kind: t.kind, topicIds: t.topicIds, score: t.score, startedAt: t.startedAt, submittedAt: t.submittedAt, n: sql<number>`jsonb_array_length(${t.questions})` })
+    .from(t)
+    .where(and(eq(t.id, attemptId), eq(t.userId, user.id)))
+    .limit(1);
+  if (!mine) throw new HttpError(404, "Test not found.");
+  if (!mine.submittedAt || mine.score === null) throw new HttpError(409, "Submit the test to see your rank.");
+  if (mine.kind === "weekly") {
+    const w = windowAt(mine.startedAt.getTime());
+    return { ...(await rankAgainst(weeklyRankFilter(mine.examId, w), mine.score, user.id)), provisional: Date.now() < w.closesAt };
+  }
+  const sameTopics = mine.kind === "full" ? sql`true` : sql`${t.topicIds} = ${mine.topicIds}`;
+  return rankAgainst(and(eq(t.examId, mine.examId), eq(t.kind, mine.kind), isNotNull(t.submittedAt), sql`jsonb_array_length(${t.questions}) = ${mine.n}`, sameTopics)!, mine.score, user.id);
 }
 
 // ---------- Admin ----------

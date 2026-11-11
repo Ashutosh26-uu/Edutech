@@ -176,6 +176,9 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
           </div>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">{topic.name}</h2>
           <p className="mt-2 text-slate-700">{topic.summary}</p>
+          <Link href={`/topics/${topic.id}`} className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">
+            Open topic page →
+          </Link>
           <h3 className="mt-5 text-sm font-semibold uppercase tracking-wide text-slate-500">Key points</h3>
           <ul className="mt-2 space-y-2">
             {topic.keyPoints.map((k) => (
@@ -197,7 +200,7 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
               </button>
             )}
           </div>
-          {practising ? <Quiz key={topic.id} questions={questions} mode="practice" /> : <p className="text-sm text-slate-600">Answer one question at a time with instant explanations.</p>}
+          {practising ? <Quiz key={topic.id} questions={questions} mode="practice" share={{ title: topic.name }} /> : <p className="text-sm text-slate-600">Answer one question at a time with instant explanations.</p>}
         </div>
       </div>
       <aside className="space-y-5">

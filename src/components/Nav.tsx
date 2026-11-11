@@ -21,6 +21,7 @@ const LINKS = [
 
 /** Extra pages listed in the phone menu, where there is room for them. */
 const MORE = [
+  { href: "/mock-sunday", label: "Sunday mock" },
   { href: "/saved", label: "Saved questions" },
   { href: "/interview", label: "Interview prep" },
   { href: "/resume", label: "Resume builder" },

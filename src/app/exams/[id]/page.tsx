@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, ChevronRight, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +7,7 @@ import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
+import { isWeeklyExam } from "@/lib/weekly";
 
 export function generateStaticParams() {
   return EXAMS.map((e) => ({ id: e.id }));
@@ -113,6 +114,18 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             {plan.pattern.sectional && <p className="mt-2 text-xs text-slate-500">In the full mock each section has its own timer and closes when it ends, as in the real paper.</p>}
           </div>
         )}
+        {isWeeklyExam(exam.id) && (
+          <Link href="/mock-sunday" className="card-link flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
+              <Trophy className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-slate-900">Sunday All-India Mock: free, live 10am–10pm</span>
+              <span className="block text-sm text-slate-600">One {exam.name} paper for every student each Sunday. See your all-India rank and the top 10.</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+          </Link>
+        )}
         <p className="text-xs text-slate-500">Exam patterns change. Always confirm dates, eligibility and the current pattern in the latest official notification.</p>
       </div>
 
@@ -134,7 +147,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                   return (
                     <li key={tid} className="flex items-center justify-between gap-3 py-2.5">
                       <div className="min-w-0">
-                        <Link href={`/learn?topic=${encodeURIComponent(t.name)}`} className="font-medium text-slate-800 hover:text-brand-700">
+                        <Link href={`/topics/${tid}`} className="font-medium text-slate-800 hover:text-brand-700">
                           {t.name}
                         </Link>
                         <TopicAccuracy topicId={tid} />

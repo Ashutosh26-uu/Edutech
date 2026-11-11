@@ -35,6 +35,7 @@ const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
       ["Daily plan", "/today"],
       ["Video breakdown", "/video"],
       ["Learn topics", "/learn"],
+      ["All topics", "/topics"],
       ["Flashcards", "/review"],
       ["Exam tomorrow", "/last-minute"],
       ["Interview prep", "/interview"],
