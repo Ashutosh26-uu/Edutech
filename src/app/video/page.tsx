@@ -1,6 +1,7 @@
 "use client";
 
-import { ClipboardPaste, Download, ExternalLink, Layers, Printer, Zap } from "lucide-react";
+import { ClipboardPaste, Download, ExternalLink, Layers, NotebookPen, Printer, Zap } from "lucide-react";
+import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
@@ -9,7 +10,7 @@ import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { YouTubePlayer, type PlayerHandle } from "@/components/YouTubePlayer";
 import { api } from "@/lib/api";
 import { cardsForVideo } from "@/lib/cards";
-import { downloadText, notesMarkdown, printNotes } from "@/lib/exportNotes";
+import { downloadText, myNotesMarkdown, notesMarkdown, printNotes } from "@/lib/exportNotes";
 import { addCards, addVideoNote, deleteVideoNote, forgetTranscript, pastedTranscript, rememberTranscript, saveVideo } from "@/lib/storage";
 import type { Chapter, Importance, TranscriptLine, VideoBreakdown } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
@@ -43,6 +44,10 @@ function VideoView() {
   const [pasted, setPasted] = useState("");
   // True when the breakdown on screen came from a transcript pasted earlier in this browser.
   const [fromSaved, setFromSaved] = useState(false);
+  // Watching without a transcript: the player and the user's own timestamped notes only.
+  const [mode, setMode] = useState<"auto" | "watch" | "paste">("auto");
+  const store = useStore();
+  const hasOwnNotes = !!videoId && (store?.videoNotes[videoId]?.length ?? 0) > 0;
 
   const analyse = useCallback(
     async (typed?: string) => {
@@ -70,6 +75,7 @@ function VideoView() {
   );
 
   useEffect(() => {
+    setMode("auto");
     if (videoId) analyse();
     else setState({ status: "idle" });
   }, [videoId, analyse]);
@@ -96,7 +102,25 @@ function VideoView() {
           <p className="text-sm font-medium text-red-700">{state.message}</p>
         </div>
       )}
-      {state.status === "error" && state.needsTranscript && videoId && <PasteTranscript videoId={videoId} message={state.message} pasted={pasted} setPasted={setPasted} onAnalyse={() => analyse(pasted)} />}
+      {state.status === "error" &&
+        state.needsTranscript &&
+        videoId &&
+        // A video the user already took notes on without a transcript opens straight in that mode.
+        (mode === "watch" || (mode === "auto" && hasOwnNotes) ? (
+          <WatchOnly videoId={videoId} startAt={startAt} onPaste={() => setMode("paste")} />
+        ) : (
+          <PasteTranscript
+            videoId={videoId}
+            message={state.message}
+            pasted={pasted}
+            setPasted={setPasted}
+            onAnalyse={() => analyse(pasted)}
+            onWatch={() => {
+              setMode("watch");
+              saveVideo({ videoId, title: "YouTube lecture (my notes)", chapters: 0, savedAt: Date.now() });
+            }}
+          />
+        ))}
 
       {state.status === "done" && fromSaved && videoId && (
         <p className="text-xs text-slate-500">
@@ -123,7 +147,21 @@ function VideoView() {
  * Shown when the server can't read a video's captions (YouTube often blocks cloud servers):
  * step-by-step help to copy the transcript from YouTube, then the same breakdown runs on it.
  */
-function PasteTranscript({ videoId, message, pasted, setPasted, onAnalyse }: { videoId: string; message: string; pasted: string; setPasted: (s: string) => void; onAnalyse: () => void }) {
+function PasteTranscript({
+  videoId,
+  message,
+  pasted,
+  setPasted,
+  onAnalyse,
+  onWatch,
+}: {
+  videoId: string;
+  message: string;
+  pasted: string;
+  setPasted: (s: string) => void;
+  onAnalyse: () => void;
+  onWatch: () => void;
+}) {
   const lines = useMemo(() => (pasted.trim() ? parsePastedTranscript(pasted) : []), [pasted]);
   const [clipError, setClipError] = useState("");
   const fromClipboard = async () => {
@@ -188,6 +226,69 @@ function PasteTranscript({ videoId, message, pasted, setPasted, onAnalyse }: { v
       <button className="btn-primary" disabled={lines.length < 3} onClick={onAnalyse}>
         Break it down
       </button>
+
+      <details className="rounded-xl border border-slate-200 p-3 text-sm">
+        <summary className="cursor-pointer font-medium text-slate-900">Can’t find “Show transcript” on YouTube?</summary>
+        <div className="mt-2 space-y-2 text-slate-600">
+          <p>Then this video has no captions, so there is no transcript to copy. You can still study it:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              <b>Watch and take notes</b>: play it here at your speed and write notes that remember the time in the video.
+            </li>
+            <li>
+              <b>Paste any text about the lecture</b> in the box above (your own notes, the teacher’s handout, the video description). Notes and a quiz are made from it; chapter times are estimated.
+            </li>
+            <li>
+              Search the topic on <Link href="/learn" className="font-medium text-brand-700 hover:underline">Learn</Link> for ready notes and practice, or pick another lecture on the same topic that has captions.
+            </li>
+          </ul>
+          <button type="button" className="btn-ghost" onClick={onWatch}>
+            <NotebookPen className="h-4 w-4" /> Watch and take notes
+          </button>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+/** A video with no transcript: the player, speed control and the user's own timestamped notes. */
+function WatchOnly({ videoId, startAt, onPaste }: { videoId: string; startAt: number; onPaste: () => void }) {
+  const player = useRef<PlayerHandle>(null);
+  const [now, setNow] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const store = useStore();
+  const myNotes = store?.videoNotes[videoId] ?? [];
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-4">
+      <YouTubePlayer ref={player} videoId={videoId} start={startAt} onTime={setNow} />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex overflow-hidden rounded-lg border border-slate-200 text-xs">
+          {SPEEDS.map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setSpeed(s);
+                player.current?.setRate(s);
+              }}
+              className={`px-2 py-1.5 font-semibold ${speed === s ? "bg-ink text-on-ink" : "bg-surface text-slate-600 hover:bg-slate-50"}`}
+            >
+              {s}×
+            </button>
+          ))}
+        </div>
+        <button className="btn-ghost ml-auto px-3 py-1.5 text-xs" disabled={!myNotes.length} onClick={() => downloadText("my-lecture-notes.md", myNotesMarkdown(videoId, myNotes))}>
+          <Download className="h-3.5 w-3.5" /> Download my notes
+        </button>
+      </div>
+      <div className="rounded-xl bg-brand-50 p-4 text-sm text-brand-900">
+        This video has no transcript, so there are no automatic chapters or quiz. Write notes as you watch: each one remembers the time, and tapping the time jumps back to it.
+{" "}
+        <button className="font-medium underline" onClick={onPaste}>
+          I have a transcript to paste
+        </button>
+      </div>
+      <MyNotes videoId={videoId} notes={myNotes} getTime={() => now} onSeek={(t) => player.current?.seek(t)} />
     </div>
   );
 }
