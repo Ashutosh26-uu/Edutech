@@ -176,6 +176,9 @@ function TopicView({ result, related, onPick }: { result: TopicResult; related: 
           </div>
           <h2 className="mt-2 text-xl font-semibold text-slate-900">{topic.name}</h2>
           <p className="mt-2 text-slate-700">{topic.summary}</p>
+          <Link href={`/topics/${topic.id}`} className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline">
+            Open topic page →
+          </Link>
           <h3 className="mt-5 text-sm font-semibold uppercase tracking-wide text-slate-500">Key points</h3>
           <ul className="mt-2 space-y-2">
             {topic.keyPoints.map((k) => (
