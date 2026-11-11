@@ -24,6 +24,19 @@ export function notesMarkdown(d: VideoBreakdown, mine: VideoNote[]): string {
   return lines.join("\n");
 }
 
+/** Markdown for a video watched without a transcript: only the user's own timestamped notes. */
+export function myNotesMarkdown(videoId: string, mine: VideoNote[]): string {
+  return [
+    "# My lecture notes",
+    "",
+    `[Watch on YouTube](https://www.youtube.com/watch?v=${videoId})`,
+    "",
+    ...[...mine].sort((a, b) => a.t - b.t).map((n) => `- [${formatTime(n.t)}](${link(videoId, n.t)}) ${n.text}`),
+    "",
+    "Written with StudyClip",
+  ].join("\n");
+}
+
 export function downloadText(filename: string, text: string, type = "text/markdown") {
   const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
   const a = document.createElement("a");
