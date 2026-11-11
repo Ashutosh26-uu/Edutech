@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { RichText } from "@/components/RichText";
-import { ReportButton, StandingCard } from "@/components/QualityWidgets";
+import { ReportButton, StandingCard, type Standing } from "@/components/QualityWidgets";
+import { ScoreCardButton } from "@/components/ScoreCard";
 import { cardsForQuestions } from "@/lib/cards";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
@@ -53,6 +54,14 @@ interface Props {
    * per-question seconds to the server and resolves with the full questions (with answers).
    */
   submit?: (chosen: (number | null)[], times: number[]) => Promise<MCQ[]>;
+  /** What the shareable score card names (exam or topic) and the exam its link points to. */
+  share?: ShareInfo;
+}
+
+/** Title and exam for the shareable score card on the results screen. */
+export interface ShareInfo {
+  title: string;
+  examId?: string;
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -108,7 +117,7 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId }: Props) {
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share }: Props) {
   const [idx, setIdx] = useState(0);
   const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
   const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
@@ -225,7 +234,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
-  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} attemptId={attemptId} />;
+  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} attemptId={attemptId} share={share} />;
 
   const q = questions[idx];
   const text = inLang(q, lang);
@@ -416,11 +425,13 @@ interface ResultsProps {
   onTimestamp?: (s: number) => void;
   onRestart?: () => void;
   attemptId?: string;
+  share?: ShareInfo;
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, attemptId }: ResultsProps) {
+export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, attemptId, share }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
+  const [standing, setStanding] = useState<Standing | null>(null);
   // Answer review filter: long mocks are easier to review one kind of answer at a time.
   const [show, setShow] = useState<"all" | "wrong" | "skipped" | "correct">("all");
   const [lang, setLang] = useLang();
@@ -463,6 +474,24 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   // Topics below 50% in this set, for a one-tap practice set on them.
   const weakIds = [...byTopic].filter(([id, t]) => TOPIC_BY_ID.has(id) && pctOf(t.c, t.n) < 50).map(([id]) => id).slice(0, 8);
 
+  // A card with nothing attempted has nothing to show off, so the share button needs one answer.
+  const shareCard = correct + wrong > 0 && (
+    <ScoreCardButton
+      summary={{
+        title: share?.title || "Practice set",
+        examId: share?.examId,
+        score: +score.toFixed(2),
+        total,
+        scoreLabel: marks > 1 || negativeMarking > 0 ? "Marks" : "Score",
+        correct,
+        wrong,
+        skipped,
+        accuracy: pct,
+        rank: standing,
+      }}
+    />
+  );
+
   const saveMistakes = () => {
     setSaved(addCards(cardsForQuestions(wrongBank.map((r) => r.question))));
   };
@@ -475,7 +504,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         <Stat label="Wrong" value={wrong} tone="red" />
         <Stat label="Skipped" value={skipped} tone="slate" />
       </div>
-      {attemptId && <StandingCard attemptId={attemptId} />}
+      {attemptId && <StandingCard attemptId={attemptId} onLoad={setStanding} />}
       <p className="text-sm text-slate-600">
         Accuracy <b>{pct}%</b> of attempted
         {negativeMarking > 0 && <> · Negative marking: −{+(negativeMarking * marks).toFixed(2)} mark{negativeMarking * marks === 1 ? "" : "s"} per wrong answer</>}
@@ -490,6 +519,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           </>
         )}
       </p>
+      {shareCard && <div className="flex">{shareCard}</div>}
 
       {timed && timeAll > 0 && (
         <div className="card">
@@ -666,6 +696,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         <Link href="/progress" className="btn-ghost">
           My progress
         </Link>
+        {shareCard}
       </div>
     </div>
   );

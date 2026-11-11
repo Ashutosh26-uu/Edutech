@@ -3,7 +3,7 @@
 import { ArrowRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CATEGORIES, EXAMS, examTopicIds } from "@/data/exams";
+import { CATEGORIES, EXAMS, examTopicIds, searchExams } from "@/data/exams";
 
 /** Searchable, filterable list of every exam, grouped by category. */
 export function ExamBrowser() {
@@ -11,15 +11,10 @@ export function ExamBrowser() {
   const [cat, setCat] = useState<string>("All");
   const [level, setLevel] = useState<"All" | "National" | "State">("All");
 
-  const filtered = useMemo(() => {
-    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return EXAMS.filter((e) => {
-      if (cat !== "All" && e.category !== cat) return false;
-      if (level !== "All" && e.level !== level) return false;
-      const hay = `${e.name} ${e.fullName} ${e.conductedBy} ${e.category}`.toLowerCase();
-      return words.every((w) => hay.includes(w));
-    });
-  }, [q, cat, level]);
+  const filtered = useMemo(
+    () => searchExams(q).filter((e) => (cat === "All" || e.category === cat) && (level === "All" || e.level === level)),
+    [q, cat, level],
+  );
 
   const groups = CATEGORIES.map((c) => ({ c, exams: filtered.filter((e) => e.category === c) })).filter((g) => g.exams.length);
 
