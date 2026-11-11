@@ -43,6 +43,9 @@ jobs:
       - name: Streaks, question of the day and badges
         run: npm run test:habits
 
+      - name: Word and fact of the day
+        run: npm run test:daily-learning
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |

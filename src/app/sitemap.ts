@@ -6,7 +6,7 @@ import { TOPICS } from "@/data/topics";
 // Built once at build time, so it also works in the static export.
 export const dynamic = "force-static";
 
-const PAGES = ["/", "/exams", "/topics", "/today", "/review", "/last-minute", "/interview", "/resume", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund"];
+const PAGES = ["/", "/exams", "/topics", "/today", "/listen", "/review", "/last-minute", "/interview", "/resume", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

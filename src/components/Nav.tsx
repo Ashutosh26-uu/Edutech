@@ -23,6 +23,7 @@ const LINKS = [
 const MORE = [
   { href: "/mock-sunday", label: "Sunday mock" },
   { href: "/saved", label: "Saved questions" },
+  { href: "/listen", label: "Audio revision" },
   { href: "/interview", label: "Interview prep" },
   { href: "/resume", label: "Resume builder" },
   { href: "/pricing", label: "Pricing" },
