@@ -144,7 +144,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                   return (
                     <li key={tid} className="flex items-center justify-between gap-3 py-2.5">
                       <div className="min-w-0">
-                        <Link href={`/learn?topic=${encodeURIComponent(t.name)}`} className="font-medium text-slate-800 hover:text-brand-700">
+                        <Link href={`/topics/${tid}`} className="font-medium text-slate-800 hover:text-brand-700">
                           {t.name}
                         </Link>
                         <TopicAccuracy topicId={tid} />

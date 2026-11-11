@@ -66,7 +66,7 @@ function TestAnalysis() {
         {attempt.submittedAt && <p className="text-sm text-slate-600">Taken on {new Date(attempt.submittedAt).toLocaleString()}</p>}
       </div>
       <div className="card">
-        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} />
+        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} share={{ title: `${exam?.name ?? attempt.examId} · ${title}`, examId: exam?.id }} />
       </div>
     </div>
   );

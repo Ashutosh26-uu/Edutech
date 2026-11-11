@@ -3,6 +3,18 @@ export const SITE_NAME = "StudyClip";
 export const COMPANY = "Reasonateai Private Limited";
 
 /**
+ * The public address of the site root (including any sub-path it is served from), set with
+ * NEXT_PUBLIC_SITE_URL. Used for the sitemap, robots.txt and canonical links.
+ */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://studyclip.netlify.app").replace(/\/+$/, "");
+
+/** Absolute URL of a page; the static export serves every page with a trailing slash. */
+export function absoluteUrl(path: string) {
+  const p = path === "/" ? "/" : process.env.NEXT_PUBLIC_STATIC === "1" ? `${path.replace(/\/$/, "")}/` : path;
+  return SITE_URL + p;
+}
+
+/**
  * Support and grievance email, set with NEXT_PUBLIC_CONTACT_EMAIL. Pages show a fallback
  * line until it is set, so no made-up address is ever published.
  */

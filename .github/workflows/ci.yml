@@ -40,6 +40,9 @@ jobs:
       - name: Sunday mock schedule and shared paper
         run: npm run test:weekly
 
+      - name: Streaks, question of the day and badges
+        run: npm run test:habits
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |
