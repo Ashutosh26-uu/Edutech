@@ -1,6 +1,7 @@
 "use client";
 
 import { newMemory, review as fsrsReview, type Grade, type Memory } from "./fsrs";
+import { computeStreak, consecutiveDays, istDayKey, type StreakInfo } from "./streak";
 import { mergeSync, type Bookmark, type SyncDoc } from "./sync";
 import type { MCQ } from "./types";
 
@@ -51,7 +52,7 @@ export interface VideoNote {
   text: string;
 }
 
-interface Store {
+export interface Store {
   videos: SavedVideo[];
   topics: Record<string, TopicStat>;
   mocks: MockResult[];
@@ -76,6 +77,19 @@ interface Store {
   bookmarks: Record<string, Bookmark>;
   /** Deleted cards and bookmarks, so a sync does not bring them back (see lib/sync.ts). */
   deleted: Record<string, number>;
+  /** Missed days a streak freeze covered (YYYY-MM-DD, local), so the streak is stable and no freeze is spent twice. */
+  frozenDays: string[];
+  /** Question of the day answers, keyed by India date (YYYY-MM-DD). */
+  dailyQuestions: Record<string, DailyAnswer>;
+  /** Badge ids already celebrated with a toast. Unset until the badges feature first runs. */
+  announcedBadges?: string[];
+}
+
+export interface DailyAnswer {
+  questionId: string;
+  chosen: number;
+  correct: boolean;
+  at: number;
 }
 
 export interface Purchase {
@@ -97,7 +111,7 @@ export interface DayCounts {
 }
 
 const KEY = "studyclip:v1";
-const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [], bookmarks: {}, deleted: {} };
+const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [], bookmarks: {}, deleted: {}, frozenDays: [], dailyQuestions: {} };
 export const UPDATE_EVENT = "studyclip:update";
 
 export const XP = { correct: 10, wrong: 2, review: 5, video: 20, mock: 50 } as const;
@@ -130,6 +144,8 @@ function addXp(s: Store, amount: number, what: keyof DayCounts) {
   s.activity[k] = (s.activity[k] ?? 0) + amount;
   const c = (s.counts[k] ??= { questions: 0, reviews: 0, videos: 0, mocks: 0 });
   c[what]++;
+  // Studying today settles any freeze that bridges yesterday: write it down so it stays spent.
+  s.frozenDays = streakInfo(s).frozen;
 }
 
 export function today(s = load()): DayCounts {
@@ -327,16 +343,47 @@ export function deleteVideoNote(videoId: string, id: string) {
 
 // ---------- Streaks and levels ----------
 
-/** Consecutive days with any XP, ending today (or yesterday, if today has none yet). */
+/** Consecutive days with any XP, ending today (or yesterday, if today has none yet). A single missed day is bridged by a streak freeze. */
 export function streak(s = load()): number {
-  const d = new Date();
-  if (!s.activity[dayKey(d)]) d.setDate(d.getDate() - 1);
-  let n = 0;
-  while (s.activity[dayKey(d)]) {
-    n++;
-    d.setDate(d.getDate() - 1);
+  return streakInfo(s).count;
+}
+
+/** The streak with its freezes: how many are held, which days they covered, and whether one is about to cover yesterday. */
+export function streakInfo(s = load()): StreakInfo {
+  return computeStreak(s.activity, s.frozenDays ?? [], dayKey());
+}
+
+// ---------- Question of the day ----------
+
+/** Saves the answer to a day's question (India date). The first answer counts; later ones are ignored. */
+export function recordDailyAnswer(date: string, question: MCQ, chosen: number): DailyAnswer {
+  const s = load();
+  const prev = (s.dailyQuestions ??= {})[date];
+  if (prev) return prev;
+  const a: DailyAnswer = { questionId: question.id, chosen, correct: chosen === question.answer, at: Date.now() };
+  s.dailyQuestions[date] = a;
+  addXp(s, a.correct ? XP.correct : XP.wrong, "questions");
+  if (question.topicId) {
+    const t = (s.topics[question.topicId] ??= { attempted: 0, correct: 0 });
+    t.attempted++;
+    if (a.correct) t.correct++;
+    t.lastPracticed = Date.now();
   }
-  return n;
+  save(s);
+  return a;
+}
+
+/** Days in a row (India dates) the question of the day was answered, ending today or yesterday. */
+export function dailyQuestionStreak(s = load()): number {
+  return consecutiveDays(Object.keys(s.dailyQuestions ?? {}), istDayKey());
+}
+
+// ---------- Badges ----------
+
+export function markBadgesAnnounced(ids: string[]) {
+  const s = load();
+  s.announcedBadges = [...new Set([...(s.announcedBadges ?? []), ...ids])];
+  save(s);
 }
 
 export function level(xp: number): { level: number; into: number; span: number } {
