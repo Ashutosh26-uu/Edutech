@@ -133,7 +133,7 @@ export function SundayMock() {
       <section className="space-y-3">
         <div>
           <h2 className="font-semibold">Last week’s results</h2>
-          {last && <p className="text-xs text-slate-500">Mock of {istDateTime(last.opensAt).split(",")[0]} · final ranks</p>}
+          {last && <p className="text-xs text-slate-500">Mock of {istDateTime(last.opensAt).split(",").slice(0, 2).join(",")} · final ranks</p>}
         </div>
         {IS_STATIC ? (
           <p className="card text-sm text-slate-600">Leaderboards are available on the full site.</p>
