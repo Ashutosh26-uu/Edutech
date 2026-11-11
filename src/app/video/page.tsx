@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Layers, Printer, Zap } from "lucide-react";
+import { ClipboardPaste, Download, ExternalLink, Layers, Printer, Zap } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
@@ -13,7 +13,7 @@ import { downloadText, notesMarkdown, printNotes } from "@/lib/exportNotes";
 import { addCards, addVideoNote, deleteVideoNote, saveVideo } from "@/lib/storage";
 import type { Chapter, Importance, TranscriptLine, VideoBreakdown } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
-import { formatTime } from "@/lib/youtube";
+import { formatTime, parsePastedTranscript } from "@/lib/youtube";
 
 export default function VideoPage() {
   return (
@@ -83,24 +83,87 @@ function VideoView() {
         </div>
       )}
 
-      {state.status === "error" && (
-        <div className="card space-y-3">
+      {state.status === "error" && !state.needsTranscript && (
+        <div className="card">
           <p className="text-sm font-medium text-red-700">{state.message}</p>
-          {state.needsTranscript && (
-            <>
-              <p className="text-sm text-slate-600">
-                On YouTube, open the video, click <b>…more</b> under the title, then <b>Show transcript</b>. Copy all the lines and paste them here.
-              </p>
-              <textarea className="input h-40 font-mono text-xs" placeholder={"0:00 Welcome to today’s lecture…\n0:12 We will start with…"} value={pasted} onChange={(e) => setPasted(e.target.value)} />
-              <button className="btn-primary" disabled={!pasted.trim()} onClick={() => analyse(pasted)}>
-                Analyse pasted transcript
-              </button>
-            </>
-          )}
         </div>
       )}
+      {state.status === "error" && state.needsTranscript && videoId && <PasteTranscript videoId={videoId} message={state.message} pasted={pasted} setPasted={setPasted} onAnalyse={() => analyse(pasted)} />}
 
       {state.status === "done" && <Breakdown data={state.data} startAt={startAt} />}
+    </div>
+  );
+}
+
+/**
+ * Shown when the server can't read a video's captions (YouTube often blocks cloud servers):
+ * step-by-step help to copy the transcript from YouTube, then the same breakdown runs on it.
+ */
+function PasteTranscript({ videoId, message, pasted, setPasted, onAnalyse }: { videoId: string; message: string; pasted: string; setPasted: (s: string) => void; onAnalyse: () => void }) {
+  const lines = useMemo(() => (pasted.trim() ? parsePastedTranscript(pasted) : []), [pasted]);
+  const [clipError, setClipError] = useState("");
+  const fromClipboard = async () => {
+    setClipError("");
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) setPasted(text);
+      else setClipError("Your clipboard is empty. Copy the transcript on YouTube first.");
+    } catch {
+      setClipError("Your browser didn’t allow reading the clipboard. Click in the box below and press Ctrl+V (or long-press → Paste).");
+    }
+  };
+  const tooShort = lines.length > 0 && lines.length < 3;
+
+  return (
+    <div className="card space-y-4">
+      <div>
+        <p className="font-semibold text-slate-900">One more step: paste the transcript</p>
+        <p className="mt-1 text-sm text-slate-600">
+          {message} Copy the transcript from YouTube and paste it below. You get the same chapters, notes and quiz.
+        </p>
+      </div>
+      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-700">
+        <li>
+          Open the video on YouTube{" "}
+          <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline">
+            (open it here <ExternalLink className="h-3.5 w-3.5" />)
+          </a>
+          .
+        </li>
+        <li>
+          Under the title, click <b>…more</b>, scroll down and click <b>Show transcript</b>.
+        </li>
+        <li>
+          In the transcript panel, click just before the first line, scroll to the end, then <b>Shift + click</b> after the last line to select it all. Press <b>Ctrl + C</b> (<b>⌘ + C</b> on Mac).
+        </li>
+        <li>Come back here and paste it in the box.</li>
+      </ol>
+      <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+        On a phone the YouTube app doesn’t let you copy the transcript. Open YouTube in your browser, switch to the desktop site, or do this step on a computer.
+      </p>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className="btn-ghost" onClick={fromClipboard}>
+            <ClipboardPaste className="h-4 w-4" /> Paste from clipboard
+          </button>
+          {lines.length > 0 && (
+            <span className={`text-xs ${tooShort ? "text-amber-700" : "text-emerald-700"}`}>
+              {tooShort ? "That looks too short. Copy the whole transcript." : `${lines.length} transcript lines found${lines[0].start === 0 && lines.every((l) => l.dur === 10) ? " (no timestamps: times are estimated)" : ""}`}
+            </span>
+          )}
+        </div>
+        {clipError && <p className="text-xs text-red-700">{clipError}</p>}
+        <textarea
+          className="input h-40 font-mono text-xs"
+          aria-label="Video transcript"
+          placeholder={"0:00 Welcome to today’s lecture…\n0:12 We will start with…"}
+          value={pasted}
+          onChange={(e) => setPasted(e.target.value)}
+        />
+      </div>
+      <button className="btn-primary" disabled={lines.length < 3} onClick={onAnalyse}>
+        Break it down
+      </button>
     </div>
   );
 }
