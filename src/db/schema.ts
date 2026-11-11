@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, date, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, index, integer, jsonb, pgTable, primaryKey, real, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { MCQ } from "@/lib/types";
 
 /** A section of a full mock: questions [from, from + count) of the attempt, with its own minutes. */
@@ -249,4 +249,26 @@ export const eventCounts = pgTable(
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.day, t.name, t.path] })],
+);
+
+/**
+ * Web Push subscriptions for the opt-in daily reminder. One row per browser (endpoint), signed in
+ * or not. `hour_ist` is the India hour to send at; `last_sent_on` (India date) stops a second send
+ * the same day. Written by /api/push/subscribe, read by /api/push/send (hourly Netlify schedule).
+ */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    examId: text("exam_id"),
+    hourIst: smallint("hour_ist").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSentOn: date("last_sent_on"),
+    failures: integer("failures").notNull().default(0),
+  },
+  (t) => [index("push_hour_idx").on(t.hourIst, t.lastSentOn)],
 );

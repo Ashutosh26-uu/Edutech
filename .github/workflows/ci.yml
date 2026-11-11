@@ -43,6 +43,9 @@ jobs:
       - name: Streaks, question of the day and badges
         run: npm run test:habits
 
+      - name: Daily reminder hours and cron auth
+        run: npm run test:reminders
+
       - name: Mock analysis, exam palette and error coach
         run: npm run test:analysis
 
