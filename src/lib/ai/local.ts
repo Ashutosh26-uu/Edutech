@@ -9,8 +9,8 @@ import type { AIProvider } from "./provider";
 import { analyzeVideo } from "./local-video";
 
 /** Shuffles options while keeping the answer index pointing at the right option. */
-export function shuffleOptions(q: MCQ): MCQ {
-  const order = shuffle(q.options.map((_, i) => i));
+export function shuffleOptions(q: MCQ, rand: () => number = Math.random): MCQ {
+  const order = shuffle(q.options.map((_, i) => i), rand);
   return { ...q, options: order.map((i) => q.options[i]), optionsHi: q.optionsHi && order.map((i) => q.optionsHi![i]), answer: order.indexOf(q.answer) };
 }
 
@@ -39,16 +39,17 @@ function rankTopics(query: string): { topic: Topic; score: number }[] {
  * drawn at random in proportion to its weight (equal weights without `weights`), so topics
  * interleave rather than block and, in smart practice, weak topics come up more often.
  * Bank questions come first; Quant topics with a generator never run dry. A tier that runs
- * short borrows from the nearest tiers so the set is always full.
+ * short borrows from the nearest tiers so the set is always full. Pass a seeded `rand` to get the
+ * same set every time (the Sunday All-India Mock gives everyone one paper this way).
  */
-async function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}): Promise<MCQ[]> {
+export async function buildSet(topicIds: string[], count: number, weights: Record<string, number> = {}, rand: () => number = Math.random): Promise<MCQ[]> {
   const size = Math.max(MIN_SET_SIZE, count);
   const quota = tierQuota(size);
   const bank = await loadBank(topicIds);
   // pools[topic][tier]: shuffled bank questions, popped from the end as they are used. Your own
   // previous-year questions go last so they are drawn first, then exam favourites, then the rest.
   const pool = (id: string, d: Difficulty) => {
-    const qs = shuffle(bank.filter((q) => q.topicId === id && q.difficulty === d));
+    const qs = shuffle(bank.filter((q) => q.topicId === id && q.difficulty === d), rand);
     return [...qs.filter((q) => !q.source), ...qs.filter((q) => q.source && !q.pyq), ...qs.filter((q) => q.pyq)];
   };
   const pools = new Map(topicIds.map((id) => [id, Object.fromEntries(DIFFICULTIES.map((d) => [d, pool(id, d)])) as Record<Difficulty, MCQ[]>]));
@@ -60,10 +61,10 @@ async function buildSet(topicIds: string[], count: number, weights: Record<strin
       const ids = topicIds.filter((id) => pools.get(id)![tier].length > 0 || hasGenerator(id));
       if (!ids.length) return null;
       const total = ids.reduce((s, id) => s + (weights[id] ?? 1), 0);
-      let r = Math.random() * total;
+      let r = rand() * total;
       const id = ids.find((x) => (r -= weights[x] ?? 1) <= 0) ?? ids.at(-1)!;
       const fromBank = pools.get(id)![tier].pop();
-      const q = fromBank ? shuffleOptions(fromBank) : generateQuestions(id, 1, Math.random, tier)[0];
+      const q = fromBank ? shuffleOptions(fromBank, rand) : generateQuestions(id, 1, rand, tier)[0];
       if (q && !seen.has(q.question)) {
         seen.add(q.question);
         return q;

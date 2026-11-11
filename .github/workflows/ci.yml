@@ -37,6 +37,9 @@ jobs:
       - name: Help bot answers
         run: npm run test:helpbot
 
+      - name: Sunday mock schedule and shared paper
+        run: npm run test:weekly
+
       - name: Streaks, question of the day and badges
         run: npm run test:habits
 
