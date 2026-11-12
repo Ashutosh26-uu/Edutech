@@ -452,21 +452,25 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-        <button className="btn-ghost" disabled={idx === first} onClick={() => goTo(idx - 1)}>
-          ← Previous
-        </button>
-        <div className="flex gap-2">
-          {mode === "mock" && (
-            <button className={`btn-ghost ${marked[idx] ? "border-violet-400 text-violet-700" : ""}`} aria-pressed={marked[idx]} onClick={() => setMarked((m) => m.map((v, k) => (k === idx ? !v : v)))}>
-              {marked[idx] ? "Marked ✓" : "Mark for review"}
-            </button>
-          )}
-          {mode === "mock" && chosen[idx] !== null && (
+      {mode === "mock" && (
+        <div className="flex flex-wrap gap-2">
+          <button className={`btn-ghost ${marked[idx] ? "border-violet-400 text-violet-700" : ""}`} aria-pressed={marked[idx]} onClick={() => setMarked((m) => m.map((v, k) => (k === idx ? !v : v)))}>
+            {marked[idx] ? "Marked ✓" : "Mark for review"}
+          </button>
+          {chosen[idx] !== null && (
             <button className="btn-ghost" onClick={() => setChosen((c) => c.map((v, k) => (k === idx ? null : v)))}>
-              Clear
+              Clear answer
             </button>
           )}
+        </div>
+      )}
+
+      {/* On phones Previous / Next stay pinned above the tab bar, so a long explanation never hides them. */}
+      <div className="sticky bottom-[var(--bottom-nav-h,0px)] z-10 -mx-4 flex items-center justify-between gap-2 border-t border-slate-200 bg-surface/95 px-4 py-2.5 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 sm:pb-0 sm:backdrop-blur-none print:static">
+        <button className="btn-ghost" disabled={idx === first} onClick={() => goTo(idx - 1)} aria-label="Previous question">
+          ← <span className="hidden min-[400px]:inline">Previous</span>
+        </button>
+        <div className="flex min-w-0 gap-2">
           {idx < last ? (
             <button className={mode === "practice" && !isRevealed ? "btn-ghost" : "btn-primary"} onClick={() => goTo(idx + 1)}>
               {mode === "practice" && !isRevealed ? "Skip →" : mode === "mock" ? "Save & next →" : "Next →"}
