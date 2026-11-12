@@ -295,6 +295,6 @@ export const BANK_SIZES: Record<string, number> = {
   "reason-syllogism": 103,
   "sci-biology": 114,
   "sci-chemistry": 113,
-  "sci-everyday-science": 40,
+  "sci-everyday-science": 70,
   "sci-physics": 114,
 };
