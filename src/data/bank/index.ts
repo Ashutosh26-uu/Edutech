@@ -236,7 +236,7 @@ export const BANK_SIZES: Record<string, number> = {
   "math-definite-integrals-area": 85,
   "math-differentiation-applications": 94,
   "math-integration": 95,
-  "math-inverse-trig": 85,
+  "math-inverse-trig": 119,
   "math-limits-continuity": 95,
   "math-matrices-determinants-vectors": 95,
   "math-probability-pnc": 95,
