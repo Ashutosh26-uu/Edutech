@@ -187,7 +187,7 @@ export const BANK_SIZES: Record<string, number> = {
   "chem-p-block-coordination": 127,
   "chem-periodic-table": 95,
   "chem-practical-salt-analysis": 133,
-  "chem-s-block-hydrogen": 85,
+  "chem-s-block-hydrogen": 118,
   "chem-solutions-states": 84,
   "chem-thermodynamics": 95,
   "comp-awareness": 114,
