@@ -275,7 +275,7 @@ export const BANK_SIZES: Record<string, number> = {
   "quant-ci": 64,
   "quant-data-interpretation": 120,
   "quant-mensuration": 146,
-  "quant-number-system": 111,
+  "quant-number-system": 146,
   "quant-percentage": 68,
   "quant-profit-loss": 68,
   "quant-ratio": 64,
