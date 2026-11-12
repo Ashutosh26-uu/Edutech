@@ -41,7 +41,13 @@ export default function Home() {
               <div className="mt-8 max-w-lg">
                 <VideoLinkForm size="lg" />
               </div>
-              <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+              <p className="mt-5 text-sm text-slate-600">
+                First time here?{" "}
+                <Link href="/start" className="font-medium text-brand-700 underline-offset-2 hover:underline">
+                  See how StudyClip works in 6 simple steps →
+                </Link>
+              </p>
+              <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
                 {["Practice free", "Works with any captioned lecture", "No sign-up needed"].map((t) => (
                   <li key={t} className="flex items-center gap-1.5">
                     <Check className="h-4 w-4 text-emerald-600" />

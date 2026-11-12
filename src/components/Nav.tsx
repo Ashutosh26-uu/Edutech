@@ -191,7 +191,7 @@ export function MobileNav() {
   // Bottom row: pricing, invite, help and log in (account pages are dropped on the static build).
   const link = (href: string) => visible(COMPANY_LINKS.filter((l) => l.href === href));
   const signedOut = account.mode !== "local" && account.ready && !account.user;
-  const bottom: (NavItem | "help")[] = [...link("/pricing"), ...link("/invite"), "help", ...(signedOut ? link("/login") : [])];
+  const bottom: (NavItem | "help")[] = [...link("/start"), ...link("/pricing"), ...link("/invite"), "help", ...(signedOut ? link("/login") : [])];
   return (
     <div className="lg:hidden">
       <button
@@ -278,6 +278,18 @@ export function MobileNav() {
           document.body,
         )}
     </div>
+  );
+}
+
+/** Small "New here?" link to the Start here guide, shown in the header until an exam is chosen. */
+export function NewHereLink() {
+  const path = usePathname();
+  const store = useStore();
+  if (!store || store.examId || path === "/start") return null;
+  return (
+    <Link href="/start" className="shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50">
+      New here?
+    </Link>
   );
 }
 

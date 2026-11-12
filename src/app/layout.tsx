@@ -8,7 +8,7 @@ import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
 import { FocusPill } from "@/components/FocusPill";
 import { HelpBot } from "@/components/HelpBot";
 import { Logo } from "@/components/Logo";
-import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
+import { HeaderStats, MobileNav, Nav, NewHereLink } from "@/components/Nav";
 import { RegisterSW } from "@/components/RegisterSW";
 import { SiteEvents } from "@/components/SiteEvents";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
@@ -66,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Nav />
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <NewHereLink />
               <PaletteButton />
               <HeaderStats />
               <ThemeToggle />
