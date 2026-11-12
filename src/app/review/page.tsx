@@ -17,11 +17,11 @@ import { useStore } from "@/lib/useStore";
 import { formatTime } from "@/lib/youtube";
 import { InfoTip } from "@/components/InfoTip";
 
-const GRADES: { g: Grade; label: string; cls: string }[] = [
-  { g: 1, label: "Again", cls: "bg-red-50 text-red-700 hover:bg-red-100" },
-  { g: 2, label: "Hard", cls: "bg-amber-50 text-amber-800 hover:bg-amber-100" },
-  { g: 3, label: "Good", cls: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" },
-  { g: 4, label: "Easy", cls: "bg-brand-50 text-brand-700 hover:bg-brand-100" },
+const GRADES: { g: Grade; label: string; meaning: string; cls: string }[] = [
+  { g: 1, label: "Again", meaning: "I forgot it", cls: "bg-red-50 text-red-700 hover:bg-red-100" },
+  { g: 2, label: "Hard", meaning: "I remembered it slowly", cls: "bg-amber-50 text-amber-800 hover:bg-amber-100" },
+  { g: 3, label: "Good", meaning: "I knew it", cls: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" },
+  { g: 4, label: "Easy", meaning: "I knew it at once", cls: "bg-brand-50 text-brand-700 hover:bg-brand-100" },
 ];
 
 export default function ReviewPage() {
@@ -46,7 +46,7 @@ export default function ReviewPage() {
       />
 
       {session && due.length ? (
-        <ReviewSession onExit={() => setSession(false)} />
+        <ReviewSession onExit={() => setSession(false)} examId={store.examId} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -81,7 +81,7 @@ export default function ReviewPage() {
   );
 }
 
-function ReviewSession({ onExit }: { onExit: () => void }) {
+function ReviewSession({ onExit, examId }: { onExit: () => void; examId?: string }) {
   const store = useStore();
   const [shown, setShown] = useState(false);
   const [done, setDone] = useState(0);
@@ -150,10 +150,16 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
     return (
       <div className="card space-y-3 text-center">
         <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" strokeWidth={1.75} />
-        <p className="font-semibold text-slate-900">Session complete: {done} cards reviewed.</p>
-        <button className="btn-primary" onClick={onExit}>
-          Back to deck
-        </button>
+        <p className="font-semibold text-slate-900">Done! You reviewed {done} card{done === 1 ? "" : "s"}.</p>
+        <p className="text-sm text-slate-600">They will come back when it’s time to revise them again. Next, try a few practice questions.</p>
+        <div className="flex flex-col justify-center gap-2 sm:flex-row">
+          <Link href={practiseHref(examId)} className="btn-primary">
+            Start practice <ArrowRight className="h-4 w-4" />
+          </Link>
+          <button className="btn-ghost" onClick={onExit}>
+            Back to flashcards
+          </button>
+        </div>
       </div>
     );
   }
@@ -202,19 +208,24 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
         )}
       </div>
       {shown ? (
-        <div className="grid grid-cols-4 gap-2">
-          {GRADES.map(({ g, label, cls }) => (
-            <button key={g} onClick={() => grade(g)} className={`btn flex-col gap-0 py-3 ${cls}`}>
-              <span>{label}</span>
-              <span className="text-xs font-normal opacity-75">
-                {intervals[g]} · key {g}
-              </span>
-            </button>
-          ))}
+        <div className="space-y-2">
+          <p className="text-center text-sm font-medium text-slate-700">How well did you remember it?</p>
+          <div className="grid grid-cols-4 gap-2">
+            {GRADES.map(({ g, label, meaning, cls }) => (
+              <button key={g} onClick={() => grade(g)} aria-label={`${label}: ${meaning}. Comes back in ${intervals[g]}.`} className={`btn flex-col gap-0 px-1 py-3 ${cls}`}>
+                <span>{label}</span>
+                <span className="text-[11px] font-normal leading-tight opacity-80">{meaning}</span>
+                <span className="text-[11px] font-normal opacity-70">
+                  {intervals[g]}
+                  <span className="hidden pointer-fine:inline"> · key {g}</span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <button className="btn-primary w-full py-3" onClick={() => setShown(true)}>
-          Show answer (Space)
+          Show answer <span className="hidden pointer-fine:inline">(Space)</span>
         </button>
       )}
       <div className="flex items-center justify-between gap-2">

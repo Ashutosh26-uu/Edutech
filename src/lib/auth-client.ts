@@ -6,7 +6,7 @@ import { createAuthClient } from "@neon/auth/next";
 export const authClient = createAuthClient();
 
 const MESSAGES: Record<string, string> = {
-  INVALID_EMAIL_OR_PASSWORD: "Incorrect email or password.",
+  INVALID_EMAIL_OR_PASSWORD: "That email and password don’t match. Check both, or tap Sign up if you’re new.",
   USER_ALREADY_EXISTS: "An account with this email already exists. Log in instead.",
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "An account with this email already exists. Log in instead.",
   PASSWORD_TOO_SHORT: "Password must be at least 8 characters.",
@@ -15,7 +15,7 @@ const MESSAGES: Record<string, string> = {
   INVALID_OTP: "That code is not right. Check the email and try again.",
   OTP_EXPIRED: "That code has expired. Request a new one.",
   TOO_MANY_ATTEMPTS: "Too many wrong codes. Request a new one.",
-  invalid_credentials: "Incorrect email or password.",
+  invalid_credentials: "That email and password don’t match. Check both, or tap Sign up if you’re new.",
   user_already_exists: "An account with this email already exists. Log in instead.",
   email_exists: "An account with this email already exists. Log in instead.",
   weak_password: "Password must be at least 8 characters.",
@@ -42,7 +42,10 @@ function toAuthError(error: NonNullable<AuthFailure>, fallback: string): AuthErr
   const inner = error.error ?? error.body ?? {};
   const status = error.status ?? inner.status;
   const code = inner.code ?? error.code ?? (status === 429 ? "RATE_LIMITED" : "UNKNOWN");
-  const message = status === 429 ? "Too many attempts. Please wait a minute and try again." : MESSAGES[code] || inner.message || error.message || fallback;
+  // A thrown fetch failure ("Failed to fetch", "NetworkError…") is a connection problem, not a wrong password.
+  const raw = inner.message || error.message || "";
+  const offline = !MESSAGES[code] && /fetch|network|load failed/i.test(raw);
+  const message = status === 429 ? "Too many attempts. Please wait a minute and try again." : offline ? "Couldn’t reach StudyClip. Check your internet connection and try again." : MESSAGES[code] || raw || fallback;
   return { code, message };
 }
 

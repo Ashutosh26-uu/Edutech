@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MailCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -28,6 +28,9 @@ function LoginForm() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  // Sent here from a test or practice set: say so, and that they come straight back.
+  const forTest = /^\/(practice|tests|mock-sunday)/.test(next);
   // Set once an account needs its emailed 6-digit code: after sign-up, or on login before verifying.
   const [verifying, setVerifying] = useState<string | null>(null);
 
@@ -92,14 +95,17 @@ function LoginForm() {
       <div className="space-y-3 text-center">
         <LogoMark className="mx-auto h-10 w-10" />
         <h1 className="text-2xl font-semibold">{tab === "login" ? "Welcome back" : "Create your account"}</h1>
-        <p className="text-sm text-slate-600">{tab === "login" ? "Log in to use your tests and revision packs." : "Free to join. Get one free timed test for every exam."}</p>
+        <p className="text-sm text-slate-600">
+          {forTest ? "Log in or sign up to take your test. You’ll come straight back to it." : tab === "login" ? "Log in to use your tests and revision packs." : "Free to join. Get one free timed test for every exam."}
+        </p>
+        {tab === "login" && <p className="text-xs text-slate-500">New to StudyClip? Tap Sign up below. It’s free.</p>}
         {invited && tab === "signup" && (
           <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">You were invited by a friend. Verify your email and finish your first timed test, and you both get 1 extra test credit.</p>
         )}
       </div>
       <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-surface p-0.5 text-sm">
         {(["login", "signup"] as const).map((t) => (
-          <button key={t} onClick={() => (setTab(t), setError(""))} className={`rounded-md py-1.5 ${tab === t ? "bg-slate-100 font-medium text-slate-900" : "text-slate-500"}`}>
+          <button key={t} type="button" aria-pressed={tab === t} onClick={() => (setTab(t), setError(""))} className={`min-h-10 rounded-md py-1.5 ${tab === t ? "bg-slate-100 font-medium text-slate-900" : "text-slate-500"}`}>
             {t === "login" ? "Log in" : "Sign up"}
           </button>
         ))}
@@ -117,18 +123,33 @@ function LoginForm() {
         </label>
         <label className="block space-y-1 text-sm">
           <span className="text-slate-600">Password</span>
-          <input
-            className="input"
-            type="password"
-            required
-            minLength={tab === "signup" ? 8 : undefined}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={tab === "login" ? "current-password" : "new-password"}
-          />
+          <span className="relative block">
+            <input
+              className="input pr-12"
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={tab === "signup" ? 8 : undefined}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={tab === "login" ? "current-password" : "new-password"}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-lg text-slate-500 hover:text-slate-900"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </span>
           {tab === "signup" && <span className="text-xs text-slate-500">At least 8 characters.</span>}
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
         <button className="btn-primary w-full py-2.5" disabled={busy}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {tab === "login" ? "Log in" : "Create account"}

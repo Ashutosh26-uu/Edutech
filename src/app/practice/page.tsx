@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowLeft, Loader2, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Info, Loader2, Sparkles, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChallengeBox, readChallenge } from "@/components/Challenge";
-import { ExamModeSwitch, useExamModePref } from "@/components/ExamMode";
+import { ExamModeSwitch, PaletteLegend, useExamModePref } from "@/components/ExamMode";
 import { TestPaywall } from "@/components/Paywall";
 import { Quiz, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -22,6 +22,7 @@ import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
 import { track } from "@/lib/track";
+import { useStore } from "@/lib/useStore";
 import { isWeeklyExam } from "@/lib/weekly";
 
 export default function PracticePage() {
@@ -84,6 +85,8 @@ function PracticeView() {
   const [localSections, setLocalSections] = useState<QuizSection[] | null>(null);
   const [previous, setPrevious] = useState<{ score: number; total: number } | null>(null);
   const [error, setError] = useState("");
+  // False when the "error" is really an empty list (no saved questions, nothing in the notebook): retrying won't help.
+  const [retryable, setRetryable] = useState(true);
   const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
   const [finished, setFinished] = useState<AnswerResult[] | null>(null);
@@ -113,6 +116,11 @@ function PracticeView() {
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
+    setRetryable(true);
+    const nothing = (msg: string) => {
+      setRetryable(false);
+      setError(msg);
+    };
     setFinished(null);
     setResumed(null);
     if (resumeKey) {
@@ -126,22 +134,22 @@ function PracticeView() {
     if (challenge) {
       const found = await findQuestions(challenge.ids);
       const qs = challenge.ids.flatMap((id) => (found.has(id) ? [shuffleOptions(found.get(id)!)] : []));
-      if (!qs.length) return setError("This challenge link doesn’t match any questions. Ask your friend to send it again.");
+      if (!qs.length) return nothing("This challenge link doesn’t match any questions. Ask your friend to send it again.");
       return setQuestions(qs);
     }
     if (isSaved) {
       const saved = Object.values(load().bookmarks)
         .map((b) => b.question)
         .filter((q) => !requestedTopics.length || (q.topicId && requestedTopics.includes(q.topicId)));
-      if (!saved.length) return setError("No saved questions yet. Tap ☆ Save on any question after answering it.");
+      if (!saved.length) return nothing("No saved questions yet. Tap ☆ Save on any question after answering it.");
       return setQuestions(shuffle(saved).slice(0, 20).map((q) => shuffleOptions(q)));
     }
     if (isMistakes) {
-      if (!server) return setError("The mistake notebook needs an account. Log in on the full site to use it.");
+      if (!server) return nothing("The mistake notebook needs an account. Log in on the full site to use it.");
       if (!account.user) return router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
       const { status, data } = await postJson("/api/mistakes", { topicId: requestedTopics[0], count: 20 });
       if (status !== 200) return setError(data.error ?? "Could not load your mistakes.");
-      if (!data.questions.length) return setError("Nothing in your mistake notebook for this yet. Wrong answers in practice and tests land here.");
+      if (!data.questions.length) return nothing("Nothing in your mistake notebook for this yet. Wrong answers in practice and tests land here.");
       return setQuestions(data.questions);
     }
     if (isFullMock && plan) {
@@ -240,17 +248,7 @@ function PracticeView() {
     }
   };
 
-  if (!topicIds.length && !isMistakes && !isSaved && !challenge) {
-    return (
-      <div className="card text-sm">
-        Nothing to practise here yet.{" "}
-        <Link href="/exams" className="font-medium text-brand-700">
-          Choose an exam
-        </Link>{" "}
-        with practice topics.
-      </div>
-    );
-  }
+  if (!topicIds.length && !isMistakes && !isSaved && !challenge) return <PickPractice />;
   if (isTimed && server && !exam) {
     return <div className="card text-sm">Timed tests belong to an exam. <Link href="/exams" className="font-medium text-brand-700">Choose an exam</Link> first.</div>;
   }
@@ -301,8 +299,8 @@ function PracticeView() {
           : isTimedSet
             ? `Free: doesn’t use your free test or credits · ${size} adaptive questions · 1 minute per question · answers revealed after you submit`
           : isSmart
-            ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall. Every set ramps from easy to very hard."
-            : `${size} questions, ramping from easy to very hard · instant feedback with an explanation after every answer.`;
+            ? `${size} questions picked for you, more from topics you find hard or haven’t tried yet. They start easy and get harder. You see the answer and an explanation after each one.`
+            : `${size} questions that start easy and get harder. You see the answer and an explanation after each one.`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -348,12 +346,25 @@ function PracticeView() {
               </button>
             </div>
           ) : (
-            <StartScreen access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+            <StartScreen rules={{ questions: isFullMock && plan ? totalQuestions(plan.sections) : isSectionTest ? planSection!.questions : size, upTo: !(isFullMock && plan) && !isSectionTest, minutes: isFullMock && plan ? totalMinutes(plan.sections) : isSectionTest ? planSection!.minutes : size, marks, negative: negative * marks }} access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
           )
         ) : phase === "paywall" ? (
           <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
         ) : error ? (
-          <p className="text-sm text-red-600">{error}</p>
+          <div className="space-y-3 py-2 text-sm" role={retryable ? "alert" : "status"}>
+            <p className="font-semibold text-slate-900">{retryable ? "Couldn’t load the questions" : "Nothing to show here yet"}</p>
+            <p className="text-slate-600">{error}</p>
+            <div className="flex flex-wrap gap-2">
+              {retryable && (
+                <button type="button" className="btn-primary" onClick={() => setRound((r) => r + 1)}>
+                  Try again
+                </button>
+              )}
+              <Link href={exam ? `/exams/${exam.id}` : isSaved ? "/saved" : isMistakes ? "/mistakes" : "/topics"} className={retryable ? "btn-ghost" : "btn-primary"}>
+                {exam ? `Back to ${exam.name}` : isSaved ? "Saved questions" : isMistakes ? "Mistake notebook" : "Choose a topic"}
+              </Link>
+            </div>
+          </div>
         ) : !questions ? (
           <p className="text-sm text-slate-500">Preparing questions…</p>
         ) : (
@@ -408,22 +419,104 @@ function PracticeView() {
   );
 }
 
-function StartScreen({ access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
+/**
+ * /practice with nothing chosen (an old link, or the address typed in): offer the student's own
+ * exam in one tap instead of a dead end, or the exam list when none is chosen yet.
+ */
+function PickPractice() {
+  const store = useStore();
+  const mine = EXAM_BY_ID.get(store?.examId ?? "");
+  const options = mine
+    ? [
+        { href: `/practice?exam=${mine.id}&smart=1`, icon: Sparkles, title: "Start practice", text: `10 ${mine.name} questions, picked for you, with an answer and explanation after each one.` },
+        { href: `/exams/${mine.id}`, icon: BookOpen, title: "Pick one topic", text: `Choose a single ${mine.name} topic to practise.` },
+        { href: `/practice?exam=${mine.id}&mock=1`, icon: Timer, title: "Take a mock test", text: "A full timed paper, like the real exam." },
+      ]
+    : [
+        { href: "/exams", icon: Sparkles, title: "Choose your exam", text: "Pick the exam you are preparing for. Practice sets follow its syllabus." },
+        { href: "/topics", icon: BookOpen, title: "Browse all topics", text: "Practise any topic without choosing an exam." },
+      ];
+  return (
+    <div className="mx-auto max-w-xl space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">Practice</h1>
+        <p className="text-sm text-slate-600">{mine ? `What would you like to do for ${mine.name}?` : "Choose what to practise first."}</p>
+      </div>
+      <div className="grid gap-2">
+        {options.map((o, i) => (
+          <Link key={o.href} href={o.href} className={`group flex items-center gap-3 rounded-xl p-4 transition-[opacity,border-color,background-color] ${i === 0 ? "bg-ink text-on-ink hover:opacity-90" : "border border-slate-200 bg-surface text-slate-900 hover:border-slate-300 hover:bg-slate-50"}`}>
+            <o.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{o.title}</span>
+              <span className={`block text-xs ${i === 0 ? "text-on-ink/70" : "text-slate-500"}`}>{o.text}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface TestRules {
+  questions: number;
+  /** Topic tests and demo mocks may come up a little short of the target count. */
+  upTo: boolean;
+  minutes: number;
+  /** Marks for a right answer, and marks lost for a wrong one (0 when there is no negative marking). */
+  marks: number;
+  negative: number;
+}
+
+/** "How this test works": time, marking, moving around, the palette colours and when answers show. */
+function HowItWorks({ rules, sectional, examMode }: { rules: TestRules; sectional: boolean; examMode: boolean }) {
+  const n = (x: number) => +x.toFixed(2);
+  const plural = (x: number, w: string) => `${n(x)} ${w}${x === 1 ? "" : "s"}`;
+  return (
+    <section aria-labelledby="how-heading" className="rounded-xl border border-slate-200 p-4 text-left text-sm text-slate-700">
+      <h3 id="how-heading" className="flex items-center gap-1.5 font-semibold text-slate-900">
+        <Info className="h-4 w-4 text-brand-600" /> How this test works
+      </h3>
+      <ul className="mt-2 list-disc space-y-1.5 pl-5">
+        <li>
+          <b>{rules.upTo ? "Up to " : ""}{rules.questions} questions in {rules.minutes} minutes.</b> The clock starts when you tap Start. When time is up, the test submits itself.
+        </li>
+        <li>
+          Right answer: <b className="text-emerald-700">+{plural(rules.marks, "mark")}</b>.{" "}
+          {rules.negative > 0 ? (
+            <>
+              Wrong answer: <b className="text-red-600">−{plural(rules.negative, "mark")}</b>. Left blank: 0. If you are only guessing, it is safer to skip.
+            </>
+          ) : (
+            <>Wrong or blank: 0. There is no negative marking, so answer every question.</>
+          )}
+        </li>
+        {sectional && <li>Each section has its own clock and closes when its time ends. You can’t go back to a closed section.</li>}
+        <li>Tap a question number to jump to it. Use <b>Mark for review</b> to come back to a question before you submit.</li>
+        <li>Answers and explanations appear after you submit.</li>
+      </ul>
+      <p className="mt-3 mb-1.5 text-xs font-medium text-slate-500">Question number colours</p>
+      <PaletteLegend examMode={examMode} />
+    </section>
+  );
+}
+
+function StartScreen({ rules, access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { rules: TestRules; access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
   return (
-    <div className="mx-auto max-w-sm space-y-4 py-6 text-center">
+    <div className="mx-auto max-w-md space-y-4 py-4 text-center sm:py-6">
       <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-slate-600">
         <Timer className="h-5 w-5" />
       </span>
       <div>
         <h2 className="text-lg font-semibold">Ready when you are</h2>
         <p className="mt-1 text-sm text-slate-600">
-          The timer starts as soon as you begin. {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
+          {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
         </p>
-        {sectional && <p className="mt-2 text-sm text-amber-700">Sectional timing: each section has its own clock and closes when it ends. You can’t go back to a closed section.</p>}
       </div>
+      <HowItWorks rules={rules} sectional={sectional} examMode={examMode} />
       <ExamModeSwitch on={examMode} onChange={setExamMode} />
       <button
         className="btn-primary w-full py-2.5"

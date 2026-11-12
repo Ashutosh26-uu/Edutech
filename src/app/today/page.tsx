@@ -87,7 +87,7 @@ export default function TodayPage() {
               detail: `${lastMock ? `Last mock: ${Math.floor((Date.now() - lastMock) / DAY)} days ago.` : "You haven’t taken a mock test yet."} ${access === "free" ? "Uses your free test for this exam." : "Uses 1 test credit."}`,
               href: `/practice?exam=${exam.id}&mock=1`,
               done: Date.now() - lastMock < mockEvery * DAY,
-              cta: "Take test",
+              cta: "Start test",
             },
         {
           title: "Watch one lecture the smart way",
