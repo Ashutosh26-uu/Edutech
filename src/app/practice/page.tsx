@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowLeft, Loader2, Timer } from "lucide-react";
+import { ArrowLeft, Info, Loader2, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChallengeBox, readChallenge } from "@/components/Challenge";
-import { ExamModeSwitch, useExamModePref } from "@/components/ExamMode";
+import { ExamModeSwitch, PaletteLegend, useExamModePref } from "@/components/ExamMode";
 import { TestPaywall } from "@/components/Paywall";
 import { Quiz, type AnswerResult, type QuizSection } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -348,7 +348,7 @@ function PracticeView() {
               </button>
             </div>
           ) : (
-            <StartScreen access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+            <StartScreen rules={{ questions: isFullMock && plan ? totalQuestions(plan.sections) : isSectionTest ? planSection!.questions : size, upTo: !(isFullMock && plan) && !isSectionTest, minutes: isFullMock && plan ? totalMinutes(plan.sections) : isSectionTest ? planSection!.minutes : size, marks, negative: negative * marks }} access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
           )
         ) : phase === "paywall" ? (
           <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
@@ -408,22 +408,65 @@ function PracticeView() {
   );
 }
 
-function StartScreen({ access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
+interface TestRules {
+  questions: number;
+  /** Topic tests and demo mocks may come up a little short of the target count. */
+  upTo: boolean;
+  minutes: number;
+  /** Marks for a right answer, and marks lost for a wrong one (0 when there is no negative marking). */
+  marks: number;
+  negative: number;
+}
+
+/** "How this test works": time, marking, moving around, the palette colours and when answers show. */
+function HowItWorks({ rules, sectional, examMode }: { rules: TestRules; sectional: boolean; examMode: boolean }) {
+  const n = (x: number) => +x.toFixed(2);
+  const plural = (x: number, w: string) => `${n(x)} ${w}${x === 1 ? "" : "s"}`;
+  return (
+    <section aria-labelledby="how-heading" className="rounded-xl border border-slate-200 p-4 text-left text-sm text-slate-700">
+      <h3 id="how-heading" className="flex items-center gap-1.5 font-semibold text-slate-900">
+        <Info className="h-4 w-4 text-brand-600" /> How this test works
+      </h3>
+      <ul className="mt-2 list-disc space-y-1.5 pl-5">
+        <li>
+          <b>{rules.upTo ? "Up to " : ""}{rules.questions} questions in {rules.minutes} minutes.</b> The clock starts when you tap Start. When time is up, the test submits itself.
+        </li>
+        <li>
+          Right answer: <b className="text-emerald-700">+{plural(rules.marks, "mark")}</b>.{" "}
+          {rules.negative > 0 ? (
+            <>
+              Wrong answer: <b className="text-red-600">−{plural(rules.negative, "mark")}</b>. Left blank: 0. If you are only guessing, it is safer to skip.
+            </>
+          ) : (
+            <>Wrong or blank: 0. There is no negative marking, so answer every question.</>
+          )}
+        </li>
+        {sectional && <li>Each section has its own clock and closes when its time ends. You can’t go back to a closed section.</li>}
+        <li>Tap a question number to jump to it. Use <b>Mark for review</b> to come back to a question before you submit.</li>
+        <li>Answers and explanations appear after you submit.</li>
+      </ul>
+      <p className="mt-3 mb-1.5 text-xs font-medium text-slate-500">Question number colours</p>
+      <PaletteLegend examMode={examMode} />
+    </section>
+  );
+}
+
+function StartScreen({ rules, access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { rules: TestRules; access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
   return (
-    <div className="mx-auto max-w-sm space-y-4 py-6 text-center">
+    <div className="mx-auto max-w-md space-y-4 py-4 text-center sm:py-6">
       <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-slate-100 text-slate-600">
         <Timer className="h-5 w-5" />
       </span>
       <div>
         <h2 className="text-lg font-semibold">Ready when you are</h2>
         <p className="mt-1 text-sm text-slate-600">
-          The timer starts as soon as you begin. {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
+          {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
         </p>
-        {sectional && <p className="mt-2 text-sm text-amber-700">Sectional timing: each section has its own clock and closes when it ends. You can’t go back to a closed section.</p>}
       </div>
+      <HowItWorks rules={rules} sectional={sectional} examMode={examMode} />
       <ExamModeSwitch on={examMode} onChange={setExamMode} />
       <button
         className="btn-primary w-full py-2.5"

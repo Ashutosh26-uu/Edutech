@@ -250,6 +250,37 @@ export function ExamView(p: ExamViewProps) {
 }
 
 /** Start-screen switch for exam mode; the choice is remembered in this browser. */
+/** Colour key of the question palette, for the start screen: the CBT shapes in exam mode, else the plain one. */
+export function PaletteLegend({ examMode }: { examMode: boolean }) {
+  if (examMode)
+    return (
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-slate-600">
+        {PALETTE_STATES.map((s) => (
+          <li key={s} className="flex items-center gap-2">
+            <Swatch state={s} className="h-5 w-5 shrink-0" />
+            {PALETTE_LABEL[s]}
+          </li>
+        ))}
+      </ul>
+    );
+  const plain: [string, string][] = [
+    ["bg-brand-600", "Answered"],
+    ["bg-slate-200", "Not answered"],
+    ["bg-violet-100 ring-1 ring-violet-400", "Marked for review"],
+    ["bg-violet-600", "Answered & marked"],
+  ];
+  return (
+    <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-slate-600">
+      {plain.map(([cls, label]) => (
+        <li key={label} className="flex items-center gap-2">
+          <span className={`h-5 w-5 shrink-0 rounded-md ${cls}`} aria-hidden />
+          {label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ExamModeSwitch({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-left text-sm">
