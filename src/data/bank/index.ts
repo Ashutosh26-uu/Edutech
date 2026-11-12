@@ -265,7 +265,7 @@ export const BANK_SIZES: Record<string, number> = {
   "polity-constitutional-bodies": 85,
   "polity-dpsp-duties": 142,
   "polity-fundamental-rights": 141,
-  "polity-judiciary": 85,
+  "polity-judiciary": 115,
   "polity-parliament": 142,
   "polity-preamble": 142,
   "polity-president-pm": 115,
