@@ -172,7 +172,7 @@ export const BANK_SIZES: Record<string, number> = {
   "bio-molecular-basis-inheritance": 100,
   "bio-neural-endocrine": 100,
   "bio-plant-morphology-anatomy": 60,
-  "bio-plant-physiology": 70,
+  "bio-plant-physiology": 100,
   "bio-reproduction-health": 70,
   "cdp-child-development": 134,
   "cdp-pedagogy-subjects": 100,
