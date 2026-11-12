@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, Briefcase, ChevronRight, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -126,6 +126,18 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-slate-900">Sunday All-India Mock: free, live 10am–10pm</span>
               <span className="block text-sm text-slate-600">One {exam.name} paper for every student each Sunday. See your all-India rank and the top 10.</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+          </Link>
+        )}
+        {exam.category === "Campus Placement" && (
+          <Link href="/placement" className="card-link flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
+              <Briefcase className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-slate-900">Placement preparation hub</span>
+              <span className="block text-sm text-slate-600">All company tests, aptitude and coding topics, formula sheets, interview prep and the resume builder.</span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
           </Link>
