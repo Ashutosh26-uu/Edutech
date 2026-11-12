@@ -132,10 +132,27 @@ export function load(): Store {
   }
 }
 
+let notifyQueued = false;
+
+/**
+ * Tells live widgets (header stats, nav badges) that progress changed. The event is sent from a
+ * microtask, not inside the write: a write made while React renders one component (a typing test
+ * finishing, say) must not set state in another one mid-render ("Cannot update a component while
+ * rendering a different component"). Several writes in one go send a single event.
+ */
+export function notifyStoreChange() {
+  if (notifyQueued || typeof window === "undefined") return;
+  notifyQueued = true;
+  queueMicrotask(() => {
+    notifyQueued = false;
+    window.dispatchEvent(new Event(UPDATE_EVENT));
+  });
+}
+
 function save(s: Store) {
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
-    window.dispatchEvent(new Event(UPDATE_EVENT));
+    notifyStoreChange();
   } catch {
     /* storage unavailable (private mode); progress just isn't kept */
   }
