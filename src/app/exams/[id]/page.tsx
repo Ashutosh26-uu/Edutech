@@ -223,7 +223,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 })}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500">Practice questions for this subject are coming soon. Meanwhile, break down a lecture on it in Videos.</p>
+              <p className="text-sm text-slate-500">There’s no question set for this subject on StudyClip. Use the official syllabus, and paste a YouTube lecture on it into <Link href="/video" className="font-medium text-brand-700 hover:underline">Videos</Link> to get chapters, notes and a quiz.</p>
             )}
           </section>
         ))}

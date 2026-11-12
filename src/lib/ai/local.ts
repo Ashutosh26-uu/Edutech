@@ -136,7 +136,7 @@ export const localProvider: AIProvider = {
       similar: scored.slice(0, 3).filter((x) => x.s > 0.15).map((x) => x.q),
       relatedTopics,
       message:
-        "This question isn’t in the question bank yet. Step-by-step answers for any question will work once an AI model is connected. Meanwhile, here are related topics and similar questions.",
+        "This question isn’t in the question bank yet. Here are related topics and similar questions to work through instead.",
     };
   },
 };

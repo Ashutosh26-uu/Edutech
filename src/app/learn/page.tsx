@@ -96,7 +96,7 @@ function TopicSearch({ initial }: { initial: string }) {
       {data && !data.result && (
         <div className="card text-sm">
           <p className="font-medium text-slate-800">No notes for “{query}” yet.</p>
-          <p className="mt-1 text-slate-600">Notes for any topic will be generated once an AI model is connected. Until then, try one of these:</p>
+          <p className="mt-1 text-slate-600">Try a shorter or different name for the topic (for example “percentage” or “Fundamental Rights”), or open one of these topics:</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {(data.suggestions.length ? data.suggestions : TOPICS.slice(0, 8)).map((t) => (
               <button key={t.id} onClick={() => go(t.name)} className="chip bg-brand-50 px-3 py-1.5 text-sm text-brand-700">
