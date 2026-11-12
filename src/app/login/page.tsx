@@ -21,7 +21,7 @@ function LoginForm() {
   const account = useAccount();
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next")?.startsWith("/") ? params.get("next")! : "/today";
+  const next = safeNext(params.get("next"));
   const [tab, setTab] = useState<"login" | "signup">(params.get("tab") === "signup" ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -217,4 +217,9 @@ function VerifyEmail({ email, onVerified, onBack }: { email: string; onVerified:
       </form>
     </div>
   );
+}
+
+/** Only same-site paths: "/x" is fine, but "//host" or anything with a backslash ("/\host") could leave the site. */
+function safeNext(raw: string | null): string {
+  return raw && /^\/(?!\/)/.test(raw) && !raw.includes("\\") ? raw : "/today";
 }
