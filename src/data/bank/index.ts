@@ -165,7 +165,7 @@ export const BANK_SIZES: Record<string, number> = {
   "bio-cell-structure-division": 70,
   "bio-ecology-environment": 70,
   "bio-evolution": 100,
-  "bio-genetics-inheritance": 70,
+  "bio-genetics-inheritance": 100,
   "bio-health-microbes": 60,
   "bio-human-physiology-systems": 70,
   "bio-living-world-plant-kingdom": 60,
