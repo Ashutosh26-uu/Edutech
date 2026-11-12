@@ -291,7 +291,7 @@ export const BANK_SIZES: Record<string, number> = {
   "reason-direction": 103,
   "reason-inequality-order": 155,
   "reason-seating-puzzles": 85,
-  "reason-series": 114,
+  "reason-series": 169,
   "reason-syllogism": 103,
   "sci-biology": 114,
   "sci-chemistry": 113,
