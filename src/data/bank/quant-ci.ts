@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Compound Interest (Quantitative Aptitude): 135 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Compound Interest (Quantitative Aptitude): 139 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"quant-ci-1","question":"Compound interest on ₹10,000 at 10% per annum for 2 years is:","options":["₹2,000","₹2,100","₹2,200","₹2,310"],"answer":1,"explanation":"10,000 × 1.21 = 12,100, so CI = ₹2,100.","difficulty":"easy"},
   {"id":"quant-ci-2","question":"The difference between CI and SI on ₹5,000 for 2 years at 10% is:","options":["₹25","₹50","₹100","₹500"],"answer":1,"explanation":"P(R/100)² = 5,000 × 0.01 = ₹50.","difficulty":"moderate"},
@@ -137,6 +137,10 @@ const questions: BankQuestion[] = [
   {"id":"quant-ci-133","question":"The compound interest on a sum for the first 2 years is ₹2,100, and for the first 3 years it is ₹3,310 (compounded annually). What is the rate of interest?","options":["11.5%","5%","12.1%","10%"],"answer":3,"explanation":"Third-year interest = 3,310 − 2,100 = ₹1,210, and it equals the 2-year amount × r. Trying 10%: the sum is 2,100/0.21 = ₹10,000, the 2-year amount ₹12,100, and 10% of it is ₹1,210 ✓.","difficulty":"very-hard","source":"SSC CGL · SSC CHSL"},
   {"id":"quant-ci-134","question":"The compound interest on a sum for 2 years is ₹832 and the simple interest for the same period at the same rate is ₹800. What is the compound interest on the sum for 3 years?","options":["₹1,200","₹1,280","₹1,298.56","₹1,248"],"answer":2,"explanation":"CI − SI = ₹32 = interest on one year's interest (₹400), so r = 8%. Sum = 400/0.08 = ₹5,000. 3-year CI = 5,000 × (1.08³ − 1) = 5,000 × 0.259712 = ₹1,298.56.","difficulty":"very-hard","source":"SSC CGL Tier 2 · IBPS PO"},
   {"id":"quant-ci-135","question":"A sum earns compound interest at 10% in the first year and 20% in the second year. What single annual rate, compounded annually for 2 years, gives the same amount?","options":["15%","14.89%","15.5%","14.5%"],"answer":1,"explanation":"Factor = 1.1 × 1.2 = 1.32. Equivalent rate = √1.32 − 1 ≈ 14.89%, a little below the plain average of 15%.","difficulty":"very-hard","source":"SSC CGL · CDS"},
+  {"id":"quant-ci-136","question":"What is the compound interest on ₹64,000 for 1 year at 15% per annum, compounded half-yearly?","options":["₹9,960","₹9,600","₹10,080","₹9,840"],"answer":0,"explanation":"7.5% per half-year: 1.075² = 1.155625. CI = 64,000 × 0.155625 = ₹9,960.","difficulty":"hard","source":"SSC CGL · IBPS Clerk"},
+  {"id":"quant-ci-137","question":"The compound interest on a sum for 2 years at 20% per annum exceeds the compound interest on it for 2 years at 10% per annum by ₹2,300. What is the sum?","options":["₹11,500","₹23,000","₹12,000","₹10,000"],"answer":3,"explanation":"2-year CI rates: 44% at 20% and 21% at 10%. The 23% difference = ₹2,300, so the sum = ₹10,000.","difficulty":"hard","source":"SSC CGL · SSC CHSL"},
+  {"id":"quant-ci-138","question":"At 25% per annum compound interest, the interest for the third year on a sum is ₹3,125. What is the sum?","options":["₹12,500","₹10,000","₹8,000","₹6,400"],"answer":2,"explanation":"Third-year interest = P × 1.25² × 0.25 = 0.390625P = 3,125, so P = ₹8,000.","difficulty":"very-hard","source":"SSC CGL · SSC CPO"},
+  {"id":"quant-ci-139","question":"In how many years will ₹1,331 amount to ₹1,771.561 at 10% per annum compound interest?","options":["4 years","3 years","2 years","5 years"],"answer":1,"explanation":"1,771.561/1,331 = 1.331 = 1.1³, so 3 years.","difficulty":"moderate","source":"SSC CHSL · RRB NTPC"},
 ];
 
 export default questions;
