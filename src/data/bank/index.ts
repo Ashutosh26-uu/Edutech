@@ -287,7 +287,7 @@ export const BANK_SIZES: Record<string, number> = {
   "reason-clock-calendar": 85,
   "reason-coding": 114,
   "reason-critical-reasoning": 160,
-  "reason-data-sufficiency": 40,
+  "reason-data-sufficiency": 160,
   "reason-direction": 103,
   "reason-inequality-order": 85,
   "reason-seating-puzzles": 85,
