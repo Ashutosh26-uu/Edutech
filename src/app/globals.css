@@ -254,6 +254,30 @@ html.dark {
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
 
+/* "Skip to content": the first thing Tab reaches, shown only while focused. */
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.5rem;
+  z-index: 60;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+}
+/* The skip target takes focus by script only; no ring around the whole page. */
+main:focus,
+main:focus-visible {
+  outline: none;
+}
+
 /* Route loading skeletons stay invisible for the first 350 ms, so fast page loads never flash them. */
 .route-loading {
   animation: route-loading-in 0.2s ease-out 0.35s backwards;

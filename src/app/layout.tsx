@@ -58,6 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="flex min-h-screen flex-col">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <AccountProvider>
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/80 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 lg:gap-4 xl:gap-6">
@@ -74,7 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-10">{children}</main>
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-10">{children}</main>
         <footer className="border-t border-slate-200 bg-surface">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12">
             <div className="max-w-md space-y-4">

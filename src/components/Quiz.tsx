@@ -101,7 +101,7 @@ export function BookmarkButton({ question }: { question: MCQ }) {
     <button
       type="button"
       onClick={() => toggleBookmark(question)}
-      className={`chip ${on ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600 hover:bg-amber-50"}`}
+      className={`chip pointer-coarse:min-h-10 pointer-coarse:px-3 ${on ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600 hover:bg-amber-50"}`}
       title={on ? "Remove from saved questions" : "Save this question to revise later"}
       aria-pressed={on}
     >
@@ -116,7 +116,7 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
     <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs" role="group" aria-label="Question language">
       <Languages className="ml-1 h-3.5 w-3.5 text-slate-500" />
       {(["en", "hi"] as const).map((l) => (
-        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium ${lang === l ? "bg-surface text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500"}`}>
+        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium pointer-coarse:min-h-10 pointer-coarse:px-3 ${lang === l ? "bg-surface text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500"}`}>
           {l === "en" ? "English" : "हिंदी"}
         </button>
       ))}
@@ -382,7 +382,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
           else if (isRevealed && picked) cls = "border-red-300 bg-red-50";
           else if (picked) cls = "border-brand-500 bg-brand-50";
           return (
-            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
+            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex min-h-12 touch-manipulation items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
               <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600">{LETTERS[i]}</span>
               <span className="min-w-0 whitespace-pre-wrap break-words">{opt}</span>
             </button>
@@ -433,7 +433,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
                       ? "bg-brand-600 text-white"
                       : "bg-slate-100 text-slate-600";
               return (
-                <button key={i} onClick={() => goTo(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "step" : undefined} className={`relative h-8 w-8 rounded-lg text-xs font-semibold ${state} ${i === idx ? "outline-2 outline-offset-2 outline-brand-500" : ""}`}>
+                <button key={i} onClick={() => goTo(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "step" : undefined} className={`relative h-8 w-8 rounded-lg text-xs font-semibold pointer-coarse:h-10 pointer-coarse:w-10 ${state} ${i === idx ? "outline-2 outline-offset-2 outline-brand-500" : ""}`}>
                   {i + 1}
                 </button>
               );
