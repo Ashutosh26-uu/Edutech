@@ -1,12 +1,12 @@
 "use client";
 
-import { CalendarCheck, Check, ChevronDown, Share2, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Share2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RichText } from "@/components/RichText";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { findQuestions } from "@/lib/bank";
 import { questionOfTheDay } from "@/lib/daily";
-import { dailyQuestionStreak, recordDailyAnswer, type DailyAnswer, type Store } from "@/lib/storage";
+import { recordDailyAnswer, type DailyAnswer, type Store } from "@/lib/storage";
 import { addDays, istDayKey } from "@/lib/streak";
 import type { MCQ } from "@/lib/types";
 
@@ -49,8 +49,6 @@ export function DailyQuestion({ store }: { store: Store }) {
     };
   }, [yesterday, store.examId, pastId]);
 
-  const dailyStreak = dailyQuestionStreak(store);
-
   const share = async () => {
     const link = new URL("/today", location.origin).toString();
     if (navigator.share) {
@@ -73,9 +71,6 @@ export function DailyQuestion({ store }: { store: Store }) {
             One hard question, the same for everyone today
           </h2>
         </div>
-        <span className="chip bg-violet-50 text-violet-700" title="Days in a row you answered the question of the day">
-          <CalendarCheck className="h-3.5 w-3.5" /> {dailyStreak} day{dailyStreak === 1 ? "" : "s"} in a row
-        </span>
       </div>
 
       {q === undefined ? (

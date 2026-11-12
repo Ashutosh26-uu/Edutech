@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BadgesSection } from "@/components/Badges";
+import { Heatmap } from "@/components/Heatmap";
 import { Stat } from "@/components/Quiz";
 import { MistakePatternSummary } from "@/components/StudyNotes";
 import { EXAM_BY_ID } from "@/data/exams";
@@ -261,6 +263,12 @@ export default function ProgressPage() {
         </section>
       </div>
       <MistakePatternSummary />
+
+      <BadgesSection store={data} />
+      <section className="card">
+        <h2 className="mb-3 font-semibold text-slate-900">Your study activity</h2>
+        <Heatmap activity={data.activity} />
+      </section>
     </div>
   );
 }
