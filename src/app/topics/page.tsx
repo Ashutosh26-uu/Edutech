@@ -6,7 +6,7 @@ import { TOPICS } from "@/data/topics";
 import type { Topic } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "All topics – notes and practice questions with solutions",
+  title: "Topics & notes – short notes and practice questions with solutions",
   description: "Short notes, key points and solved practice questions for every topic in SSC, banking, railway, UPSC, teaching and entrance exams.",
   alternates: { canonical: absoluteUrl("/topics") },
 };
@@ -24,7 +24,7 @@ export default function TopicsPage() {
   return (
     <div className="space-y-8">
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-semibold">All topics</h1>
+        <h1 className="text-2xl font-semibold">Topics &amp; notes</h1>
         <p className="mt-1.5 text-slate-600">
           {TOPICS.length} topics across {groups.length} subjects, with short notes and {total.toLocaleString("en-IN")} practice questions with solutions. Pick a topic to revise it and try solved questions.
         </p>

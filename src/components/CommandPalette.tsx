@@ -3,8 +3,9 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EXAMS } from "@/data/exams";
-import { TOPICS } from "@/data/topics";
+import type { EXAMS } from "@/data/exams";
+import { ALL_PAGES, visible } from "@/data/sitemap-nav";
+import type { TOPICS } from "@/data/topics";
 import { load } from "@/lib/storage";
 import { parseVideoId } from "@/lib/youtube";
 import { toggleTheme } from "./ThemeToggle";
@@ -16,12 +17,16 @@ interface Item {
   run: () => void;
 }
 
+/** Menu pages for quick search; the footer's legal pages are left out. */
+const PAGES = visible(ALL_PAGES).filter((p) => !["/privacy", "/terms", "/refund", "/login"].includes(p.href));
+
 /** Global quick-search (Ctrl/⌘ + K): pages, exams, topics, recent videos and actions. */
 export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const [data, setData] = useState<{ exams: typeof EXAMS; topics: typeof TOPICS } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,6 +54,18 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  // Exams and topics are large, so they load only when the palette is first opened.
+  useEffect(() => {
+    if (!open || data) return;
+    let live = true;
+    Promise.all([import("@/data/exams"), import("@/data/topics")])
+      .then(([e, t]) => live && setData({ exams: e.EXAMS, topics: t.TOPICS }))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [open, data]);
+
   const go = (href: string) => () => router.push(href);
 
   const items = useMemo<Item[]>(() => {
@@ -56,21 +73,16 @@ export function CommandPalette() {
     const store = load();
     const examId = store.examId;
     return [
-      { label: "Today’s plan", hint: "Daily goal, streak and tasks", group: "Pages", run: go("/today") },
-      { label: "Review flashcards", hint: "Spaced repetition", group: "Pages", run: go("/review") },
-      { label: "Mistake notebook", hint: "Questions you got wrong", group: "Pages", run: go("/mistakes") },
-      { label: "Saved questions", hint: "Questions you starred", group: "Pages", run: go("/saved") },
-      { label: "Break down a video", hint: "Paste a YouTube link", group: "Pages", run: go("/video") },
-      { label: "My progress", hint: "Accuracy and weak topics", group: "Pages", run: go("/progress") },
+      ...PAGES.map((p) => ({ label: p.label, hint: p.description, group: "Pages", run: go(p.href) })),
       ...(examId ? [{ label: "Start smart practice", hint: "Adaptive questions for your exam", group: "Actions", run: go(`/practice?exam=${examId}&smart=1`) }] : []),
       ...(examId ? [{ label: "Take a mock test", hint: "Timed, with negative marking", group: "Actions", run: go(`/practice?exam=${examId}&mock=1`) }] : []),
       { label: "Toggle dark mode", hint: "Switch theme", group: "Actions", run: toggleTheme },
-      ...EXAMS.map((e) => ({ label: e.name, hint: e.fullName, group: "Exams", run: go(`/exams/${e.id}`) })),
-      ...TOPICS.map((t) => ({ label: t.name, hint: t.subject, group: "Topics", run: go(`/learn?topic=${encodeURIComponent(t.name)}`) })),
+      ...(data?.exams ?? []).map((e) => ({ label: e.name, hint: e.fullName, group: "Exams", run: go(`/exams/${e.id}`) })),
+      ...(data?.topics ?? []).map((t) => ({ label: t.name, hint: t.subject, group: "Topics", run: go(`/learn?topic=${encodeURIComponent(t.name)}`) })),
       ...store.videos.map((v) => ({ label: v.title, hint: `${v.chapters} chapters`, group: "Recent videos", run: go(`/video?v=${v.videoId}`) })),
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, data]);
 
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -147,10 +159,16 @@ export function CommandPalette() {
 
 export function PaletteButton() {
   return (
-    <button onClick={() => window.dispatchEvent(new Event("studyclip:palette"))} className="mr-1 hidden h-8 w-52 shrink-0 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-400 hover:border-slate-300 lg:flex" title="Quick search (Ctrl + K)">
+    // Icon only at 1024px so the section menus fit; the full box from 1280px.
+    <button
+      onClick={() => window.dispatchEvent(new Event("studyclip:palette"))}
+      className="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-400 hover:border-slate-300 lg:flex xl:w-52 xl:justify-start xl:px-2.5"
+      title="Quick search (Ctrl + K)"
+      aria-label="Search (Ctrl + K)"
+    >
       <Search className="h-3.5 w-3.5" />
-      <span className="flex-1 text-left">Search…</span>
-      <kbd className="rounded border border-slate-200 bg-surface px-1 font-mono text-[10px] text-slate-500">Ctrl K</kbd>
+      <span className="hidden flex-1 text-left xl:inline">Search…</span>
+      <kbd className="hidden rounded border border-slate-200 bg-surface px-1 font-mono text-[10px] text-slate-500 xl:inline">Ctrl K</kbd>
     </button>
   );
 }

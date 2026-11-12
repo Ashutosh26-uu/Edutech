@@ -89,7 +89,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
       {structured && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structured) }} />}
       <div className="space-y-5">
         <Link href="/topics" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> All topics
+          <ArrowLeft className="h-4 w-4" /> Topics &amp; notes
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
