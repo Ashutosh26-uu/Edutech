@@ -156,7 +156,7 @@ export function HelpBot() {
             track("helpbot_open");
           }}
           aria-label="Open help chat"
-          className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-on-ink shadow-lg transition hover:opacity-90"
+          className="fixed right-4 bottom-[var(--float-bottom,max(1rem,env(safe-area-inset-bottom)))] z-30 flex items-center gap-2 rounded-full bg-ink px-4 py-3 text-sm font-medium text-on-ink shadow-lg transition hover:opacity-90"
         >
           <MessageCircleQuestion className="h-5 w-5" />
           <span className="hidden sm:inline">Help</span>

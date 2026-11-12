@@ -18,7 +18,7 @@ export function FocusPill() {
   return (
     <Link
       href="/focus"
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 z-30 flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 py-2 text-xs font-medium text-slate-700 shadow-lg transition hover:border-slate-300 print:hidden"
+      className="fixed bottom-[var(--float-bottom,max(1rem,env(safe-area-inset-bottom)))] left-4 z-30 flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-3 py-2 text-xs font-medium text-slate-700 shadow-lg transition hover:border-slate-300 print:hidden"
       aria-label={`Focus timer: ${state.phase}, ${formatClock(timeLeft(state, now))} left${state.running ? "" : ", paused"}. Open timer`}
     >
       <Icon className={`h-3.5 w-3.5 ${state.phase === "focus" ? "text-brand-600" : "text-emerald-600"}`} />

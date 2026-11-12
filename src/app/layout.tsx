@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { AccountMenu } from "@/components/AccountMenu";
 import { AccountSync } from "@/components/AccountSync";
+import { BottomNav } from "@/components/BottomNav";
 import { CommandPalette, PaletteButton } from "@/components/CommandPalette";
 import { FocusPill } from "@/components/FocusPill";
 import { HelpBot } from "@/components/HelpBot";
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        <BottomNav />
         <CommandPalette />
         <HelpBot />
         <RegisterSW />

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { MENU_EVENT } from "@/components/BottomNav";
 import { activeSection, COMPANY_LINKS, isCurrent, NAV_SECTIONS, type NavItem, type NavSection, visible } from "@/data/sitemap-nav";
 import { useAccount } from "@/lib/account";
 import { dueCards, level, streak } from "@/lib/storage";
@@ -166,6 +167,15 @@ export function MobileNav() {
 
   // Close on navigation and on Escape; stop the page behind from scrolling while open.
   useEffect(() => setOpen(false), [path]);
+  // The phone tab bar's "More" button toggles this menu, and shows it as pressed while open.
+  useEffect(() => {
+    const onToggle = () => setOpen((o) => !o);
+    window.addEventListener(MENU_EVENT, onToggle);
+    return () => window.removeEventListener(MENU_EVENT, onToggle);
+  }, []);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(`${MENU_EVENT}-state`, { detail: open }));
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -199,7 +209,7 @@ export function MobileNav() {
         createPortal(
           <>
             <div className="fixed inset-0 top-14 z-30 bg-black/30" onClick={() => setOpen(false)} aria-hidden />
-            <div id="mobile-menu" className="fixed inset-x-0 top-14 z-40 max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-slate-200 bg-surface px-4 pb-6 pt-3 shadow-lg">
+            <div id="mobile-menu" className="fixed inset-x-0 top-14 z-40 max-h-[calc(100dvh-3.5rem-var(--bottom-nav-h,0px))] overflow-y-auto border-b border-slate-200 bg-surface px-4 pb-6 pt-3 shadow-lg">
               <button
                 type="button"
                 onClick={() => {

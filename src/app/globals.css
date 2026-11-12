@@ -107,6 +107,16 @@ html.dark {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Phone tab bar (components/BottomNav.tsx): pad the page so nothing hides under it, and lift
+     floating buttons (help chat, focus timer, toasts) above it. */
+  @media (width < 48rem) {
+    body[data-bottom-nav] {
+      --bottom-nav-h: calc(3.5rem + env(safe-area-inset-bottom));
+      --float-bottom: calc(3.5rem + env(safe-area-inset-bottom) + 0.75rem);
+      padding-bottom: var(--bottom-nav-h);
+    }
+  }
+
   /* No grey flash on tap in mobile browsers; the active: styles show the press instead. */
   * {
     -webkit-tap-highlight-color: transparent;
