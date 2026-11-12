@@ -37,7 +37,7 @@ export function ReportButton({ question }: { question: MCQ }) {
 
   return (
     <span className="relative inline-flex">
-      <button type="button" onClick={() => setOpen((o) => !o)} className="chip bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-700" aria-expanded={open} title="Report a problem with this question">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="chip bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-700 pointer-coarse:min-h-10 pointer-coarse:px-3" aria-expanded={open} title="Report a problem with this question">
         <Flag className="h-3.5 w-3.5" /> Report
       </button>
       {open && (

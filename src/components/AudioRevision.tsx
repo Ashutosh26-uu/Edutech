@@ -2,6 +2,7 @@
 
 import { Headphones, Info, Moon, Pause, Play, SkipBack, SkipForward, Sun } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EXAM_BY_ID } from "@/data/exams";
 import { buildPlaylist, examTopicList, STARTER_TOPICS, weakTopicIds, type PlaylistSource, type Track } from "@/lib/revisionAudio";
@@ -222,16 +223,23 @@ export function AudioRevision() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="eyebrow flex items-center gap-1.5">
-          <Headphones className="h-3.5 w-3.5" /> Audio revision
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Revise while you travel</h1>
-        <p className="mt-1 text-sm text-slate-600">Your phone reads out the key points and short notes of the topics you need most, one after another. Put on earphones and press play.</p>
-      </div>
+      <PageHeader
+        path="/listen"
+        title={
+          <span className="flex items-center gap-2">
+            <Headphones className="h-6 w-6 text-brand-600" aria-hidden /> Audio revision
+          </span>
+        }
+        intro="Revise while you travel: your phone reads out the key points of the topics you need most, one after another. Put on earphones and press play."
+      />
 
       {!supported ? (
-        <div className="card text-sm text-slate-700">This browser can’t read text aloud. Try Chrome, Edge or Safari on a recent phone or computer.</div>
+        <div className="card space-y-3 text-sm text-slate-700">
+          <p>This browser can’t read text aloud. Try Chrome, Edge or Safari on a recent phone or computer, or read the same notes yourself.</p>
+          <Link href="/topics" className="btn-primary">
+            Read topic notes
+          </Link>
+        </div>
       ) : (
         <>
           <section className="card space-y-4">
@@ -257,9 +265,14 @@ export function AudioRevision() {
               ))}
             </div>
             {!weak.length && (
-              <p className="text-xs text-slate-500">
-                Weak topics appear once you’ve answered at least 5 questions in a topic. {exam ? "" : <><Link href="/today" className="text-brand-700 hover:underline">Choose your exam</Link> to revise its syllabus.</>}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
+                <p>
+                  Weak topics appear once you’ve answered at least 5 questions in a topic. {exam ? "Until then, listen to your exam’s syllabus." : "Choose your exam to revise its syllabus."}
+                </p>
+                <Link href={exam ? `/practice?exam=${exam.id}&smart=1` : "/exams"} className="btn-ghost px-3 py-1.5 text-xs">
+                  {exam ? "Practise to find weak topics" : "Choose your exam"}
+                </Link>
+              </div>
             )}
 
             <div className="rounded-xl bg-slate-50 p-4">

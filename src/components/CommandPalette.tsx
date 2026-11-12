@@ -68,6 +68,20 @@ export function CommandPalette() {
 
   const go = (href: string) => () => router.push(href);
 
+  // Shown while the box is empty, so a first-time visitor sees where to go.
+  const popular = useMemo<Item[]>(() => {
+    if (!open) return [];
+    const examId = load().examId;
+    return [
+      { label: "Today’s plan", hint: "Your daily goal, streak and tasks", group: "Popular", run: go("/today") },
+      { label: "Practise my exam", hint: examId ? "10 questions picked for your exam" : "Choose your exam first", group: "Popular", run: go(examId ? `/practice?exam=${examId}&smart=1` : "/exams") },
+      { label: "Free mock test", hint: examId ? "Your exam’s free timed test" : "Choose your exam, then take its free test", group: "Popular", run: go(examId ? `/practice?exam=${examId}&mock=1` : "/exams") },
+      { label: "Formula sheets", hint: "One-page formulas and tricks", group: "Popular", run: go("/formulas") },
+      { label: "Start here", hint: "New to StudyClip? A step-by-step guide", group: "Popular", run: go("/start") },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   const items = useMemo<Item[]>(() => {
     if (!open) return [];
     const store = load();
@@ -88,7 +102,7 @@ export function CommandPalette() {
     const query = q.trim().toLowerCase();
     const videoId = parseVideoId(q);
     const special: Item[] = videoId ? [{ label: "Break down this video", hint: videoId, group: "Video", run: go(`/video?v=${videoId}`) }] : [];
-    if (!query) return [...special, ...items.slice(0, 8)];
+    if (!query) return [...special, ...popular];
     const words = query.split(/\s+/);
     const scored = items
       .map((it) => {
@@ -102,7 +116,7 @@ export function CommandPalette() {
     const fallback: Item[] = scored.length || videoId ? [] : [{ label: `Search topics for “${q.trim()}”`, hint: "Open Learn", group: "Search", run: go(`/learn?topic=${encodeURIComponent(q.trim())}`) }];
     return [...special, ...scored.slice(0, 12), ...fallback];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, items]);
+  }, [q, items, popular]);
 
   if (!open) return null;
 
@@ -117,7 +131,8 @@ export function CommandPalette() {
         <input
           ref={input}
           className="w-full border-b border-slate-200 bg-transparent px-5 py-4 text-base text-slate-900 outline-none"
-          placeholder="Search topics, exams, pages… or paste a YouTube link"
+          placeholder="Type an exam, topic or page… or paste a YouTube link"
+          aria-label="Search exams, topics and pages"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -133,7 +148,12 @@ export function CommandPalette() {
             } else if (e.key === "Enter" && results[sel]) run(results[sel]);
           }}
         />
-        <ul className="max-h-[50vh] overflow-y-auto p-2">
+        {!q.trim() && (
+          <p className="px-5 pt-3 text-xs text-slate-500">
+            Type an exam, topic or page. <span className="font-medium text-slate-600">Popular:</span>
+          </p>
+        )}
+        <ul className="max-h-[50vh] overflow-y-auto p-2" aria-label={q.trim() ? "Results" : "Popular"}>
           {results.map((it, i) => (
             <li key={`${it.group}-${it.label}`}>
               <button onMouseEnter={() => setSel(i)} onClick={() => run(it)} className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${i === sel ? "bg-brand-50" : ""}`}>

@@ -107,6 +107,16 @@ html.dark {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Phone tab bar (components/BottomNav.tsx): pad the page so nothing hides under it, and lift
+     floating buttons (help chat, focus timer, toasts) above it. */
+  @media (width < 48rem) {
+    body[data-bottom-nav] {
+      --bottom-nav-h: calc(3.5rem + env(safe-area-inset-bottom));
+      --float-bottom: calc(3.5rem + env(safe-area-inset-bottom) + 0.75rem);
+      padding-bottom: var(--bottom-nav-h);
+    }
+  }
+
   /* No grey flash on tap in mobile browsers; the active: styles show the press instead. */
   * {
     -webkit-tap-highlight-color: transparent;
@@ -252,6 +262,55 @@ html.dark {
   background-image: linear-gradient(to right, var(--color-slate-200) 1px, transparent 1px), linear-gradient(to bottom, var(--color-slate-200) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+}
+
+/* "Skip to content": the first thing Tab reaches, shown only while focused. */
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.5rem;
+  z-index: 60;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+}
+/* The skip target takes focus by script only; no ring around the whole page. */
+main:focus,
+main:focus-visible {
+  outline: none;
+}
+
+/* Route loading skeletons stay invisible for the first 350 ms, so fast page loads never flash them. */
+.route-loading {
+  animation: route-loading-in 0.2s ease-out 0.35s backwards;
+}
+@keyframes route-loading-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Home page top: the picker and hero are server-rendered; a returning visitor (marked before
+   first paint by HomeTop) sees a placeholder instead until the dashboard is ready. */
+.home-wait {
+  display: none;
+}
+:root[data-home-exam] .home-pending > .home-wait {
+  display: block;
+}
+:root[data-home-exam] .home-pending > .home-fresh {
+  display: none;
 }
 
 /* Touch screens: 16px text in inputs so iPhones do not zoom in on focus (buttons get their 44px via the btn utility). */

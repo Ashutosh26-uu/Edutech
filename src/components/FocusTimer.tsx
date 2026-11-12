@@ -2,6 +2,7 @@
 
 import { Coffee, Pause, Play, RotateCcw, Timer, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPICS, TOPIC_BY_ID } from "@/data/topics";
 import { focusXp, formatClock, pause, phaseMs, PRESETS, reset, setPreset, start, timeLeft, updateFocus, useFocus, type FocusState, type Preset } from "@/lib/focus";
@@ -25,12 +26,11 @@ export function FocusTimer() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Focus timer</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Study in focused blocks with short breaks. Each finished block earns {focusXp(p.focus)} XP and counts toward your streak.
-        </p>
-      </div>
+      <PageHeader
+        path="/focus"
+        title="Focus timer"
+        intro={`Press start and study without your phone until the timer rings, then take a short break. Each finished block earns ${focusXp(p.focus)} XP and counts toward your streak.`}
+      />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <section className="card flex flex-col items-center gap-5 py-8" aria-label="Timer">

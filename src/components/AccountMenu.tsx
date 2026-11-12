@@ -4,6 +4,7 @@ import { Gift, LogOut, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAccount } from "@/lib/account";
+import { InfoTip } from "@/components/InfoTip";
 
 /** Log in button, or the signed-in user's menu. Hidden on the static build, which has no accounts. */
 export function AccountMenu() {
@@ -41,7 +42,9 @@ export function AccountMenu() {
             </div>
           </div>
           <div className="mx-2.5 mb-1 rounded-lg bg-slate-50 px-2.5 py-2 text-xs text-slate-600">
-            Test credits: <b className="text-slate-900">{a.credits}</b>
+            <span className="inline-flex items-center gap-1">
+              Test credits: <b className="text-slate-900">{a.credits}</b> <InfoTip id="credits" />
+            </span>
             {Object.keys(a.revisionPasses).length > 0 && <> · Revision packs: <b className="text-slate-900">{Object.keys(a.revisionPasses).length}</b></>}
           </div>
           <Link href="/pricing" onClick={() => setOpen(false)} className="block rounded-md px-2.5 py-2 text-slate-700 hover:bg-slate-100">

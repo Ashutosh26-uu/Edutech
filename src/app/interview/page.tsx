@@ -4,6 +4,7 @@ import { ChevronDown, Lightbulb, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { INTERVIEW } from "@/data/interview";
+import { PageHeader } from "@/components/PageHeader";
 
 /** Renders `inline code` in an answer as monospace. */
 function Line({ text }: { text: string }) {
@@ -39,9 +40,12 @@ export default function InterviewPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold">Interview prep</h1>
-        <p className="mt-1 text-sm text-slate-600">
+      <PageHeader
+        path="/interview"
+        title="Interview prep"
+        intro="Pick a section or search a question, read the model answer, then say it out loud in your own words."
+      >
+        <p className="text-sm text-slate-500">
           {total} questions asked in campus and off-campus placement interviews, with model answers to adapt in your own words. Practise the written tests on the{" "}
           <Link href="/placement" className="font-medium text-brand-700">
             placement exam pages
@@ -52,7 +56,7 @@ export default function InterviewPage() {
           </Link>
           .
         </p>
-      </div>
+      </PageHeader>
 
       <label className="relative block">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />

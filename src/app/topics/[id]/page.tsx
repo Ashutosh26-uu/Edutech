@@ -1,7 +1,8 @@
-import { ArrowLeft, BookOpen, CheckCircle2, ListChecks, Sigma } from "lucide-react";
+import { BookOpen, CheckCircle2, ListChecks, Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/PageHeader";
 import { PrintPracticeSheet } from "@/components/PrintPracticeSheet";
 import { RichText } from "@/components/RichText";
 import { TopicNotesContent } from "@/components/TopicNotesContent";
@@ -88,14 +89,11 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-8">
       {structured && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structured) }} />}
       <div className="space-y-5">
-        <Link href="/topics" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> Topics &amp; notes
-        </Link>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="eyebrow">{topic.subject}</p>
-            <h1 className="mt-1 text-2xl font-semibold">{topic.name}</h1>
-          </div>
+        <PageHeader
+          path={`/topics/${id}`}
+          title={topic.name}
+          intro={`${topic.subject}. Read the short notes and key points below, then practise questions on this topic to check what you remember.`}
+        >
           <div className="flex flex-wrap gap-2">
             <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost">
               <BookOpen className="h-4 w-4" /> Read on Learn
@@ -111,7 +109,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
               </Link>
             )}
           </div>
-        </div>
+        </PageHeader>
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { MENU_EVENT } from "@/components/BottomNav";
 import { activeSection, COMPANY_LINKS, isCurrent, NAV_SECTIONS, type NavItem, type NavSection, visible } from "@/data/sitemap-nav";
 import { useAccount } from "@/lib/account";
 import { dueCards, level, streak } from "@/lib/storage";
@@ -166,6 +167,15 @@ export function MobileNav() {
 
   // Close on navigation and on Escape; stop the page behind from scrolling while open.
   useEffect(() => setOpen(false), [path]);
+  // The phone tab bar's "More" button toggles this menu, and shows it as pressed while open.
+  useEffect(() => {
+    const onToggle = () => setOpen((o) => !o);
+    window.addEventListener(MENU_EVENT, onToggle);
+    return () => window.removeEventListener(MENU_EVENT, onToggle);
+  }, []);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(`${MENU_EVENT}-state`, { detail: open }));
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -181,7 +191,7 @@ export function MobileNav() {
   // Bottom row: pricing, invite, help and log in (account pages are dropped on the static build).
   const link = (href: string) => visible(COMPANY_LINKS.filter((l) => l.href === href));
   const signedOut = account.mode !== "local" && account.ready && !account.user;
-  const bottom: (NavItem | "help")[] = [...link("/pricing"), ...link("/invite"), "help", ...(signedOut ? link("/login") : [])];
+  const bottom: (NavItem | "help")[] = [...link("/start"), ...link("/pricing"), ...link("/invite"), "help", ...(signedOut ? link("/login") : [])];
   return (
     <div className="lg:hidden">
       <button
@@ -199,7 +209,7 @@ export function MobileNav() {
         createPortal(
           <>
             <div className="fixed inset-0 top-14 z-30 bg-black/30" onClick={() => setOpen(false)} aria-hidden />
-            <div id="mobile-menu" className="fixed inset-x-0 top-14 z-40 max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-slate-200 bg-surface px-4 pb-6 pt-3 shadow-lg">
+            <div id="mobile-menu" className="fixed inset-x-0 top-14 z-40 max-h-[calc(100dvh-3.5rem-var(--bottom-nav-h,0px))] overflow-y-auto border-b border-slate-200 bg-surface px-4 pb-6 pt-3 shadow-lg">
               <button
                 type="button"
                 onClick={() => {
@@ -271,13 +281,26 @@ export function MobileNav() {
   );
 }
 
+/** Small "New here?" link to the Start here guide, shown in the header until an exam is chosen. */
+export function NewHereLink() {
+  const path = usePathname();
+  const store = useStore();
+  if (!store || store.examId || path === "/start") return null;
+  return (
+    <Link href="/start" className="shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50">
+      New here?
+    </Link>
+  );
+}
+
 /** Compact streak and level indicator for the header. */
 export function HeaderStats() {
   const store = useStore();
-  if (!store) return null;
+  // Same footprint before progress loads, so the header doesn't shift when the numbers arrive.
+  if (!store) return <span className="hidden h-8 min-w-[5.5rem] shrink-0 sm:block" aria-hidden />;
   const s = streak(store);
   return (
-    <Link href="/today" className="hidden h-8 shrink-0 items-center gap-2 rounded-md px-2 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex" title={`${s}-day streak · level ${level(store.xp).level}`}>
+    <Link href="/today" className="hidden h-8 min-w-[5.5rem] shrink-0 items-center justify-center gap-2 rounded-md px-2 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex" title={`${s}-day streak · level ${level(store.xp).level}`}>
       <Flame className={`h-3.5 w-3.5 ${s ? "text-orange-500" : ""}`} strokeWidth={2.25} />
       <span className="font-medium tabular-nums text-slate-700">{s}</span>
       <span className="h-3 w-px bg-slate-200" />

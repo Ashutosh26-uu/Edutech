@@ -7,6 +7,8 @@ import { EXAM_BY_ID } from "@/data/exams";
 import { useAccount } from "@/lib/account";
 import { FREE_PERKS, PRODUCTS } from "@/lib/products";
 import { useStore } from "@/lib/useStore";
+import { PageHeader } from "@/components/PageHeader";
+import { InfoTip } from "@/components/InfoTip";
 
 const FAQ = [
   ["Is there a subscription?", "No. You pay ₹19 only when you need a pack. Test credits never expire; a revision pack lasts 7 days for the exam you choose."],
@@ -20,11 +22,15 @@ export default function PricingPage() {
   const account = useAccount();
   return (
     <div className="space-y-14">
-      <div className="mx-auto max-w-2xl text-center">
-        <p className="eyebrow">Pricing</p>
-        <h1 className="mt-2 text-3xl font-semibold">Free to study. ₹19 when the exam is close.</h1>
-        <p className="mt-3 text-slate-600">No subscription. Buy a pack only when you need it, like the night before your paper.</p>
-      </div>
+      <PageHeader
+        path="/pricing"
+        title="Free to study. ₹19 when the exam is close."
+        intro={
+          <>
+            Practice, notes and flashcards are free. Each exam also gets one free mock test <InfoTip id="free-test" />. Buy a small pack of credits <InfoTip id="credits" /> only if you want more timed tests; there is no subscription.
+          </>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Plan name="Free" price="₹0" tagline="Everything you need to prepare." perks={FREE_PERKS} cta={<Link href="/today" className="btn-ghost w-full">Start studying</Link>} />

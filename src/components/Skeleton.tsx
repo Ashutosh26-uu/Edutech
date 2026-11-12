@@ -24,3 +24,15 @@ export function PageSkeleton({ tiles = 4 }: { tiles?: number }) {
     </div>
   );
 }
+
+/**
+ * Route-level loading state (loading.tsx). It fades in only after a short CSS delay, so quick
+ * navigations never flash it; on a slow connection it shows the page's rough shape.
+ */
+export function RouteLoading({ tiles = 4 }: { tiles?: number }) {
+  return (
+    <div className="route-loading">
+      <PageSkeleton tiles={tiles} />
+    </div>
+  );
+}

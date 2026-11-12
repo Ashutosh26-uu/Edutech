@@ -15,6 +15,8 @@ import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, toggleBookmark } from "@/lib/storage";
+import { useLeaveGuard } from "@/lib/leaveGuard";
+import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
 import type { Difficulty, MCQ } from "@/lib/types";
@@ -65,6 +67,9 @@ interface Props {
   examMode?: boolean;
   /** Name shown as the candidate in exam mode. */
   candidate?: string;
+  /** Untimed practice: progress to pick up from (a resumed set), and a callback on every change. */
+  initial?: QuizProgress | null;
+  onProgress?: (p: QuizProgress) => void;
 }
 
 /** Title and exam for the shareable score card on the results screen. */
@@ -96,7 +101,7 @@ export function BookmarkButton({ question }: { question: MCQ }) {
     <button
       type="button"
       onClick={() => toggleBookmark(question)}
-      className={`chip ${on ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600 hover:bg-amber-50"}`}
+      className={`chip pointer-coarse:min-h-10 pointer-coarse:px-3 ${on ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600 hover:bg-amber-50"}`}
       title={on ? "Remove from saved questions" : "Save this question to revise later"}
       aria-pressed={on}
     >
@@ -111,7 +116,7 @@ export function LangToggle({ lang, setLang }: { lang: Lang; setLang: (l: Lang) =
     <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs" role="group" aria-label="Question language">
       <Languages className="ml-1 h-3.5 w-3.5 text-slate-500" />
       {(["en", "hi"] as const).map((l) => (
-        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium ${lang === l ? "bg-surface text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500"}`}>
+        <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-md px-2 py-0.5 font-medium pointer-coarse:min-h-10 pointer-coarse:px-3 ${lang === l ? "bg-surface text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500"}`}>
           {l === "en" ? "English" : "हिंदी"}
         </button>
       ))}
@@ -126,12 +131,14 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate }: Props) {
-  const [idx, setIdx] = useState(0);
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate, initial, onProgress }: Props) {
+  // A resumed set only counts when it was saved for this many questions.
+  const start = initial && initial.chosen.length === questions.length ? initial : null;
+  const [idx, setIdx] = useState(start?.idx ?? 0);
   // Questions opened at least once, for "Not visited" vs "Not answered" in exam mode.
-  const [visited, setVisited] = useState<boolean[]>(() => questions.map((_, i) => i === 0));
-  const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
-  const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
+  const [visited, setVisited] = useState<boolean[]>(() => start?.visited ?? questions.map((_, i) => i === 0));
+  const [chosen, setChosen] = useState<(number | null)[]>(() => start?.chosen ?? questions.map(() => null));
+  const [revealed, setRevealed] = useState<boolean[]>(() => start?.revealed ?? questions.map(() => false));
   // Mock tests: questions the user flagged to come back to, as in the real exam's "Mark for review".
   const [marked, setMarked] = useState<boolean[]>(() => questions.map(() => false));
   const [done, setDone] = useState(false);
@@ -230,6 +237,18 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     if (done) exitFullscreen();
     return () => exitFullscreen();
   }, [exam, done]);
+
+  // Ask before leaving a running timed test, or a practice set that is part-way through (its
+  // answers are recorded only when it is finished). Never once the set is done.
+  const midway = mode === "practice" && chosen.some((c) => c !== null);
+  useLeaveGuard(!done && (timed || midway), timed ? "Leave the test? The timer keeps running and your answers so far may be lost." : "Leave this practice set? Your answers so far haven’t been saved yet.");
+
+  // Untimed practice: report progress so the set can be picked up again after a refresh.
+  const progressRef = useRef(onProgress);
+  progressRef.current = onProgress;
+  useEffect(() => {
+    if (!done) progressRef.current?.({ idx, chosen, revealed, visited });
+  }, [idx, chosen, revealed, visited, done]);
 
   // Keyboard: 1–4 or A–D pick an option, ← / → move between questions (not while typing).
   useEffect(() => {
@@ -363,7 +382,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
           else if (isRevealed && picked) cls = "border-red-300 bg-red-50";
           else if (picked) cls = "border-brand-500 bg-brand-50";
           return (
-            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
+            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex min-h-12 touch-manipulation items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
               <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600">{LETTERS[i]}</span>
               <span className="min-w-0 whitespace-pre-wrap break-words">{opt}</span>
             </button>
@@ -414,7 +433,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
                       ? "bg-brand-600 text-white"
                       : "bg-slate-100 text-slate-600";
               return (
-                <button key={i} onClick={() => goTo(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "step" : undefined} className={`relative h-8 w-8 rounded-lg text-xs font-semibold ${state} ${i === idx ? "outline-2 outline-offset-2 outline-brand-500" : ""}`}>
+                <button key={i} onClick={() => goTo(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "step" : undefined} className={`relative h-8 w-8 rounded-lg text-xs font-semibold pointer-coarse:h-10 pointer-coarse:w-10 ${state} ${i === idx ? "outline-2 outline-offset-2 outline-brand-500" : ""}`}>
                   {i + 1}
                 </button>
               );

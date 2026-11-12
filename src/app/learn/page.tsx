@@ -16,6 +16,7 @@ import { cardsForTopic, type NewCard } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function LearnPage() {
   return (
@@ -32,10 +33,11 @@ function LearnView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Learn</h1>
-        <p className="mt-1 text-sm text-slate-600">Study any topic or get help with a specific question.</p>
-      </div>
+      <PageHeader
+        path="/learn"
+        title="Search & question solver"
+        intro="Type a topic to read its notes, or switch to “Solve a question” and paste a question you are stuck on to see how to solve it."
+      />
       <div className="inline-flex rounded-xl bg-slate-100 p-1 text-sm">
         {(["topic", "question"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-4 py-1.5 font-semibold ${tab === t ? "bg-surface text-brand-700 shadow-sm" : "text-slate-600"}`}>

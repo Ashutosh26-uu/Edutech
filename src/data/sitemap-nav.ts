@@ -86,6 +86,7 @@ export const SECTIONS: NavSection[] = [
 
 /** Pages listed only in the footer (and the phone menu's bottom row). */
 export const COMPANY_LINKS: NavItem[] = [
+  { href: "/start", label: "Start here", description: "New to StudyClip? A simple step-by-step guide" },
   { href: "/pricing", label: "Pricing", description: "Test credits and revision packs" },
   { href: "/invite", label: "Invite friends", description: "Get a free test for every friend who joins", needsAccount: true, private: true },
   { href: "/about", label: "About us", description: "Who we are" },
@@ -118,6 +119,22 @@ export function activeSection(path: string): string | undefined {
   const own = Object.keys(HOME_SECTION).find((h) => under(path, h));
   if (own) return HOME_SECTION[own];
   return SECTIONS.find((s) => s.items.some((i) => under(path, i.href)))?.id;
+}
+
+/**
+ * Where a page sits in the menus, for its breadcrumb: the section title and the menu entry the
+ * path belongs to (the entry itself, or its parent for pages like /exams/ssc-cgl).
+ */
+export function crumbFor(path: string): { section: string; item?: NavItem } {
+  const id = activeSection(path);
+  const sec = SECTIONS.find((s) => s.id === id);
+  if (sec) {
+    const items = sec.items.filter((i) => under(path, i.href) || (i.href === "/exams" && path.startsWith("/practice")));
+    // Prefer the longest (most specific) match.
+    return { section: sec.title, item: items.sort((a, b) => b.href.length - a.href.length)[0] };
+  }
+  const company = COMPANY_LINKS.find((i) => under(path, i.href));
+  return { section: "Help", item: company };
 }
 
 /** Whether a menu link points at the current page. */

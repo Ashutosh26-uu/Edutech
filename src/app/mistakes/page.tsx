@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowLeft, BookmarkPlus, NotebookPen } from "lucide-react";
+import { BookmarkPlus, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { EmptyState, practiseHref } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { PageSkeleton } from "@/components/Skeleton";
 import { Stat } from "@/components/Quiz";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -12,6 +14,7 @@ import { StaticNotice } from "@/components/StaticNotice";
 import { IS_STATIC } from "@/lib/api";
 import { cardsForQuestions } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
+import { useStore } from "@/lib/useStore";
 import type { MCQ } from "@/lib/types";
 
 interface Mistake {
@@ -24,6 +27,7 @@ interface Mistake {
 /** The mistake notebook: every question the account has got wrong and not yet got right again. */
 export default function MistakesPage() {
   const account = useAccount();
+  const store = useStore();
   const [mistakes, setMistakes] = useState<Mistake[] | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
   // The questions behind the notebook entries, loaded for just the topics they belong to.
@@ -66,18 +70,17 @@ export default function MistakesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Link href="/progress" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> My progress
-          </Link>
-          <h1 className="text-2xl font-semibold text-slate-900">Mistake notebook</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Questions you got wrong, saved to your account. Answer one correctly in a mistakes set and it leaves the notebook. Questions you starred are in{" "}
+      <PageHeader
+        path="/mistakes"
+        title="Mistake notebook"
+        intro={
+          <>
+            Every question you got wrong is kept here. Practise them again: answer one correctly and it leaves the notebook. Questions you starred are in{" "}
             <Link href="/saved" className="font-medium text-brand-700">Saved questions</Link>.
-          </p>
-        </div>
-        {mistakes.length > 0 && (
+          </>
+        }
+        aside={
+        mistakes.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button className="btn-ghost" onClick={() => setSaved(addCards(cardsForQuestions(questions)))} disabled={saved !== null}>
               <BookmarkPlus className="h-4 w-4" /> {saved === null ? "Add all to flashcards" : saved ? `${saved} added` : "Already in flashcards"}
@@ -86,8 +89,9 @@ export default function MistakesPage() {
               Practise my mistakes
             </Link>
           </div>
-        )}
-      </div>
+        )
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Open mistakes" value={mistakes.length} tone="red" />
@@ -97,9 +101,9 @@ export default function MistakesPage() {
       </div>
 
       {mistakes.length === 0 ? (
-        <div className="card text-sm text-slate-600">
-          Nothing here yet. Wrong answers in <Link href="/exams" className="font-medium text-brand-700">practice and timed tests</Link> land in this notebook.
-        </div>
+        <EmptyState title="No mistakes yet" action={{ href: practiseHref(store?.examId), label: "Practise a topic" }}>
+          Wrong answers in practice and timed tests land here, so you can practise them again.
+        </EmptyState>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {topics.map(([topicId, ms]) => (

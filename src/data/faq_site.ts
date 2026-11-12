@@ -29,9 +29,22 @@ export const SITE: Faq[] = [
     hi: "Teen steps mein shuru karo:\n- **Exams** kholo, apna exam search karo aur uska page kholo, phir **Make this my exam** dabao.\n- **Smart practice** dabao, syllabus se 10 sawaal ka set milega.\n- **Today** kholo, wahan roz ka plan hai: flashcards, practice, ek lecture aur mock test.\nPractice ke liye sign-up zaroori nahi. Mistakes save karne aur timed test ke liye account banao.",
     links: [
       ["Find your exam", "/exams", "Apna exam dhundho"],
+      ["Start here guide", "/start", "Start here guide"],
       ["Today’s plan", "/today"],
     ],
-    next: ["smart-practice", "daily-plan", "signup"],
+    next: ["start-guide", "smart-practice", "daily-plan"],
+  },
+  {
+    id: "start-guide",
+    cat: "start",
+    q: "Is there a step-by-step guide?",
+    qh: "Step by step guide hai kya?",
+    ask: ["start here guide", "step by step guide", "beginner guide", "guide for beginners", "tutorial", "is there a tutorial", "show me a guide", "step by step samjhao", "guide dikhao", "shuru se samjhao", "how to use step by step"],
+    keys: ["guide", "tutorial", "step", "samjhao"],
+    en: "Yes. **Start here** walks you through six steps, each with a button to do it now:\n- Choose your exam\n- Do a 10-question practice set\n- Read your result (accuracy and weak topics)\n- Revise with flashcards\n- Take your free mock test\n- Follow your daily plan on Today",
+    hi: "Haan. **Start here** page 6 steps mein sab samjhata hai, har step pe ek button hai:\n- Apna exam chuno\n- 10 sawaal ka practice set karo\n- Result padho (accuracy aur weak topics)\n- Flashcards se revise karo\n- Free mock test do\n- Roz Today ka plan follow karo",
+    links: [["Open Start here", "/start", "Start here kholo"]],
+    next: ["start-where", "smart-practice", "free-test"],
   },
   {
     id: "exams-list",

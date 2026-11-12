@@ -2,6 +2,7 @@
 
 import { CalendarClock, ChevronRight, Loader2, Medal, Radio, Trophy, Users } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { useEffect, useRef, useState } from "react";
 import { EXAM_BY_ID } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
@@ -67,13 +68,11 @@ export function SundayMock() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <p className="eyebrow">Every Sunday · free</p>
-        <h1 className="mt-1 text-2xl font-semibold">Sunday All-India Mock</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          One full paper per exam, the same for every student, live on Sunday from {HOURS} India time. It doesn’t use your free test or credits. You get one attempt, and your all-India rank is ready when the mock closes.
-        </p>
-      </div>
+      <PageHeader
+        path="/mock-sunday"
+        title="Sunday All-India Mock"
+        intro={`A free full test every Sunday (${HOURS} India time), the same paper for every student, so you can see your all-India rank. It doesn’t use your free test or credits, and you get one attempt.`}
+      />
 
       {IS_STATIC && <div className="card text-sm text-slate-600">The All-India mock, ranks and the leaderboard are available on the full site, where you can log in.</div>}
 

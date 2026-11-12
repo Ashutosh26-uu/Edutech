@@ -2,6 +2,7 @@
 
 import { AlertTriangle, BookOpen, CalendarClock, Check, Printer, RotateCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
@@ -49,8 +50,14 @@ export function SyllabusTracker() {
       <div className="space-y-6">
         <Header />
         <div className="card space-y-3 text-sm text-slate-700">
-          <p>Pick your exam to see its full syllabus, topic by topic.</p>
-          <ExamSelect value="" />
+          <p className="font-semibold text-slate-900">First, choose your exam</p>
+          <p>Pick it from the list below to see its full syllabus, topic by topic. Not sure which one? Browse all exams.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <ExamSelect value="" />
+            <Link href="/exams" className="btn-ghost">
+              Browse exams
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -245,13 +252,12 @@ export function SyllabusTracker() {
 
 function Header({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Syllabus tracker</h1>
-        <p className="mt-1 text-sm text-slate-600 print:hidden">Mark each topic as you go. We add your practice numbers and plan your revisions.</p>
-      </div>
-      {children}
-    </div>
+    <PageHeader
+      path="/tracker"
+      title="Syllabus tracker"
+      intro="See every topic of your exam in one list. Mark each topic as you study it, and we show when to revise it next."
+      aside={children}
+    />
   );
 }
 

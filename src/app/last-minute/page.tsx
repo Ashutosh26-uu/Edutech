@@ -13,6 +13,7 @@ import { hasPass, testAccessFor, useAccount } from "@/lib/account";
 import { PRODUCTS } from "@/lib/products";
 import type { MCQ } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function LastMinutePage() {
   return (
@@ -35,11 +36,12 @@ function LastMinute() {
 
   return (
     <div className="space-y-10">
-      <div className="max-w-2xl">
-        <p className="eyebrow">Last-minute revision</p>
-        <h1 className="mt-2 text-3xl font-semibold">Exam tomorrow? Revise the whole syllabus tonight.</h1>
-        <p className="mt-3 text-slate-600">Everything you need for the final evening: one-page notes for every topic, rapid flashcards and timed tests. ₹19 each, no subscription.</p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+      <PageHeader
+        path="/last-minute"
+        title="Exam tomorrow? Revise the whole syllabus tonight."
+        intro="Choose your exam to get one-page notes for every topic, quick flashcards and timed tests for the final evening. ₹19 each, no subscription."
+      >
+        <div className="flex flex-wrap items-center gap-3">
           <label className="text-sm text-slate-600" htmlFor="exam-pick">
             Your exam
           </label>
@@ -64,10 +66,10 @@ function LastMinute() {
             })}
           </select>
         </div>
-      </div>
+      </PageHeader>
 
       {!store || !account.ready ? null : !exam || !topics.length ? (
-        <div className="card text-sm text-slate-600">Choose your exam to see its revision pack and tests.</div>
+        <div className="card text-sm text-slate-600">Choose your exam above to see its revision pack and tests.</div>
       ) : (
         <>
           <div className="grid gap-4 lg:grid-cols-2">

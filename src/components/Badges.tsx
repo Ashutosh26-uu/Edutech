@@ -94,7 +94,7 @@ export function BadgeToast({ store }: { store: Store }) {
   const first = shown[0];
   const Icon = ICONS[first.id] ?? Award;
   return (
-    <div role="status" aria-live="polite" className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-sm items-center gap-3 rounded-xl border border-amber-200 bg-surface p-3 shadow-lg">
+    <div role="status" aria-live="polite" className="fixed inset-x-4 bottom-[var(--float-bottom,calc(1rem+env(safe-area-inset-bottom)))] z-50 mx-auto flex max-w-sm items-center gap-3 rounded-xl border border-amber-200 bg-surface p-3 shadow-lg">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-400 text-white">
         <Icon className="h-5 w-5" />
       </span>

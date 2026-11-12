@@ -20,7 +20,7 @@ export function NoteButton({ question }: { question: MCQ }) {
       type="button"
       onClick={() => toggleNoteOpen(question.id)}
       aria-expanded={isOpen}
-      className={`chip ${has ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-600 hover:bg-sky-50"}`}
+      className={`chip pointer-coarse:min-h-10 pointer-coarse:px-3 ${has ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-600 hover:bg-sky-50"}`}
       title={has ? "Edit your note on this question" : "Write a note on this question"}
     >
       <StickyNote className="h-3.5 w-3.5" /> {has ? "Note ✓" : "Note"}
