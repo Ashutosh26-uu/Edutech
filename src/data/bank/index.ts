@@ -178,7 +178,7 @@ export const BANK_SIZES: Record<string, number> = {
   "chem-amines-biomolecules": 85,
   "chem-atomic-structure": 128,
   "chem-carbonyl-acids": 85,
-  "chem-chemical-bonding": 95,
+  "chem-chemical-bonding": 128,
   "chem-chemical-equilibrium": 128,
   "chem-electrochemistry": 129,
   "chem-goc": 95,
