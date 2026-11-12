@@ -1,17 +1,17 @@
 "use client";
 
-import { Check, Flame, Snowflake } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Snowflake } from "lucide-react";
 import Link from "next/link";
-import { BadgesSection, BadgeToast } from "@/components/Badges";
+import { BadgeToast } from "@/components/Badges";
 import { DailyQuestion } from "@/components/DailyQuestion";
 import { DailyReminder } from "@/components/DailyReminder";
-import { Heatmap } from "@/components/Heatmap";
 import { WordFactOfDay } from "@/components/WordFactOfDay";
 import { RevisionDueCard } from "@/components/RevisionDueCard";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
+import { testAccessFor, useAccount } from "@/lib/account";
 import { focusTopics } from "@/lib/adaptive";
-import { dayKey, daysUntilExam, dueCards, level, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
+import { dayKey, daysUntilExam, dueCards, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
 import { MAX_FREEZES, FREEZE_EVERY } from "@/lib/streak";
 import { useStore } from "@/lib/useStore";
 
@@ -23,33 +23,43 @@ interface Task {
   href: string;
   done: boolean;
   cta: string;
+  /** Nice to do, but not needed to finish the day's plan. */
+  optional?: boolean;
 }
 
 export default function TodayPage() {
   const store = useStore();
+  const account = useAccount();
   if (!store) return null;
 
   const exam = store.examId ? EXAM_BY_ID.get(store.examId) : undefined;
   const t = today(store);
   const xpToday = store.activity[dayKey()] ?? 0;
-  const goalPct = Math.min(100, Math.round((xpToday / store.dailyGoal) * 100));
-  const lvl = level(store.xp);
   const st = streakInfo(store);
   const days = daysUntilExam(store.examDate);
+  const cardCount = Object.keys(store.cards).length;
   const due = dueCards(store).length;
   const focus = exam ? focusTopics(examTopicIds(exam), store.topics, 3) : [];
   const lastMock = store.mocks.find((m) => m.examId === exam?.id)?.takenAt ?? 0;
   const mockEvery = days !== null && days <= 30 ? 2 : 7; // revision mode in the last month
+  // Every timed test uses the exam's one free test, then 1 credit. With neither left, offer a free timed set instead.
+  const access = account.ready ? testAccessFor(account, exam?.id) : "free";
+  const noTestsLeft = access === "none";
 
   const tasks: Task[] = exam
     ? [
-        {
-          title: "Review your flashcards",
-          detail: due ? `${due} cards due. Reviewing at the right time locks them into long-term memory.` : Object.keys(store.cards).length ? "Nothing due. Nice!" : "Add a topic deck to start spaced repetition.",
-          href: "/review",
-          done: Object.keys(store.cards).length > 0 && due === 0,
-          cta: due ? "Review" : "Open deck",
-        },
+        // No deck yet: nothing to review, so the task is left out rather than shown as a chore.
+        ...(cardCount
+          ? [
+              {
+                title: "Review your flashcards",
+                detail: due ? `${due} cards due. Reviewing at the right time locks them into long-term memory.` : "Nothing due. Nice!",
+                href: "/review",
+                done: due === 0,
+                cta: "Review",
+              },
+            ]
+          : []),
         {
           title: "Smart practice: 10 questions",
           detail: "Adaptive questions from your weakest topics, mixed together.",
@@ -57,111 +67,111 @@ export default function TodayPage() {
           done: t.questions >= 10,
           cta: "Start",
         },
+        noTestsLeft
+          ? {
+              title: "Free option today: a 20-question timed practice set",
+              detail: "You’ve used this exam’s free test and have no credits, so practise against the clock for free instead.",
+              href: `/practice?exam=${exam.id}&smart=1&timed=1`,
+              done: Date.now() - lastMock < mockEvery * DAY || t.questions >= 30,
+              cta: "Start",
+            }
+          : {
+              title: mockEvery === 2 ? "Mock test (revision mode: every 2 days)" : "Weekly mock test",
+              detail: `${lastMock ? `Last mock: ${Math.floor((Date.now() - lastMock) / DAY)} days ago.` : "You haven’t taken a mock test yet."} ${access === "free" ? "Uses your free test for this exam." : "Uses 1 test credit."}`,
+              href: `/practice?exam=${exam.id}&mock=1`,
+              done: Date.now() - lastMock < mockEvery * DAY,
+              cta: "Take test",
+            },
         {
           title: "Watch one lecture the smart way",
-          detail: "Break a YouTube lecture into chapters and watch only the important parts.",
+          detail: "Optional. Break a YouTube lecture into chapters and watch only the important parts.",
           href: "/video",
           done: t.videos > 0,
           cta: "Open",
-        },
-        {
-          title: mockEvery === 2 ? "Mock test (revision mode: every 2 days)" : "Weekly mock test",
-          detail: lastMock ? `Last mock: ${Math.floor((Date.now() - lastMock) / DAY)} days ago.` : "You haven’t taken a mock test yet.",
-          href: `/practice?exam=${exam.id}&mock=1`,
-          done: Date.now() - lastMock < mockEvery * DAY,
-          cta: "Take test",
+          optional: true,
         },
       ]
     : [];
-  const doneCount = tasks.filter((x) => x.done).length;
+  const required = tasks.filter((x) => !x.optional);
+  const doneCount = required.filter((x) => x.done).length;
+  const next = required.find((x) => !x.done) ?? tasks.find((x) => !x.done);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Today</h1>
-          <p className="mt-1 text-sm text-slate-600">{new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</p>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">Today</h1>
+            <p className="mt-0.5 text-sm text-slate-600">{new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}</p>
+          </div>
+          <ExamPicker examId={store.examId} examDate={store.examDate} />
         </div>
-        <ExamPicker examId={store.examId} examDate={store.examDate} />
+        <Link
+          href="/progress"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-700 hover:border-brand-300"
+          title={`Streak freezes: ${st.freezes} of ${MAX_FREEZES}. Earn one for every ${FREEZE_EVERY} days in a row; each covers a single missed day.`}
+        >
+          <span className="font-medium text-slate-900">{exam ? exam.name : "No exam chosen"}</span>
+          {exam && days !== null && <span>· {days > 0 ? `${days} days left` : days === 0 ? "exam day" : "date passed"}</span>}
+          <span>· 🔥 {st.count} day streak</span>
+          {st.freezes > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-sky-600">
+              <Snowflake className="h-3.5 w-3.5" aria-hidden />
+              {st.freezes}
+            </span>
+          )}
+          <span>
+            · {xpToday}/{store.dailyGoal} XP today
+          </span>
+          <ArrowRight className="ml-auto h-4 w-4 text-slate-400" aria-hidden />
+        </Link>
+        {st.pendingFreeze && <p className="text-xs text-slate-600">You missed yesterday. Study today and a streak freeze saves your streak.</p>}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="card flex items-center gap-4">
-          <Ring pct={goalPct} label={`${xpToday}`} sub="XP" />
-          <div className="text-sm">
-            <div className="font-semibold text-slate-900">Daily goal</div>
-            <div className="text-slate-600">
-              {xpToday} / {store.dailyGoal} XP
-            </div>
-            <select className="mt-1 rounded-md border border-slate-200 bg-surface px-1 py-0.5 text-xs" value={store.dailyGoal} onChange={(e) => setDailyGoal(Number(e.target.value))} aria-label="Daily XP goal">
-              {[30, 50, 100, 150, 200].map((g) => (
-                <option key={g} value={g}>
-                  Goal: {g} XP
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="card flex items-center gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange-50 text-orange-500 dark:bg-orange-500/10"><Flame className="h-6 w-6" strokeWidth={1.75} /></span>
-          <div className="min-w-0 text-sm">
-            <div className="text-2xl font-semibold text-slate-900">{st.count} day streak</div>
-            <div className="text-slate-600">{st.pendingFreeze ? "You missed yesterday. Study today and a freeze saves your streak." : "Study a little every day to keep it going."}</div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500" title={`Earn a streak freeze for every ${FREEZE_EVERY} days in a row, up to ${MAX_FREEZES}. Each one covers a single missed day.`}>
-              <span className="flex shrink-0" aria-hidden>
-                {Array.from({ length: MAX_FREEZES }, (_, i) => (
-                  <Snowflake key={i} className={`h-3.5 w-3.5 ${i < st.freezes ? "text-sky-500" : "text-slate-300"}`} strokeWidth={2.25} />
-                ))}
-              </span>
-              <span>
-                {st.freezes} freeze{st.freezes === 1 ? "" : "s"}: covers one missed day. Earn 1 per {FREEZE_EVERY}-day streak.
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="card text-sm">
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-semibold text-slate-900">Level {lvl.level}</span>
-            <span className="text-slate-500">{store.xp} XP total</span>
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full bg-brand-500" style={{ width: `${(lvl.into / lvl.span) * 100}%` }} />
-          </div>
-          <div className="mt-1 text-xs text-slate-500">{lvl.span - lvl.into} XP to level {lvl.level + 1}</div>
-        </div>
-      </div>
-
-      <DailyQuestion store={store} />
-
-      <WordFactOfDay store={store} />
-      <RevisionDueCard store={store} />
-      <DailyReminder examId={store.examId} />
+      {next && (
+        <Link href={next.href} className="btn-primary w-full py-3 text-base sm:w-auto">
+          Do this now: {next.title} <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
 
       {exam ? (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <>
           <section className="card">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold text-slate-900">Today’s plan for {exam.name}</h2>
               <span className="chip bg-brand-50 text-brand-700">
-                {doneCount}/{tasks.length} done
+                {doneCount}/{required.length} done
               </span>
             </div>
             <ul className="mt-3 space-y-2">
               {tasks.map((task) => (
                 <li key={task.title} className={`flex items-center gap-3 rounded-xl border p-3 ${task.done ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200"}`}>
-                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${task.done ? "bg-emerald-500 text-white" : "border-2 border-slate-300"}`}>{task.done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}</span>
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${task.done ? "bg-emerald-500 text-white" : task.optional ? "border-2 border-dashed border-slate-300" : "border-2 border-slate-300"}`}>{task.done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}</span>
                   <div className="min-w-0 flex-1">
-                    <div className={`font-semibold ${task.done ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.title}</div>
+                    <div className={`font-semibold ${task.done ? "text-slate-500 line-through" : "text-slate-900"}`}>
+                      {task.title}
+                      {task.optional && <span className="chip ml-2 bg-slate-100 align-middle text-[11px] font-medium text-slate-600">Optional</span>}
+                    </div>
                     <div className="text-xs text-slate-600">{task.detail}</div>
                   </div>
                   {!task.done && (
-                    <Link href={task.href} className="btn-primary shrink-0 px-3 py-1.5 text-xs">
+                    <Link href={task.href} className={`${task.optional ? "btn-ghost" : "btn-primary"} shrink-0 px-3 py-1.5 text-xs`}>
                       {task.cta}
                     </Link>
                   )}
                 </li>
               ))}
             </ul>
+            <p className="mt-3 text-xs text-slate-500">
+              Daily goal:{" "}
+              <select className="rounded-md border border-slate-200 bg-surface px-1 py-0.5 text-xs" value={store.dailyGoal} onChange={(e) => setDailyGoal(Number(e.target.value))} aria-label="Daily XP goal">
+                {[30, 50, 100, 150, 200].map((g) => (
+                  <option key={g} value={g}>
+                    {g} XP
+                  </option>
+                ))}
+              </select>
+            </p>
           </section>
           <section className="card">
             <h2 className="font-semibold text-slate-900">Focus topics</h2>
@@ -169,11 +179,11 @@ export default function TodayPage() {
             <ul className="mt-3 divide-y divide-slate-100">
               {focus.map((f) => (
                 <li key={f.id} className="flex items-center justify-between gap-2 py-2.5 text-sm">
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-medium text-slate-800">{TOPIC_BY_ID.get(f.id)?.name}</div>
                     <div className="text-xs text-slate-500">{f.reason}</div>
                   </div>
-                  <Link href={`/practice?exam=${exam.id}&topics=${f.id}`} className="btn-ghost px-3 py-1.5 text-xs">
+                  <Link href={`/practice?exam=${exam.id}&topics=${f.id}`} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
                     Practise
                   </Link>
                 </li>
@@ -193,17 +203,32 @@ export default function TodayPage() {
               </div>
             )}
           </section>
-        </div>
+        </>
       ) : (
-        <div className="card text-sm text-slate-700">Pick your exam above to get a personalised daily plan.</div>
+        <div className="card flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
+          <span>Pick your exam above to get a personalised daily plan.</span>
+          <Link href="/exams" className="btn-ghost">
+            Browse exams
+          </Link>
+        </div>
       )}
 
-      <BadgesSection store={store} />
+      <details className="group">
+        <summary className="card flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="block font-semibold text-slate-900">Daily extras</span>
+            <span className="block text-xs text-slate-500">Question of the day · word & fact of the day · revise today</span>
+          </span>
+          <ChevronDown className="h-5 w-5 shrink-0 text-slate-400 transition group-open:rotate-180" />
+        </summary>
+        <div className="mt-4 space-y-5">
+          <DailyQuestion store={store} />
+          <WordFactOfDay store={store} />
+          <RevisionDueCard store={store} />
+        </div>
+      </details>
 
-      <section className="card">
-        <h2 className="mb-3 font-semibold text-slate-900">Your study activity</h2>
-        <Heatmap activity={store.activity} />
-      </section>
+      <DailyReminder examId={store.examId} />
       <BadgeToast store={store} />
     </div>
   );
@@ -212,7 +237,7 @@ export default function TodayPage() {
 function ExamPicker({ examId, examDate }: { examId?: string; examDate?: string }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <select className="input w-auto py-2" value={examId ?? ""} onChange={(e) => e.target.value && setExam(e.target.value)} aria-label="Your exam">
+      <select className="input w-auto max-w-full py-2" value={examId ?? ""} onChange={(e) => e.target.value && setExam(e.target.value)} aria-label="Your exam">
         <option value="">Choose your exam…</option>
         {CATEGORIES.map((c) => (
           <optgroup key={c} label={c}>
@@ -228,25 +253,6 @@ function ExamPicker({ examId, examDate }: { examId?: string; examDate?: string }
         Exam date
         <input type="date" className="input w-auto py-2" value={examDate ?? ""} onChange={(e) => setExamDate(e.target.value)} />
       </label>
-    </div>
-  );
-}
-
-function Ring({ pct, label, sub }: { pct: number; label: string; sub: string }) {
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  return (
-    <div className="relative h-16 w-16 shrink-0">
-      <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="7" className="stroke-slate-100" />
-        <circle cx="32" cy="32" r={r} fill="none" strokeWidth="7" strokeLinecap="round" className="stroke-brand-500 transition-all" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} />
-      </svg>
-      <div className="absolute inset-0 grid place-items-center text-center leading-none">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">{label}</div>
-          <div className="text-[10px] text-slate-500">{sub}</div>
-        </div>
-      </div>
     </div>
   );
 }

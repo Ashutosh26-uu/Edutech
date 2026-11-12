@@ -8,6 +8,7 @@ import { Stat } from "@/components/Quiz";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { findQuestions } from "@/lib/bank";
 import { useAccount } from "@/lib/account";
+import { StaticNotice } from "@/components/StaticNotice";
 import { IS_STATIC } from "@/lib/api";
 import { cardsForQuestions } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
@@ -40,7 +41,7 @@ export default function MistakesPage() {
   }, [account.ready, account.user]);
 
   if (IS_STATIC || (account.ready && account.mode === "local")) {
-    return <div className="card text-sm">The mistake notebook needs an account and runs on the full site, not this demo build.</div>;
+    return <StaticNotice>The mistake notebook needs an account and runs on the full site, not this demo build.</StaticNotice>;
   }
   if (!account.ready) return <PageSkeleton />;
   if (!account.user) {

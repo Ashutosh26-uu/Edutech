@@ -8,7 +8,7 @@ import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
 const FEATURES = [
   { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
   { icon: NotebookPen, title: "Notes, transcript and export", text: "Key points and facts linked to the exact second, a searchable transcript, your own notes, and export to Markdown or PDF." },
-  { icon: Layers, title: "Flashcards that schedule themselves", text: "The FSRS spaced-repetition algorithm brings each card back just before you would forget it." },
+  { icon: Layers, title: "Flashcards that schedule themselves", text: "Smart spaced repetition brings each card back just before you would forget it." },
   { icon: Target, title: "Practice that adapts", text: "Questions come more often from the topics you get wrong, mixed together, with an explanation after every answer." },
   { icon: CalendarCheck, title: "A plan for every day", text: "Set your exam date and get a daily checklist, mock tests on a schedule, and a clear view of your weak topics." },
   { icon: Mic, title: "Search by voice", text: "Ask for a topic or a question out loud, in English or Hindi, and listen to notes read back to you." },
@@ -31,7 +31,7 @@ export default function Home() {
             <div>
               <Link href="/exams" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600 hover:border-slate-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                For SSC, banking, railway, UPSC and CTET aspirants
+                For SSC, banking, railway, UPSC, JEE/NEET and campus-placement students
                 <ArrowRight className="h-3 w-3" />
               </Link>
               <h1 className="mt-5 text-4xl font-semibold leading-[1.1] sm:text-5xl">Learn from long lectures without watching every minute.</h1>
@@ -42,7 +42,7 @@ export default function Home() {
                 <VideoLinkForm size="lg" />
               </div>
               <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-                {["Free to use", "Works with any captioned lecture", "No sign-up"].map((t) => (
+                {["Practice free", "Works with any captioned lecture", "No sign-up needed"].map((t) => (
                   <li key={t} className="flex items-center gap-1.5">
                     <Check className="h-4 w-4 text-emerald-600" />
                     {t}

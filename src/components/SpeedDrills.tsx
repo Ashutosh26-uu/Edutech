@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
 import { DRILLS, DrillRound, LEVELS, isCorrect, perMinute, type DrillId, type DrillLevel, type DrillQuestion } from "@/lib/drills";
 import { readJson, writeJson } from "@/lib/localJson";
-import { awardSkillXp } from "@/lib/storage";
+import { awardXp } from "@/lib/storage";
 
 const KEY = "studyclip:drills";
 const PREFS = "studyclip:drills:prefs";
@@ -87,7 +87,7 @@ export function SpeedDrills() {
       }
       // 1 XP per correct answer, capped so a round can't farm XP.
       const xp = Math.min(correct, 40);
-      awardSkillXp(xp);
+      awardXp(xp);
       setResult({ score, best, xp });
       setPhase("done");
     },

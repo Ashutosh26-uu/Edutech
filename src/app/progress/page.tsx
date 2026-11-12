@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BadgesSection } from "@/components/Badges";
+import { Heatmap } from "@/components/Heatmap";
 import { Stat } from "@/components/Quiz";
 import { MistakePatternSummary } from "@/components/StudyNotes";
 import { EXAM_BY_ID } from "@/data/exams";
@@ -49,7 +51,7 @@ function SubjectAccuracy({ topics }: { topics: { id: string; attempted: number; 
 }
 
 /** Score (as % of maximum) of the last 12 tests, oldest to newest, so the direction is visible at a glance. */
-function ScoreTrend({ points }: { points: { at: number; pct: number; label: string }[] }) {
+function ScoreTrend({ points, mockHref }: { points: { at: number; pct: number; label: string }[]; mockHref: string }) {
   const last = [...points].sort((a, b) => a.at - b.at).slice(-12);
   const avg = (xs: { pct: number }[]) => (xs.length ? xs.reduce((n, x) => n + x.pct, 0) / xs.length : 0);
   const half = Math.floor(last.length / 2);
@@ -79,7 +81,12 @@ function ScoreTrend({ points }: { points: { at: number; pct: number; label: stri
           </div>
         </>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">Take a timed test to start your score trend.</p>
+        <div className="mt-2 space-y-3 text-sm text-slate-500">
+          <p>Take a timed test to start your score trend.</p>
+          <Link href={mockHref} className="btn-ghost px-3 py-1.5 text-xs">
+            Take a mock
+          </Link>
+        </div>
       )}
     </section>
   );
@@ -126,6 +133,15 @@ export default function ProgressPage() {
   const weak = topics.filter((t) => t.pct < 60).sort((a, b) => a.pct - b.pct);
   const exam = data.examId ? EXAM_BY_ID.get(data.examId) : undefined;
   const tests = synced ? remote.attempts.length : data.mocks.length;
+  const mockHref = exam ? `/exams/${exam.id}` : "/exams";
+  const noTests = (
+    <div className="mt-2 space-y-3 text-sm text-slate-500">
+      <p>{synced ? "No tests yet." : "No mock tests yet."}</p>
+      <Link href={mockHref} className="btn-primary px-3 py-1.5 text-xs">
+        Take a mock
+      </Link>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -133,7 +149,7 @@ export default function ProgressPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">My progress</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-medium text-brand-700">{exam.name}</Link></> : "Pick an exam to get started."} ·{" "}
+            {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-medium text-brand-700">{exam.name}</Link></> : "No exam chosen yet."} ·{" "}
             {synced ? "Saved to your account." : account.mode === "server" ? <>Saved in this browser only. <Link href="/login?next=/progress" className="font-medium text-brand-700">Log in</Link> to keep it on your account.</> : "Saved in this browser only."}
           </p>
         </div>
@@ -152,6 +168,15 @@ export default function ProgressPage() {
         )}
       </div>
 
+      {!exam && (
+        <div className="card flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
+          <span>Choose your exam to get a daily plan, focus topics and mock tests made for it.</span>
+          <Link href="/exams" className="btn-primary">
+            Choose your exam
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Questions attempted" value={attempted} tone="brand" />
         <Stat label="Accuracy" value={attempted ? `${Math.round((correct / attempted) * 100)}%` : "–"} tone="green" />
@@ -167,7 +192,7 @@ export default function ProgressPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <SubjectAccuracy topics={topics} />
-        <ScoreTrend points={synced ? remote.attempts.map((a) => ({ at: a.submittedAt, pct: a.total ? (a.score / a.total) * 100 : 0, label: `${EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · ${a.kind === "full" ? "full mock" : a.kind === "weekly" ? "Sunday All-India Mock" : a.kind === "section" ? "section test" : "topic test"}` })) : data.mocks.map((m) => ({ at: m.takenAt, pct: m.maxScore ? (m.score / m.maxScore) * 100 : 0, label: `${EXAM_BY_ID.get(m.examId)?.name ?? m.examId} · mock` }))} />
+        <ScoreTrend points={synced ? remote.attempts.map((a) => ({ at: a.submittedAt, pct: a.total ? (a.score / a.total) * 100 : 0, label: `${EXAM_BY_ID.get(a.examId)?.name ?? a.examId} · ${a.kind === "full" ? "full mock" : a.kind === "weekly" ? "Sunday All-India Mock" : a.kind === "section" ? "section test" : "topic test"}` })) : data.mocks.map((m) => ({ at: m.takenAt, pct: m.maxScore ? (m.score / m.maxScore) * 100 : 0, label: `${EXAM_BY_ID.get(m.examId)?.name ?? m.examId} · mock` }))} mockHref={mockHref} />
         <section className="card">
           <h2 className="font-semibold text-slate-900">Focus on these topics</h2>
           {weak.length ? (
@@ -216,7 +241,7 @@ export default function ProgressPage() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-slate-500">No tests yet.</p>
+              noTests
             )
           ) : data.mocks.length ? (
             <ul className="mt-3 divide-y divide-slate-100 text-sm">
@@ -232,7 +257,7 @@ export default function ProgressPage() {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">No mock tests yet.</p>
+            noTests
           )}
         </section>
 
@@ -261,6 +286,12 @@ export default function ProgressPage() {
         </section>
       </div>
       <MistakePatternSummary />
+
+      <BadgesSection store={data} />
+      <section className="card">
+        <h2 className="mb-3 font-semibold text-slate-900">Your study activity</h2>
+        <Heatmap activity={data.activity} />
+      </section>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Stat } from "@/components/Quiz";
 import { SpeakButton } from "@/components/Speak";
+import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPICS } from "@/data/topics";
 import { customCard, cardsForTopic } from "@/lib/cards";
 import { bankSize } from "@/lib/bank";
@@ -38,7 +39,7 @@ export default function ReviewPage() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Flashcard review</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Spaced repetition with the <b>FSRS</b> scheduler: each card comes back just before you are likely to forget it, so you review less and remember more.
+          Smart spaced repetition: each card comes back just before you are likely to forget it, so you review less and remember more.
         </p>
       </div>
 
@@ -57,7 +58,7 @@ export default function ReviewPage() {
             {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
           </button>
           <div className="grid gap-5 lg:grid-cols-2">
-            <AddTopicDecks have={new Set(cards.map((c) => c.id))} />
+            <AddTopicDecks have={new Set(cards.map((c) => c.id))} examId={store.examId} />
             <CustomCardForm />
           </div>
           <CardList cards={cards} />
@@ -216,14 +217,28 @@ function ReviewSession({ onExit }: { onExit: () => void }) {
   );
 }
 
-function AddTopicDecks({ have }: { have: Set<string> }) {
+function AddTopicDecks({ have, examId }: { have: Set<string>; examId?: string }) {
   const [msg, setMsg] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const exam = examId ? EXAM_BY_ID.get(examId) : undefined;
+  const examIds = exam ? new Set(examTopicIds(exam)) : null;
+  // The chosen exam's topics by default; every topic on request (or when no exam is chosen).
+  const list = examIds?.size && !showAll ? TOPICS.filter((t) => examIds.has(t.id)) : TOPICS;
   return (
     <section className="card">
-      <h2 className="font-semibold text-slate-900">Add topic decks</h2>
-      <p className="mt-1 text-sm text-slate-600">Turn a topic’s question bank into flashcards.</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-semibold text-slate-900">Add topic decks</h2>
+        {exam && !!examIds?.size && (
+          <button type="button" className="text-sm font-medium text-brand-700 hover:underline" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? `Only ${exam.name} topics` : "Show all topics"}
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-slate-600">
+        Turn a topic’s question bank into flashcards{exam && examIds?.size && !showAll ? ` (topics in ${exam.name})` : ""}.
+      </p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {TOPICS.map((t) => {
+        {list.map((t) => {
           const size = bankSize(t.id);
           if (!size) return null;
           const added = [...have].filter((id) => id.startsWith(`q:${t.id}-`)).length >= size;

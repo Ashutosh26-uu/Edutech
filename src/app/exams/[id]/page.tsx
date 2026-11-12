@@ -1,11 +1,11 @@
-import { ArrowLeft, ChevronRight, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Trophy, Zap, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
-import { TopicAccuracy, RememberExam } from "@/components/ExamClient";
+import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
 
@@ -16,6 +16,33 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const exam = EXAM_BY_ID.get((await params).id);
   return exam ? { title: `${exam.name} preparation`, description: `${exam.fullName}: syllabus, practice questions and mock tests.` } : {};
+}
+
+interface Tool {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** The study tools that fit this kind of exam. */
+function examTools(e: Exam): Tool[] {
+  const formulas: Tool = { href: "/formulas", label: "Formula sheets", icon: Sigma };
+  if (e.category === "Engineering & Medical" || /^(jee|neet)/.test(e.id))
+    return [formulas, { href: "/tracker", label: "Syllabus tracker", icon: ListChecks }, { href: "/review", label: "Flashcards", icon: Layers }];
+  if (["SSC", "Banking", "Insurance", "Railways"].includes(e.category))
+    return [
+      { href: "/drills", label: "Speed drills", icon: Zap },
+      ...(e.id === "ssc-chsl" || e.id === "ssc-cgl" ? [{ href: "/typing", label: "Typing test", icon: Keyboard }] : []),
+      ...(isWeeklyExam(e.id) ? [{ href: "/mock-sunday", label: "Sunday mock", icon: Trophy }] : []),
+      formulas,
+    ];
+  if (e.category === "Campus Placement")
+    return [
+      { href: "/placement", label: "Placement hub", icon: Briefcase },
+      { href: "/interview", label: "Interview", icon: MessageSquare },
+      { href: "/resume", label: "Resume", icon: FileText },
+    ];
+  return [];
 }
 
 function negativeMarkingText(e: Exam) {
@@ -31,6 +58,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
   if (!exam) notFound();
   const hasPractice = examTopicIds(exam).length > 0;
   const plan = mockPlan(exam);
+  const tools = examTools(exam);
 
   return (
     <div className="space-y-8">
@@ -47,22 +75,25 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <h1 className="mt-1 text-2xl font-semibold">{exam.name}</h1>
             <p className="mt-1 text-slate-600">{exam.fullName}</p>
           </div>
-          {hasPractice && (
-            <div className="flex flex-wrap gap-2">
-              <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
-                <Clock className="h-4 w-4" /> Exam tomorrow?
-              </Link>
-              <Link href={`/leaderboard?exam=${exam.id}`} className="btn-ghost">
-                <Trophy className="h-4 w-4" /> Leaderboard
-              </Link>
-              <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
-                <Sparkles className="h-4 w-4" /> Smart practice
-              </Link>
-              <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
-                {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <MakeMyExamButton examId={exam.id} />
+            {hasPractice && (
+              <>
+                <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
+                  <Clock className="h-4 w-4" /> Exam tomorrow?
+                </Link>
+                <Link href={`/leaderboard?exam=${exam.id}`} className="btn-ghost">
+                  <Trophy className="h-4 w-4" /> Leaderboard
+                </Link>
+                <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
+                  <Sparkles className="h-4 w-4" /> Smart practice
+                </Link>
+                <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
+                  {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
+                </Link>
+              </>
+            )}
+          </div>
         </div>
         <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 text-sm sm:grid-cols-3">
           <div className="bg-surface p-4">
@@ -102,7 +133,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                   <span>
                     <span className="font-medium text-slate-800">{s.subject}</span>
                     <span className="block text-xs text-slate-500">
-                      {s.questions} questions · {s.minutes} min
+                      {s.questions} questions · {s.minutes} min · uses your free test or 1 credit
                     </span>
                   </span>
                   <Link href={`/practice?exam=${exam.id}&mock=1&section=${encodeURIComponent(s.subject)}`} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
@@ -111,6 +142,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 </li>
               ))}
             </ul>
+            <p className="mt-2 text-xs text-slate-500">Every timed test (full mock, section test or topic test) uses your free test for this exam or 1 credit. Untimed practice is always free.</p>
             {plan.pattern.sectional && <p className="mt-2 text-xs text-slate-500">In the full mock each section has its own timer and closes when it ends, as in the real paper.</p>}
           </div>
         )}
@@ -122,6 +154,32 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <span className="min-w-0 flex-1">
               <span className="block font-semibold text-slate-900">Sunday All-India Mock: free, live 10am–10pm</span>
               <span className="block text-sm text-slate-600">One {exam.name} paper for every student each Sunday. See your all-India rank and the top 10.</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+          </Link>
+        )}
+        {tools.length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Tools for this exam</h2>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {tools.map(({ href, label, icon: Icon }) => (
+                <li key={href}>
+                  <Link href={href} className="btn-ghost px-3 py-1.5 text-sm">
+                    <Icon className="h-4 w-4" /> {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {exam.category === "Campus Placement" && (
+          <Link href="/placement" className="card-link flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
+              <Briefcase className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-slate-900">Placement preparation hub</span>
+              <span className="block text-sm text-slate-600">All company tests, aptitude and coding topics, formula sheets, interview prep and the resume builder.</span>
             </span>
             <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
           </Link>
@@ -153,7 +211,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                         <TopicAccuracy topicId={tid} />
                       </div>
                       <span className="flex shrink-0 gap-1.5">
-                        <Link href={`/learn?topic=${encodeURIComponent(t.name)}`} className="btn-ghost px-3 py-1.5 text-xs">
+                        <Link href={`/topics/${tid}`} className="btn-ghost px-3 py-1.5 text-xs">
                           Notes
                         </Link>
                         <Link href={`/practice?exam=${exam.id}&topics=${tid}`} className="btn-ghost px-3 py-1.5 text-xs">
@@ -165,7 +223,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 })}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500">Practice questions for this subject are coming soon. Meanwhile, break down a lecture on it in Videos.</p>
+              <p className="text-sm text-slate-500">There’s no question set for this subject on StudyClip. Use the official syllabus, and paste a YouTube lecture on it into <Link href="/video" className="font-medium text-brand-700 hover:underline">Videos</Link> to get chapters, notes and a quiz.</p>
             )}
           </section>
         ))}

@@ -159,7 +159,7 @@ export const EXAMS: Exam[] = [
   ]),
 
   ...group("Engineering & Medical", {}, [
-    { id: "jee-main", name: "JEE Main", fullName: "Joint Entrance Examination (Main)", conductedBy: "National Testing Agency", website: "https://jeemain.nta.nic.in", negativeMarking: 0.25, subjects: [s("Physics", PHY), s("Chemistry", CHEM), s("Mathematics", MATH_JEE)] },
+    { id: "jee-main", name: "JEE Main", fullName: "Joint Entrance Examination (Main)", conductedBy: "National Testing Agency", website: "https://jeemain.nta.nic.in", negativeMarking: 0.25, featured: true, subjects: [s("Physics", PHY), s("Chemistry", CHEM), s("Mathematics", MATH_JEE)] },
     { id: "jee-advanced", name: "JEE Advanced", fullName: "Joint Entrance Examination (Advanced) for IIT admissions", conductedBy: "Indian Institutes of Technology", website: "https://jeeadv.ac.in", negativeMarking: null, subjects: [s("Physics", PHY), s("Chemistry", CHEM), s("Mathematics", MATH_JEE)] },
     { id: "neet-ug", name: "NEET UG", fullName: "National Eligibility cum Entrance Test (Undergraduate)", conductedBy: "National Testing Agency", website: "https://neet.nta.nic.in", negativeMarking: 0.25, featured: true, subjects: [s("Physics", PHY), s("Chemistry", CHEM), s("Biology (Botany & Zoology)", BIO)] },
     { id: "neet-pg", name: "NEET PG", fullName: "National Eligibility cum Entrance Test (Postgraduate)", conductedBy: "National Board of Examinations in Medical Sciences", website: "https://natboard.edu.in", negativeMarking: 0.25, subjects: [s("Pre-clinical, Para-clinical and Clinical Subjects")] },
