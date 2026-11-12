@@ -40,7 +40,7 @@ export default function InterviewPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Interview preparation</h1>
+        <h1 className="text-2xl font-semibold">Interview prep</h1>
         <p className="mt-1 text-sm text-slate-600">
           {total} questions asked in campus and off-campus placement interviews, with model answers to adapt in your own words. Practise the written tests on the{" "}
           <Link href="/exams/tcs-nqt" className="font-medium text-brand-700">

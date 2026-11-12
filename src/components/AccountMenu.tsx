@@ -51,7 +51,7 @@ export function AccountMenu() {
             <Gift className="h-4 w-4" /> Invite friends, get free tests
           </Link>
           <Link href="/leaderboard" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-md px-2.5 py-2 text-slate-700 hover:bg-slate-100">
-            <Trophy className="h-4 w-4" /> Weekly leaderboards
+            <Trophy className="h-4 w-4" /> Leaderboards
           </Link>
           <button
             onClick={async () => {

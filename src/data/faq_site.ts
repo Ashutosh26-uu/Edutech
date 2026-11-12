@@ -29,7 +29,7 @@ export const SITE: Faq[] = [
     hi: "Teen steps mein shuru karo:\n- **Exams** kholo, apna exam search karo aur uska page kholo (wahi aapka exam ban jaata hai).\n- **Smart practice** dabao, syllabus se 10 sawaal ka set milega.\n- **Today** kholo, wahan roz ka plan hai: flashcards, practice, ek lecture aur mock test.\nPractice ke liye sign-up zaroori nahi. Mistakes save karne aur timed test ke liye account banao.",
     links: [
       ["Find your exam", "/exams", "Apna exam dhundho"],
-      ["Today", "/today"],
+      ["Today’s plan", "/today"],
     ],
     next: ["smart-practice", "daily-plan", "signup"],
   },
@@ -267,7 +267,7 @@ export const SITE: Faq[] = [
     keys: ["section", "sectional", "chapter"],
     en: "Yes. On exams with a paper pattern, the pattern card has a **Section test** button for each section, timed like the real section. For a single topic, **Exam tomorrow** offers a 15-question, 15-minute topic test. Each uses your free test or 1 credit.",
     hi: "Haan. Jin exams ka paper pattern hai, unke pattern card pe har section ke liye **Section test** button hai, asli section jaisa timer. Ek topic ke liye **Exam tomorrow** page pe 15 sawaal, 15 minute ka topic test hai. Har test free test ya 1 credit leta hai.",
-    links: [["Exam tomorrow", "/last-minute"]],
+    links: [["Exam tomorrow pack", "/last-minute"]],
     next: ["free-test", "sectional-timing"],
   },
   {
@@ -348,7 +348,7 @@ export const SITE: Faq[] = [
     keys: ["last-minute", "revision", "sheet", "tonight", "tomorrow"],
     en: "For the night before your exam. Pick your exam to get:\n- A **revision sheet**: one-page key points for every topic (first topic free to preview)\n- **Rapid flashcards** for the whole syllabus\n- Quick timed tests: a full mock or a 15-minute topic test\nThe full revision pack costs ₹19 for 7 days.",
     hi: "Exam se pehle wali raat ke liye. Apna exam chuno, milega:\n- **Revision sheet**: har topic ke one-page key points (pehla topic free preview)\n- Poore syllabus ke **rapid flashcards**\n- Jaldi wale timed tests: full mock ya 15 minute ka topic test\nPoora revision pack ₹19 mein 7 din ke liye.",
-    links: [["Exam tomorrow", "/last-minute"]],
+    links: [["Exam tomorrow pack", "/last-minute"]],
     next: ["revision-pack", "price"],
   },
 
@@ -362,7 +362,7 @@ export const SITE: Faq[] = [
     keys: ["today", "daily", "plan", "goal"],
     en: "**Today** gives you a daily plan for your exam: review due flashcards, 10 smart-practice questions, one lecture, and a mock test (weekly, or every 2 days in the last 30 days). Set your exam and exam date there for a countdown and focus topics. Tasks tick themselves off as you do them.",
     hi: "**Today** aapke exam ka roz ka plan deta hai: due flashcards, 10 smart practice sawaal, ek lecture, aur mock test (hafte mein ek, aakhri 30 din mein har 2 din). Wahan apna exam aur exam date set karo, countdown aur focus topics milenge. Kaam karte hi tasks apne aap tick ho jaate hain.",
-    links: [["Today", "/today"]],
+    links: [["Today’s plan", "/today"]],
     next: ["streak", "smart-practice"],
   },
   {
@@ -374,7 +374,7 @@ export const SITE: Faq[] = [
     keys: ["word", "fact"],
     en: "Yes. On **Today**, the **Word and fact of the day** card has two tabs:\n- **Word**: an exam-level English word with meaning, Hindi meaning, synonym, antonym and an example. Tap **Listen** to hear it, **Quiz me** for a quick 3-option check (a right answer adds to your *words learned*), or **Add to flashcards**.\n- **GK fact**: one static GK fact with a memory hook and a link to practise that topic.\nBoth change at midnight India time and are the same for everyone.",
     hi: "Haan. **Today** page pe **Word and fact of the day** card mein do tab hain:\n- **Word**: exam level ka English word, meaning, Hindi meaning, synonym, antonym aur example ke saath. **Listen** se suno, **Quiz me** se 3 option wala chhota check karo (sahi answer *words learned* mein judta hai), ya **Add to flashcards** karo.\n- **GK fact**: ek static GK fact, yaad rakhne ki trick aur us topic ki practice ka link.\nDono India time ke hisaab se raat 12 baje badalte hain aur sabke liye same hote hain.",
-    links: [["Today", "/today"]],
+    links: [["Today’s plan", "/today"]],
     next: ["flashcards-what", "audio-revision"],
   },
   {
@@ -422,7 +422,7 @@ export const SITE: Faq[] = [
     keys: ["streak", "xp", "level", "points", "heatmap"],
     en: "You earn XP for studying: correct answer 10, wrong answer 2, flashcard review 5, new video 20, mock test 50. Your **streak** counts days in a row with any XP, so even one question keeps it alive. Levels grow with total XP. Streak, level and a heatmap are on Today; they’re stored in this browser.",
     hi: "Padhai se XP milta hai: sahi answer 10, galat 2, flashcard review 5, naya video 20, mock test 50. **Streak** lagatar din ginti hai jinmein kuch bhi XP mila, isliye ek sawaal bhi streak bacha leta hai. Total XP se level badhta hai. Streak, level aur heatmap Today page pe hain; ye isi browser mein save hote hain.",
-    links: [["Today", "/today"]],
+    links: [["Today’s plan", "/today"]],
     next: ["progress-saved"],
   },
   {
@@ -434,7 +434,7 @@ export const SITE: Faq[] = [
     keys: ["reminder", "remind", "reminders", "yaad"],
     en: "Open **Today** and turn on **Daily reminder**, then allow notifications when your browser asks. Pick a time (7 am, 1 pm, 6 pm, 7 pm, 8 pm or 9 pm, India time) and you get one notification a day when the question of the day is ready. Turn the same switch off to stop. On iPhone, first add StudyClip to your Home Screen (Share → **Add to Home Screen**, iOS 16.4+) and turn it on from there. If notifications are blocked, allow them in your browser’s site settings.",
     hi: "**Today** kholo aur **Daily reminder** on karo, phir browser pooche to notifications allow karo. Time chuno (7 am, 1 pm, 6 pm, 7 pm, 8 pm ya 9 pm, India time); roz ek notification aayega jab aaj ka question ready hoga. Band karne ke liye wahi switch off karo. iPhone pe pehle StudyClip ko Home Screen pe add karo (Share → **Add to Home Screen**, iOS 16.4+) aur wahan se on karo. Notifications block hain to browser ki site settings mein allow karo.",
-    links: [["Today", "/today"]],
+    links: [["Today’s plan", "/today"]],
     next: ["streak", "app"],
   },
   {
@@ -458,7 +458,7 @@ export const SITE: Faq[] = [
     keys: ["leaderboard", "rankers"],
     en: "Every exam has a **weekly leaderboard** (Monday to Sunday). It is opt-in: open the leaderboard, choose a display name and tick “Show me on leaderboards”. Points are the sum of your score percentages in your best 5 timed tests on that exam this week. Only your display name is shown, never your email.",
     hi: "Har exam ka **weekly leaderboard** hai (Monday se Sunday). Ye aapki marzi pe hai: leaderboard kholo, display name chuno aur “Show me on leaderboards” tick karo. Points = is hafte us exam ke aapke best 5 timed test ke score % ka total. Sirf display name dikhta hai, email kabhi nahi.",
-    links: [["Leaderboard", "/leaderboard"]],
+    links: [["Leaderboards", "/leaderboard"]],
     next: ["progress"],
   },
   {
@@ -529,7 +529,7 @@ export const SITE: Faq[] = [
     keys: ["notes", "theory", "material", "concept", "learn", "formula"],
     en: "Open **Learn** and search any topic (or tap **Notes** next to a topic on your exam page). You get a summary, key points, short notes, **Listen** (read aloud), **Add flashcards**, practice questions, the exams it’s asked in, and previous/next topic buttons.",
     hi: "**Learn** kholo aur koi bhi topic search karo (ya exam page pe topic ke saamne **Notes** dabao). Milega: summary, key points, short notes, **Listen** (sunkar padho), **Add flashcards**, practice questions, kin exams mein aata hai, aur previous/next topic buttons.",
-    links: [["Open Learn", "/learn", "Learn kholo"]],
+    links: [["Search & question solver", "/learn", "Learn kholo"]],
     next: ["read-aloud", "doubt-solve"],
   },
   {
@@ -539,9 +539,9 @@ export const SITE: Faq[] = [
     qh: "Video breakdown kaise kaam karta hai?",
     ask: ["video breakdown", "video speed badhani hai", "2x speed", "playback speed", "lecture fast forward", "youtube lecture", "youtube video notes", "video ke notes", "lecture summary", "break it down", "paste youtube link", "video chapters", "smart play", "long lecture short"],
     keys: ["video", "youtube", "lecture", "chapters", "breakdown"],
-    en: "Paste a YouTube lecture link on **Videos** and tap **Break it down**. You get timestamped chapters (marked High/Medium/Low importance), notes with key points, a searchable transcript and a quiz. **Smart play** skips to the important parts; speed goes up to 2×. Works for videos with captions.",
-    hi: "**Videos** pe YouTube lecture ka link paste karo aur **Break it down** dabao. Milega: time ke saath chapters (High/Medium/Low importance), key points wale notes, search hone wala transcript aur quiz. **Smart play** sirf zaroori hisse chalata hai; speed 2× tak. Captions wale videos pe kaam karta hai.",
-    links: [["Break down a video", "/video", "Video breakdown"]],
+    en: "Paste a YouTube lecture link on **Video breakdown** and tap **Break it down**. You get timestamped chapters (marked High/Medium/Low importance), notes with key points, a searchable transcript and a quiz. **Smart play** skips to the important parts; speed goes up to 2×. Works for videos with captions.",
+    hi: "**Video breakdown** pe YouTube lecture ka link paste karo aur **Break it down** dabao. Milega: time ke saath chapters (High/Medium/Low importance), key points wale notes, search hone wala transcript aur quiz. **Smart play** sirf zaroori hisse chalata hai; speed 2× tak. Captions wale videos pe kaam karta hai.",
+    links: [["Video breakdown", "/video"]],
     next: ["video-no-captions", "video-export"],
   },
   {
@@ -553,7 +553,7 @@ export const SITE: Faq[] = [
     keys: ["captions", "transcript", "error", "shorts", "work"],
     en: "YouTube doesn’t always share a video’s captions with our server, so sometimes the page asks you to paste the transcript. On YouTube (in a browser, not the app), click **…more** under the title, then **Show transcript**, select all the lines and copy them. Paste them on the page and tap **Break it down**: you get the same chapters, notes and quiz. No **Show transcript** on YouTube means the video has no captions: open **Can’t find “Show transcript”?** on the page and use **Watch and take notes**. Also check the link is a normal YouTube link (watch, youtu.be, shorts or live).",
     hi: "YouTube hamesha video ke captions hamare server ko nahi deta, isliye kabhi-kabhi page transcript paste karne ko kehta hai. YouTube pe (browser mein, app mein nahi) title ke neeche **…more** dabao, phir **Show transcript**, saari lines select karke copy karo. Page pe paste karke **Break it down** dabao: wahi chapters, notes aur quiz milenge. YouTube pe **Show transcript** na dikhe to video pe captions nahi hain: page pe **Can’t find “Show transcript”?** kholo aur **Watch and take notes** use karo. Ye bhi dekho ki link normal YouTube link hai (watch, youtu.be, shorts ya live).",
-    links: [["Videos", "/video"]],
+    links: [["Video breakdown", "/video"]],
   },
   {
     id: "video-export",
@@ -706,9 +706,9 @@ export const SITE: Faq[] = [
     qh: "Live class ya teacher hain?",
     ask: ["live classes", "video course", "teacher", "coaching", "live class hai", "recorded lectures", "faculty", "mentor"],
     keys: ["live", "coaching", "course"],
-    en: "No live classes. StudyClip works with lectures you already watch: paste any YouTube lecture into **Videos** to get chapters, notes and a quiz. Practice, notes and tests do the rest.",
-    hi: "Live classes nahi hain. StudyClip un lectures ke saath kaam karta hai jo aap pehle se dekhte ho: kisi bhi YouTube lecture ko **Videos** mein paste karo, chapters, notes aur quiz milenge. Baaki kaam practice, notes aur tests karte hain.",
-    links: [["Videos", "/video"]],
+    en: "No live classes. StudyClip works with lectures you already watch: paste any YouTube lecture into **Video breakdown** to get chapters, notes and a quiz. Practice, notes and tests do the rest.",
+    hi: "Live classes nahi hain. StudyClip un lectures ke saath kaam karta hai jo aap pehle se dekhte ho: kisi bhi YouTube lecture ko **Video breakdown** mein paste karo, chapters, notes aur quiz milenge. Baaki kaam practice, notes aur tests karte hain.",
+    links: [["Video breakdown", "/video"]],
   },
   {
     id: "job-alerts",
@@ -719,7 +719,7 @@ export const SITE: Faq[] = [
     keys: ["notification", "vacancy", "admit", "cutoff", "naukri", "job"],
     en: "No, we don’t post notifications, dates, admit cards or cut-offs. Each exam page links to the **official website**, which always has the latest. You can set your own exam date on Today for a countdown.",
     hi: "Nahi, hum notifications, dates, admit card ya cut-off nahi dete. Har exam page pe **official website** ka link hai, wahan hamesha latest milta hai. Today page pe apni exam date daal ke countdown laga sakte ho.",
-    links: [["Today", "/today"]],
+    links: [["Today’s plan", "/today"]],
   },
 
   // ---------------- Account ----------------
@@ -851,7 +851,7 @@ export const SITE: Faq[] = [
     keys: ["revision", "pack", "unlock", "locked", "blurred"],
     en: "For **₹19** you get 7 days of full-syllabus revision for one exam: one-page key points for every topic, rapid flashcards, and print/PDF. Before buying, the first topic is a free preview and the rest are blurred. Buying again extends the 7 days.",
     hi: "**₹19** mein ek exam ka 7 din ka full-syllabus revision: har topic ke one-page key points, rapid flashcards aur print/PDF. Khareedne se pehle pehla topic free preview hai, baaki blur rehte hain. Dobara khareedne pe 7 din aur badh jaate hain.",
-    links: [["Exam tomorrow", "/last-minute"]],
+    links: [["Exam tomorrow pack", "/last-minute"]],
     next: ["pay-how", "refund"],
   },
   {
@@ -981,7 +981,7 @@ export const SITE: Faq[] = [
     keys: ["pdf", "print"],
     en: "Two ways:\n- **Exam tomorrow** → revision sheet: one-page key points for every topic of your exam with **Print / PDF** (first topic free; the full sheet is the ₹19 revision pack).\n- **Video breakdown** notes download free as Markdown or PDF.\nTopic notes on Learn can be read and listened to online.",
     hi: "Do tareeke:\n- **Exam tomorrow** → revision sheet: aapke exam ke har topic ke one-page key points, **Print / PDF** ke saath (pehla topic free; poori sheet ₹19 ke revision pack mein).\n- **Video breakdown** ke notes free mein Markdown ya PDF download hote hain.\nLearn ke topic notes online padh aur sun sakte ho.",
-    links: [["Exam tomorrow", "/last-minute"]],
+    links: [["Exam tomorrow pack", "/last-minute"]],
     next: ["revision-pack", "video-export"],
   },
   {
@@ -1016,7 +1016,7 @@ export const SITE: Faq[] = [
     keys: ["current", "affairs", "news"],
     en: "Not yet. We cover static GK (polity, history, geography, economy, science, banking awareness) with notes and practice. For current affairs, follow a daily news source alongside.",
     hi: "Abhi nahi. Static GK (polity, history, geography, economy, science, banking awareness) notes aur practice ke saath hai. Current affairs ke liye saath mein koi daily news source follow karo.",
-    links: [["Open Learn", "/learn", "Learn kholo"]],
+    links: [["Search & question solver", "/learn", "Learn kholo"]],
   },
   {
     id: "pause-timer",
@@ -1104,7 +1104,7 @@ export const SITE: Faq[] = [
     keys: ["select", "choose", "switch"],
     en: "Open any exam’s page from **Exams**: visiting it makes it your chosen exam. You can also pick it under “Choose your exam” on **Today**, along with your exam date. Change it the same way any time; your practice history stays.",
     hi: "**Exams** se kisi bhi exam ka page kholo: kholte hi woh aapka exam ban jaata hai. **Today** page pe “Choose your exam” mein bhi chun sakte ho, exam date ke saath. Kabhi bhi isi tarah badal sakte ho; practice history bani rehti hai.",
-    links: [["Exams", "/exams"], ["Today", "/today"]],
+    links: [["Exams", "/exams"], ["Today’s plan", "/today"]],
     next: ["daily-plan", "smart-practice"],
   },
   {
@@ -1151,7 +1151,7 @@ export const SITE: Faq[] = [
     keys: ["formula", "formulas", "tricks", "shortcut"],
     en: "Open **Formula sheets**: one printable page per Quant, Reasoning, JEE Maths, placement aptitude, Physics and Chemistry topic, with the formulas, key rules, short tricks and common traps from our notes. Tap **Print / Save as PDF** to keep an A4 copy. Each topic page also has a **Formula sheet** button.",
     hi: "**Formula sheets** kholo: Quant, Reasoning, JEE Maths, placement aptitude, Physics aur Chemistry ke har topic ka ek printable page — formulas, zaroori rules, short tricks aur common galtiyan, hamare notes se. A4 copy ke liye **Print / Save as PDF** dabao. Har topic page pe bhi **Formula sheet** button hai.",
-    links: [["Formula sheets", "/formulas", "Formula sheets dekho"], ["All topics", "/topics"]],
+    links: [["Formula sheets", "/formulas", "Formula sheets dekho"], ["Topics & notes", "/topics"]],
     next: ["speed-drills", "notes-pdf"],
   },
 ];
