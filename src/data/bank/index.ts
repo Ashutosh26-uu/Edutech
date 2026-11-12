@@ -201,7 +201,7 @@ export const BANK_SIZES: Record<string, number> = {
   "cs-operating-systems": 75,
   "cs-python": 75,
   "cs-software-engineering": 75,
-  "eco-basics": 113,
+  "eco-basics": 133,
   "eco-money-inflation": 85,
   "eco-planning-budget": 85,
   "eco-sectors-schemes": 99,
