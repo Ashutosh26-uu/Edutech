@@ -154,7 +154,7 @@ export const BANK_LOADERS: Record<string, () => Promise<{ default: BankQuestion[
 /** Questions per topic, so lists can show counts without loading any chunk. */
 export const BANK_SIZES: Record<string, number> = {
   "apt-advanced-quant": 108,
-  "apt-logical-placement": 93,
+  "apt-logical-placement": 110,
   "apt-pnc-probability": 110,
   "apt-pseudocode": 125,
   "apt-verbal-placement": 74,
