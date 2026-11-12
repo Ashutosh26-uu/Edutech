@@ -13,6 +13,7 @@ import { SiteEvents } from "@/components/SiteEvents";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { EXAM_BY_ID, EXAMS } from "@/data/exams";
 import { COMPANY } from "@/data/site";
+import { COMPANY_LINKS, NAV_SECTIONS, visible } from "@/data/sitemap-nav";
 import { AccountProvider } from "@/lib/account";
 import "./globals.css";
 
@@ -29,57 +30,24 @@ export const metadata: Metadata = {
 // viewportFit "cover" lets the safe-area padding in globals.css take effect on notched phones.
 export const viewport: Viewport = { themeColor: "#18181b", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
+/** Footer columns: the nav sections (Today folded into Practise), popular exams, then company pages. */
 const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
+  ...NAV_SECTIONS.filter((s) => s.id !== "today").map((s) => ({
+    title: s.title,
+    links: [...(s.id === "practise" ? NAV_SECTIONS[0].items : []), ...s.items].map((i): [string, string] => [i.label, i.href]),
+  })),
+  // One popular exam from each family: SSC, banking, railways, UPSC, teaching, placement.
   {
-    title: "Study",
+    title: "Popular exams",
     links: [
-      ["Daily plan", "/today"],
-      ["Video breakdown", "/video"],
-      ["Learn topics", "/learn"],
-      ["All topics", "/topics"],
-      ["Flashcards", "/review"],
-      ["Syllabus tracker", "/tracker"],
-      ["Focus timer", "/focus"],
-      ["Exam tomorrow", "/last-minute"],
-      ["Formula sheets", "/formulas"],
-      ["Speed drills", "/drills"],
-      ["Typing test", "/typing"],
-      ["Interview prep", "/interview"],
-      ["Resume builder", "/resume"],
-    ],
-  },
-  // One popular exam from each family: SSC, banking, railways, UPSC, teaching.
-  {
-    title: "Exams",
-    links: [
-      ...["ssc-cgl", "ibps-po", "rrb-ntpc", "upsc-prelims", "ctet"].flatMap((id): [string, string][] => {
+      ...["ssc-cgl", "ibps-po", "rrb-ntpc", "upsc-prelims", "ctet", "tcs-nqt"].flatMap((id): [string, string][] => {
         const e = EXAM_BY_ID.get(id);
         return e ? [[e.name, `/exams/${e.id}`]] : [];
       }),
       [`All ${EXAMS.length} exams →`, "/exams"],
     ],
   },
-  {
-    title: "Account",
-    links: [
-      ["Log in", "/login"],
-      ["Create account", "/login?tab=signup"],
-      ["My progress", "/progress"],
-      ["Leaderboards", "/leaderboard"],
-      ["Invite friends", "/invite"],
-      ["Pricing", "/pricing"],
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      ["About us", "/about"],
-      ["Contact", "/contact"],
-      ["Privacy policy", "/privacy"],
-      ["Terms of use", "/terms"],
-      ["Refund policy", "/refund"],
-    ],
-  },
+  { title: "Company", links: visible(COMPANY_LINKS).map((i): [string, string] => [i.label, i.href]) },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -107,19 +75,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-10">{children}</main>
         <footer className="border-t border-slate-200 bg-surface">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.3fr_3fr] lg:gap-16">
-            <div className="max-w-sm space-y-4">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12">
+            <div className="max-w-md space-y-4">
               <Logo showName />
               <p className="text-sm leading-relaxed text-slate-500">Study from YouTube lectures in less time, and prepare for one-day exams with practice that adapts to you.</p>
               <p className="text-xs leading-relaxed text-slate-500">SSC · Banking · Railways · UPSC &amp; State PSC · Teaching · Defence</p>
             </div>
-            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-7">
               {FOOTER.map((col) => (
                 <div key={col.title}>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">{col.title}</h3>
                   <ul className="mt-4 space-y-2.5 text-sm">
                     {col.links.map(([label, href]) => (
-                      <li key={label}>
+                      <li key={`${href}-${label}`}>
                         <Link href={href} className="text-slate-500 transition-colors hover:text-slate-900">
                           {label}
                         </Link>
