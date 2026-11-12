@@ -50,8 +50,14 @@ export function SyllabusTracker() {
       <div className="space-y-6">
         <Header />
         <div className="card space-y-3 text-sm text-slate-700">
-          <p>Pick your exam to see its full syllabus, topic by topic.</p>
-          <ExamSelect value="" />
+          <p className="font-semibold text-slate-900">First, choose your exam</p>
+          <p>Pick it from the list below to see its full syllabus, topic by topic. Not sure which one? Browse all exams.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <ExamSelect value="" />
+            <Link href="/exams" className="btn-ghost">
+              Browse exams
+            </Link>
+          </div>
         </div>
       </div>
     );

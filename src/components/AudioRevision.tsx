@@ -234,7 +234,12 @@ export function AudioRevision() {
       />
 
       {!supported ? (
-        <div className="card text-sm text-slate-700">This browser can’t read text aloud. Try Chrome, Edge or Safari on a recent phone or computer.</div>
+        <div className="card space-y-3 text-sm text-slate-700">
+          <p>This browser can’t read text aloud. Try Chrome, Edge or Safari on a recent phone or computer, or read the same notes yourself.</p>
+          <Link href="/topics" className="btn-primary">
+            Read topic notes
+          </Link>
+        </div>
       ) : (
         <>
           <section className="card space-y-4">
@@ -260,9 +265,14 @@ export function AudioRevision() {
               ))}
             </div>
             {!weak.length && (
-              <p className="text-xs text-slate-500">
-                Weak topics appear once you’ve answered at least 5 questions in a topic. {exam ? "" : <><Link href="/today" className="text-brand-700 hover:underline">Choose your exam</Link> to revise its syllabus.</>}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
+                <p>
+                  Weak topics appear once you’ve answered at least 5 questions in a topic. {exam ? "Until then, listen to your exam’s syllabus." : "Choose your exam to revise its syllabus."}
+                </p>
+                <Link href={exam ? `/practice?exam=${exam.id}&smart=1` : "/exams"} className="btn-ghost px-3 py-1.5 text-xs">
+                  {exam ? "Practise to find weak topics" : "Choose your exam"}
+                </Link>
+              </div>
             )}
 
             <div className="rounded-xl bg-slate-50 p-4">
