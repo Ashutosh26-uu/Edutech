@@ -6,6 +6,7 @@ import { absoluteUrl } from "@/data/site";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { formulaTopics } from "@/lib/formulas";
 import type { Topic } from "@/lib/types";
+import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "Campus placement preparation – aptitude, coding, interview",
@@ -41,11 +42,12 @@ export default async function PlacementPage() {
 
   return (
     <div className="space-y-10">
-      <div className="max-w-2xl">
-        <p className="eyebrow">Campus placement</p>
-        <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Placement preparation hub</h1>
-        <p className="mt-2 text-slate-600">Company tests, aptitude and coding practice, formula sheets, interview questions and your resume, all in one place. Untimed practice is free and unlimited.</p>
-      </div>
+      <PageHeader
+        path="/placement"
+        title="Placement preparation hub"
+        intro="Pick the company you are applying to and practise its test, then brush up aptitude, coding and interview answers. Untimed practice is free and unlimited."
+        secondary={{ href: "/resume", label: "Make your resume" }}
+      />
 
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 font-semibold text-slate-900">

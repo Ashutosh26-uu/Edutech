@@ -10,6 +10,7 @@ import { useAccount } from "@/lib/account";
 import { StaticNotice } from "@/components/StaticNotice";
 import { IS_STATIC } from "@/lib/api";
 import { load } from "@/lib/storage";
+import { PageHeader } from "@/components/PageHeader";
 
 interface Entry {
   rank: number;
@@ -76,14 +77,19 @@ function Leaderboard() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          <Trophy className="h-6 w-6 text-amber-500" /> Leaderboards
-        </h1>
-        <p className="text-sm text-slate-600">
+      <PageHeader
+        path="/leaderboard"
+        title={
+          <span className="flex items-center gap-2">
+            <Trophy className="h-6 w-6 text-amber-500" aria-hidden /> Leaderboards
+          </span>
+        }
+        intro="See how you rank against other students this week. Take timed tests on your exam to earn points; the board starts fresh every Monday."
+      >
+        <p className="text-sm text-slate-500">
           Points are the sum of your score percentages in your best {data?.bestOf ?? 5} timed tests on the exam this week (Monday to Sunday, India time). Late submissions don’t count.
         </p>
-      </div>
+      </PageHeader>
 
       <label className="block space-y-1 text-sm">
         <span className="text-slate-600">Exam</span>
@@ -131,15 +137,12 @@ function Leaderboard() {
             </p>
           )}
           {!data.board.length ? (
-            <p className="text-sm text-slate-500">
-              No one is on this week’s board yet.{" "}
-              {exam && (
-                <Link href={`/practice?exam=${exam.id}&mock=1`} className="font-medium text-brand-700">
-                  Take a timed test
-                </Link>
-              )}{" "}
-              to be the first.
-            </p>
+            <div className="space-y-3 text-sm text-slate-500">
+              <p>No one is on this week’s board yet. Take a timed test to be the first.</p>
+              <Link href={exam ? `/practice?exam=${exam.id}&mock=1` : "/exams"} className="btn-primary">
+                Take a timed test
+              </Link>
+            </div>
           ) : (
             <ol className="divide-y divide-slate-100">
               {data.board.map((e, i) => (

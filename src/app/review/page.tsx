@@ -3,6 +3,8 @@
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Play, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { EmptyState, practiseHref } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { Stat } from "@/components/Quiz";
 import { SpeakButton } from "@/components/Speak";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -36,12 +38,11 @@ export default function ReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Flashcard review</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">
-          Smart spaced repetition: each card comes back just before you are likely to forget it, so you review less and remember more.
-        </p>
-      </div>
+      <PageHeader
+        path="/review"
+        title="Flashcards"
+        intro="Cards come back just before you’d forget them. Review the ones due today: read the question, think of the answer, then tap Show answer and say how well you knew it."
+      />
 
       {session && due.length ? (
         <ReviewSession onExit={() => setSession(false)} />
@@ -54,10 +55,16 @@ export default function ReviewPage() {
             <Stat label="Predicted recall" value={avgRecall === null ? "–" : `${avgRecall}%`} tone="slate" />
           </div>
           {session && !due.length && <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"><CheckCircle2 className="h-4 w-4" /> You’re all caught up. New reviews will appear here when they’re due.</div>}
-          <button className="btn-primary" disabled={!due.length} onClick={() => setSession(true)}>
-            {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
-          </button>
-          <div className="grid gap-5 lg:grid-cols-2">
+          {cards.length === 0 ? (
+            <EmptyState title="You have no flashcards yet" action={{ href: "#add-decks", label: "Add cards for a topic" }} secondary={{ href: practiseHref(store.examId), label: "Or practise a topic first" }}>
+              Add a ready-made deck for a topic below, or write your own card. They will come back here when it’s time to revise.
+            </EmptyState>
+          ) : (
+            <button className="btn-primary" disabled={!due.length} onClick={() => setSession(true)}>
+              {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
+            </button>
+          )}
+          <div id="add-decks" className="grid scroll-mt-20 gap-5 lg:grid-cols-2">
             <AddTopicDecks have={new Set(cards.map((c) => c.id))} examId={store.examId} />
             <CustomCardForm />
           </div>

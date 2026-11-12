@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/PageHeader";
 import { TypingTest } from "@/components/TypingTest";
 import { absoluteUrl } from "@/data/site";
 import { PASSAGES } from "@/data/typing-passages";
@@ -14,13 +15,11 @@ export default function TypingPage() {
   const hi = PASSAGES.length - en;
   return (
     <div className="space-y-6">
-      <div>
-        <p className="eyebrow">Skill practice</p>
-        <h1 className="mt-1 text-2xl font-semibold">Typing test</h1>
-        <p className="mt-2 max-w-2xl text-slate-600">
-          Practise for the typing skill test in SSC CHSL, CGL and similar exams with {en} English and {hi} Hindi passages. Pasting is turned off, the timer starts with your first key press, and your result shows every mistake.
-        </p>
-      </div>
+      <PageHeader
+        path="/typing"
+        title="Typing test"
+        intro={`Practise the typing skill test for SSC CHSL, CGL and similar exams: pick a passage (${en} English, ${hi} Hindi) and start typing. The timer starts with your first key press, and your result shows every mistake.`}
+      />
       <TypingTest />
     </div>
   );

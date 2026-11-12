@@ -1,6 +1,7 @@
 import { Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { absoluteUrl } from "@/data/site";
 import { FORMULA_SUBJECTS, formulaTopics } from "@/lib/formulas";
 
@@ -14,13 +15,15 @@ export default async function FormulasPage() {
   const topics = await formulaTopics();
   return (
     <div className="space-y-8">
-      <div>
-        <p className="eyebrow">Revision</p>
-        <h1 className="mt-1 text-2xl font-semibold">Formula sheets</h1>
-        <p className="mt-2 max-w-2xl text-slate-600">
-          {topics.length} one-page sheets with the formulas, rules and short tricks from our topic notes. Open one and use <b>Print / Save as PDF</b> to keep an A4 copy for last-minute revision.
-        </p>
-      </div>
+      <PageHeader
+        path="/formulas"
+        title="Formula sheets"
+        intro={
+          <>
+            Open a sheet to see all the formulas and short tricks for one topic on a single page ({topics.length} sheets). Use <b>Print / Save as PDF</b> to keep a copy for last-minute revision.
+          </>
+        }
+      />
       {FORMULA_SUBJECTS.map((subject) => {
         const list = topics.filter((t) => t.subject === subject);
         if (!list.length) return null;

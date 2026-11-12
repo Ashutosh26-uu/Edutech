@@ -2,6 +2,7 @@
 
 import { AlertTriangle, BookOpen, CalendarClock, Check, Printer, RotateCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { focusTopics } from "@/lib/adaptive";
@@ -245,13 +246,12 @@ export function SyllabusTracker() {
 
 function Header({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Syllabus tracker</h1>
-        <p className="mt-1 text-sm text-slate-600 print:hidden">Mark each topic as you go. We add your practice numbers and plan your revisions.</p>
-      </div>
-      {children}
-    </div>
+    <PageHeader
+      path="/tracker"
+      title="Syllabus tracker"
+      intro="See every topic of your exam in one list. Mark each topic as you study it, and we show when to revise it next."
+      aside={children}
+    />
   );
 }
 

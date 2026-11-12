@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BadgesSection } from "@/components/Badges";
+import { practiseHref } from "@/components/EmptyState";
 import { Heatmap } from "@/components/Heatmap";
 import { Stat } from "@/components/Quiz";
+import { PageHeader } from "@/components/PageHeader";
 import { MistakePatternSummary } from "@/components/StudyNotes";
 import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -44,7 +46,12 @@ function SubjectAccuracy({ topics }: { topics: { id: string; attempted: number; 
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">Practise a few topics to see how each subject is going.</p>
+        <div className="mt-2 space-y-3 text-sm text-slate-500">
+          <p>Practise a few topics to see how each subject is going.</p>
+          <Link href="/exams" className="btn-ghost px-3 py-1.5 text-xs">
+            Find your exam
+          </Link>
+        </div>
       )}
     </section>
   );
@@ -145,15 +152,12 @@ export default function ProgressPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">My progress</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-medium text-brand-700">{exam.name}</Link></> : "No exam chosen yet."} ·{" "}
-            {synced ? "Saved to your account." : account.mode === "server" ? <>Saved in this browser only. <Link href="/login?next=/progress" className="font-medium text-brand-700">Log in</Link> to keep it on your account.</> : "Saved in this browser only."}
-          </p>
-        </div>
-        {!synced && (
+      <PageHeader
+        path="/progress"
+        title="My progress"
+        intro="See how many questions you got right, which topics are weak, and how your test scores are changing. Practise the weak topics first."
+        aside={
+        !synced && (
           <button
             className="btn-ghost text-xs"
             onClick={() => {
@@ -165,8 +169,14 @@ export default function ProgressPage() {
           >
             Reset progress
           </button>
-        )}
-      </div>
+        )
+        }
+      >
+        <p className="text-sm text-slate-500">
+          {exam ? <>Preparing for <Link href={`/exams/${exam.id}`} className="font-medium text-brand-700">{exam.name}</Link></> : "No exam chosen yet."} ·{" "}
+          {synced ? "Saved to your account." : account.mode === "server" ? <>Saved in this browser only. <Link href="/login?next=/progress" className="font-medium text-brand-700">Log in</Link> to keep it on your account.</> : "Saved in this browser only."}
+        </p>
+      </PageHeader>
 
       {!exam && (
         <div className="card flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
@@ -215,7 +225,14 @@ export default function ProgressPage() {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">{attempted ? "No weak topics. Great work!" : "Practise a few topics and your weak areas will show up here."}</p>
+            <div className="mt-2 space-y-3 text-sm text-slate-500">
+              <p>{attempted ? "No weak topics. Great work!" : "Practise a few topics and your weak areas will show up here."}</p>
+              {!attempted && (
+                <Link href={practiseHref(exam?.id)} className="btn-primary px-3 py-1.5 text-xs">
+                  Practise a topic
+                </Link>
+              )}
+            </div>
           )}
         </section>
 

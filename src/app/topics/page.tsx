@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { BANK_SIZES } from "@/data/bank";
 import { absoluteUrl } from "@/data/site";
 import { TOPICS } from "@/data/topics";
@@ -23,11 +24,11 @@ export default function TopicsPage() {
   const total = TOPICS.reduce((n, t) => n + (BANK_SIZES[t.id] ?? 0), 0);
   return (
     <div className="space-y-8">
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-semibold">Topics &amp; notes</h1>
-        <p className="mt-1.5 text-slate-600">
-          {TOPICS.length} topics across {groups.length} subjects, with short notes and {total.toLocaleString("en-IN")} practice questions with solutions. Pick a topic to revise it and try solved questions.
-        </p>
+      <PageHeader
+        path="/topics"
+        title="Topics & notes"
+        intro={`Pick a topic to read its short notes, then try solved questions on it. ${TOPICS.length} topics across ${groups.length} subjects, with ${total.toLocaleString("en-IN")} practice questions.`}
+      >
         <nav aria-label="Subjects" className="mt-4 flex flex-wrap gap-2">
           {groups.map(([subject]) => (
             <a key={subject} href={`#${slug(subject)}`} className="chip bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-brand-50">
@@ -35,7 +36,7 @@ export default function TopicsPage() {
             </a>
           ))}
         </nav>
-      </div>
+      </PageHeader>
       <div className="grid items-start gap-5 lg:grid-cols-2">
         {groups.map(([subject, topics]) => (
           <section key={subject} id={slug(subject)} className="card scroll-mt-20">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ExamBrowser } from "@/components/ExamBrowser";
+import { PageHeader } from "@/components/PageHeader";
 import { CATEGORIES, EXAMS } from "@/data/exams";
 
 export const metadata: Metadata = { title: "Exams" };
@@ -7,12 +8,12 @@ export const metadata: Metadata = { title: "Exams" };
 export default function ExamsPage() {
   return (
     <div className="space-y-8">
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-semibold">Government, entrance and campus placement exams</h1>
-        <p className="mt-1.5 text-slate-600">
-          {EXAMS.length} exams across {CATEGORIES.length} categories, from SSC and banking to state PSCs, teaching, defence and entrance exams. Pick yours to see the syllabus, practise topics and take mock tests.
-        </p>
-      </div>
+      <PageHeader
+        path="/exams"
+        title="Choose your exam"
+        intro={`Find your exam below and open it. You will see its syllabus, practise its topics and take mock tests. ${EXAMS.length} exams across ${CATEGORIES.length} categories, from SSC and banking to state PSCs, teaching, defence and entrance exams.`}
+        secondary={{ href: "/start", label: "New here? See how StudyClip works" }}
+      />
       <ExamBrowser />
     </div>
   );

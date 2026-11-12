@@ -1,10 +1,11 @@
-import { ArrowLeft, Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Trophy, Zap, type LucideIcon } from "lucide-react";
+import { Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Trophy, Zap, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
+import { PageHeader } from "@/components/PageHeader";
 import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
@@ -64,17 +65,16 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
     <div className="space-y-8">
       <RememberExam examId={exam.id} />
       <div className="space-y-5">
-        <Link href="/exams" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-          <ArrowLeft className="h-4 w-4" /> All exams
-        </Link>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">
-              {exam.category} · {exam.level}
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold">{exam.name}</h1>
-            <p className="mt-1 text-slate-600">{exam.fullName}</p>
-          </div>
+        <PageHeader
+          path={`/exams/${exam.id}`}
+          title={exam.name}
+          intro={
+            <>
+              {exam.fullName} ({exam.category} · {exam.level}).{" "}
+              {hasPractice ? "Start with smart practice, take a full mock test when ready, and see the syllabus below." : "See the exam pattern and syllabus below."}
+            </>
+          }
+        >
           <div className="flex flex-wrap items-center gap-2">
             <MakeMyExamButton examId={exam.id} />
             {hasPractice && (
@@ -94,7 +94,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
               </>
             )}
           </div>
-        </div>
+        </PageHeader>
         <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 text-sm sm:grid-cols-3">
           <div className="bg-surface p-4">
             <dt className="text-xs text-slate-500">Conducted by</dt>

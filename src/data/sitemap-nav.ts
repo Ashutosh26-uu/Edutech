@@ -120,5 +120,21 @@ export function activeSection(path: string): string | undefined {
   return SECTIONS.find((s) => s.items.some((i) => under(path, i.href)))?.id;
 }
 
+/**
+ * Where a page sits in the menus, for its breadcrumb: the section title and the menu entry the
+ * path belongs to (the entry itself, or its parent for pages like /exams/ssc-cgl).
+ */
+export function crumbFor(path: string): { section: string; item?: NavItem } {
+  const id = activeSection(path);
+  const sec = SECTIONS.find((s) => s.id === id);
+  if (sec) {
+    const items = sec.items.filter((i) => under(path, i.href) || (i.href === "/exams" && path.startsWith("/practice")));
+    // Prefer the longest (most specific) match.
+    return { section: sec.title, item: items.sort((a, b) => b.href.length - a.href.length)[0] };
+  }
+  const company = COMPANY_LINKS.find((i) => under(path, i.href));
+  return { section: "StudyClip", item: company ?? (path.startsWith("/start") ? { href: "/start", label: "Start here", description: "" } : undefined) };
+}
+
 /** Whether a menu link points at the current page. */
 export const isCurrent = (path: string, href: string) => under(path, href) || (href === "/exams" && path.startsWith("/practice"));

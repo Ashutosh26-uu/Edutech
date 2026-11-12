@@ -2,6 +2,7 @@
 
 import { Headphones, Info, Moon, Pause, Play, SkipBack, SkipForward, Sun } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EXAM_BY_ID } from "@/data/exams";
 import { buildPlaylist, examTopicList, STARTER_TOPICS, weakTopicIds, type PlaylistSource, type Track } from "@/lib/revisionAudio";
@@ -222,13 +223,15 @@ export function AudioRevision() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="eyebrow flex items-center gap-1.5">
-          <Headphones className="h-3.5 w-3.5" /> Audio revision
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Revise while you travel</h1>
-        <p className="mt-1 text-sm text-slate-600">Your phone reads out the key points and short notes of the topics you need most, one after another. Put on earphones and press play.</p>
-      </div>
+      <PageHeader
+        path="/listen"
+        title={
+          <span className="flex items-center gap-2">
+            <Headphones className="h-6 w-6 text-brand-600" aria-hidden /> Audio revision
+          </span>
+        }
+        intro="Revise while you travel: your phone reads out the key points of the topics you need most, one after another. Put on earphones and press play."
+      />
 
       {!supported ? (
         <div className="card text-sm text-slate-700">This browser can’t read text aloud. Try Chrome, Edge or Safari on a recent phone or computer.</div>

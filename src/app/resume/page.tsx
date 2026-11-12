@@ -22,6 +22,7 @@ import {
   type SectionKey,
   type Template,
 } from "@/lib/resume";
+import { PageHeader } from "@/components/PageHeader";
 
 /**
  * A real resume builder: four templates, an A4 preview that matches the PDF, your own sections,
@@ -286,11 +287,11 @@ export default function ResumePage() {
       <style>{`#resume-print-root { display: none; } @media print { @page { size: A4; margin: 0; } body > *:not(#resume-print-root) { display: none !important; } #resume-print-root { display: block !important; } html, body { background: #fff !important; padding: 0 !important; } #resume-print-root article { min-height: 0 !important; } }`}</style>
       {mounted && createPortal(<div id="resume-print-root"><ResumeSheet r={r} id="resume-sheet-print" /></div>, document.body)}
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Resume builder</h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-600">Make the resume you’ll actually send: pick a template, fill the sections, then download a PDF or a Word file. Saved in this browser as you type.</p>
-        </div>
+      <PageHeader
+        path="/resume"
+        title="Resume builder"
+        intro="Pick a template, fill in each section, then download your resume as a PDF or Word file. What you type is saved in this browser."
+        aside={
         <div className="flex flex-wrap gap-2">
           <button
             className="btn-ghost"
@@ -310,7 +311,8 @@ export default function ResumePage() {
             See preview ↓
           </a>
         </div>
-      </div>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         {/* ---------- Editor ---------- */}

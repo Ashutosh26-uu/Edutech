@@ -15,6 +15,7 @@ import { addCards, addVideoNote, deleteVideoNote, forgetTranscript, pastedTransc
 import type { Chapter, Importance, TranscriptLine, VideoBreakdown } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
 import { formatTime, parsePastedTranscript } from "@/lib/youtube";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function VideoPage() {
   return (
@@ -82,13 +83,15 @@ function VideoView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Video breakdown</h1>
-        <p className="mt-1 text-sm text-slate-600">Paste a YouTube lecture to get chapters, notes, a live transcript and a quiz.</p>
-        <div className="mt-4 max-w-3xl">
+      <PageHeader
+        path="/video"
+        title="Video breakdown"
+        intro="Paste the link of a YouTube lecture. We split it into chapters, mark the important parts, and give you notes and a short quiz."
+      >
+        <div className="max-w-3xl">
           <VideoLinkForm key={videoId ?? ""} initial={videoId ? `https://www.youtube.com/watch?v=${videoId}` : ""} />
         </div>
-      </div>
+      </PageHeader>
 
       {state.status === "loading" && (
         <div className="card flex items-center gap-3 text-sm text-slate-600">

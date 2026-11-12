@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowLeft, BookmarkPlus, Star } from "lucide-react";
+import { BookmarkPlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { EmptyState, practiseHref } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { BookmarkButton, DifficultyChip, Stat } from "@/components/Quiz";
 import { NoteBox, NoteButton } from "@/components/StudyNotes";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -31,18 +33,17 @@ export default function SavedPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Link href="/progress" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> My progress
-          </Link>
-          <h1 className="text-2xl font-semibold text-slate-900">Saved questions</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Tap <Star className="inline h-3.5 w-3.5" /> Save on any answered question to keep it here.{" "}
+      <PageHeader
+        path="/saved"
+        title="Saved questions"
+        intro={
+          <>
+            Questions you starred to look at again. Tap <Star className="inline h-3.5 w-3.5" aria-label="star" /> Save on any answered question to keep it here.{" "}
             {synced ? "Saved to your account." : account.mode === "server" ? <><Link href="/login?next=/saved" className="font-medium text-brand-700">Log in</Link> to keep them on every device.</> : "Saved in this browser."}
-          </p>
-        </div>
-        {saved.length > 0 && (
+          </>
+        }
+        aside={
+        saved.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button className="btn-ghost" onClick={() => setAdded(addCards(cardsForQuestions(saved.map((b) => b.question))))} disabled={added !== null}>
               <BookmarkPlus className="h-4 w-4" /> {added === null ? "Add all to flashcards" : added ? `${added} added` : "Already in flashcards"}
@@ -51,8 +52,9 @@ export default function SavedPage() {
               Practise saved questions
             </Link>
           </div>
-        )}
-      </div>
+        )
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Saved" value={saved.length} tone="brand" />
@@ -60,9 +62,9 @@ export default function SavedPage() {
       </div>
 
       {saved.length === 0 ? (
-        <div className="card text-sm text-slate-600">
-          Nothing saved yet. Start a <Link href="/exams" className="font-medium text-brand-700">practice set</Link> and star the questions worth another look.
-        </div>
+        <EmptyState title="Nothing saved yet" action={{ href: practiseHref(store.examId), label: "Practise a topic" }}>
+          While you practise, tap the star on any question worth another look and it appears here.
+        </EmptyState>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {[...byTopic].map(([topicId, items]) => (
