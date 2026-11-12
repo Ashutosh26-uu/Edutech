@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, BookmarkPlus, Languages, Play, Star, Timer } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookmarkPlus, ChevronDown, Languages, Play, Star, Timer } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -275,7 +275,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
-  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} attemptId={attemptId} share={share} />;
+  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} restartLabel={mode === "mock" ? "Take another test" : "Practise new questions"} attemptId={attemptId} share={share} />;
 
   const q = questions[idx];
   const text = inLang(q, lang);
@@ -519,12 +519,14 @@ interface ResultsProps {
   previous?: { score: number; total: number } | null;
   onTimestamp?: (s: number) => void;
   onRestart?: () => void;
+  /** Words on the restart button: "Practise new questions" or "Take another test". */
+  restartLabel?: string;
   attemptId?: string;
   share?: ShareInfo;
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, attemptId, share }: ResultsProps) {
+export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", attemptId, share }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
   // Answer review filter: long mocks are easier to review one kind of answer at a time.
@@ -614,14 +616,64 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
     setSaved(addCards(cardsForQuestions(wrongBank.map((r) => r.question))));
   };
 
+  // One clear verdict and one next step lead the screen; the detailed analysis sits below, folded.
+  const attempted = correct + wrong;
+  const overall = pctOf(correct, results.length);
+  const verdict =
+    attempted === 0
+      ? { title: "You didn’t answer any questions", text: "No problem. Look through the answers below, then try a fresh set." }
+      : overall >= 70
+        ? { title: "Great work!", text: `You got ${correct} of ${results.length} right.` }
+        : overall >= 40
+          ? { title: "Good effort", text: `You got ${correct} of ${results.length} right. A little more practice on your weak topics will lift this fast.` }
+          : { title: "Keep going: this is how you learn", text: `You got ${correct} of ${results.length} right. Read the explanations below, then practise the topics you missed.` };
+  const weakHref = `/practice?topics=${weakIds.join(",")}${share?.examId ? `&exam=${encodeURIComponent(share.examId)}` : ""}`;
+  const weakLabel = weakIds.length === 1 ? `Practise ${TOPIC_BY_ID.get(weakIds[0])?.name ?? "this topic"} again` : `Practise your ${weakIds.length} weakest topics`;
+  const next: { label: string; href?: string; onClick?: () => void; why: string } | null =
+    weakIds.length > 0
+      ? { label: weakLabel, href: weakHref, why: "A short set on the topics where you scored under 50%." }
+      : onRestart
+        ? { label: restartLabel, onClick: onRestart, why: overall >= 70 ? "You’re doing well. Keep the streak going with a new set." : "A new set of questions to keep improving." }
+        : { label: "See my progress", href: "/progress", why: "Your scores and weak topics over time." };
+  const toReview = () => document.getElementById("review-answers")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label={marks > 1 ? "Marks" : "Score"} value={`${+score.toFixed(2)} / ${total}`} tone="brand" />
-        <Stat label="Correct" value={correct} tone="green" />
-        <Stat label="Wrong" value={wrong} tone="red" />
-        <Stat label="Skipped" value={skipped} tone="slate" />
-      </div>
+      <section aria-labelledby="result-heading" className="space-y-4">
+        <div>
+          <p className="eyebrow">Your result</p>
+          <h3 id="result-heading" className="mt-1 text-xl font-semibold text-slate-900">
+            {verdict.title}
+          </h3>
+          <p className="mt-0.5 text-sm text-slate-600">{verdict.text}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label={marks > 1 ? "Marks" : "Score"} value={`${+score.toFixed(2)} / ${total}`} tone="brand" />
+          <Stat label="Correct" value={correct} tone="green" />
+          <Stat label="Wrong" value={wrong} tone="red" />
+          <Stat label="Skipped" value={skipped} tone="slate" />
+        </div>
+        {next && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+            <p className="text-sm font-semibold text-brand-900">Your next step</p>
+            <p className="mt-0.5 text-sm text-brand-900/80">{next.why}</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              {next.href ? (
+                <Link href={next.href} className="btn-primary w-full py-2.5 sm:w-auto">
+                  {next.label} <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <button type="button" onClick={next.onClick} className="btn-primary w-full py-2.5 sm:w-auto">
+                  {next.label} <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+              <button type="button" onClick={toReview} className="btn-ghost w-full py-2.5 sm:w-auto">
+                Review answers
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
       {attemptId && <StandingCard attemptId={attemptId} onLoad={setStanding} />}
       <p className="text-sm text-slate-600">
         Accuracy <b>{pct}%</b> of attempted
@@ -637,11 +689,14 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           </>
         )}
       </p>
-      {shareCard && <div className="flex">{shareCard}</div>}
+      {(timed && timeAll > 0) || strategy || (sections && sections.length > 1) || byTier.size > 1 || byTopic.size > 1 ? (
+        <h4 className="pt-1 font-semibold text-slate-900">
+          Detailed analysis <span className="text-sm font-normal text-slate-500">· tap a heading to open it</span>
+        </h4>
+      ) : null}
 
       {timed && timeAll > 0 && (
-        <div className="card">
-          <h4 className="mb-3 font-semibold">Time analysis</h4>
+        <Fold title="Time analysis" hint={`${formatTime(timeAll)} in all`}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Stat label="Total time" value={formatTime(timeAll)} tone="slate" />
             <Stat label="On correct" value={formatTime(secs((r) => r.correct))} tone="green" />
@@ -657,12 +712,11 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
               </>
             )}
           </p>
-        </div>
+        </Fold>
       )}
 
       {strategy && (
-        <div className="card">
-          <h4 className="mb-3 font-semibold">Attempt strategy</h4>
+        <Fold title="Attempt strategy" hint="what to skip next time">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="text-sm">
               <p className="font-medium text-red-700">Should have skipped · {strategy.shouldSkip.length}</p>
@@ -688,12 +742,11 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
               )}
             </p>
           )}
-        </div>
+        </Fold>
       )}
 
       {sections && sections.length > 1 && (
-        <div className="card">
-          <h4 className="mb-3 font-semibold">{secTimes ? "Section-wise: time vs marks" : "Section-wise"}</h4>
+        <Fold title={secTimes ? "Section-wise: time vs marks" : "Section-wise"}>
           {/* Four columns do not fit a phone: the table scrolls sideways inside the card. */}
           <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
             <table className="min-w-[28rem]">
@@ -729,12 +782,11 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
             </table>
           </div>
           {secTimes?.suggestion && <p className="mt-3 text-sm text-slate-700">{secTimes.suggestion}</p>}
-        </div>
+        </Fold>
       )}
 
       {byTier.size > 1 && (
-        <div className="card">
-          <h4 className="mb-3 font-semibold">By difficulty</h4>
+        <Fold title="By difficulty">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {DIFFICULTIES.filter((d) => byTier.has(d)).map((d) => {
               const t = byTier.get(d)!;
@@ -748,12 +800,11 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
               );
             })}
           </div>
-        </div>
+        </Fold>
       )}
 
       {byTopic.size > 1 && (
-        <div className="card">
-          <h4 className="mb-1 font-semibold">Topic-wise performance</h4>
+        <Fold title="Topic-wise performance" hint={weak.length ? `${weak.length} weak` : undefined}>
           {weak.length > 0 && <p className="mb-3 text-sm text-red-700">Focus next on: {weak.join(", ")}.</p>}
           <div className="space-y-2">
             {[...byTopic].sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n).map(([id, t]) => {
@@ -774,12 +825,12 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
               );
             })}
           </div>
-        </div>
+        </Fold>
       )}
 
       <MistakePatternCard questionIds={wrongIds} />
 
-      <div className="space-y-3">
+      <div id="review-answers" className="scroll-mt-20 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="flex items-center gap-2 font-semibold">Review answers {bilingual && <LangToggle lang={lang} setLang={setLang} />}</h4>
           <div className="flex gap-1 text-xs" role="group" aria-label="Show answers">
@@ -834,15 +885,15 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         })}
       </div>
       <div className="flex flex-wrap gap-2">
-        {onRestart && (
-          <button className="btn-primary" onClick={onRestart}>
-            Try new questions
-          </button>
-        )}
         {weakIds.length > 0 && (
-          <Link href={`/practice?topics=${weakIds.join(",")}${share?.examId ? `&exam=${encodeURIComponent(share.examId)}` : ""}`} className="btn-ghost">
-            Practise weak topics ({weakIds.length})
+          <Link href={weakHref} className="btn-primary">
+            {weakLabel}
           </Link>
+        )}
+        {onRestart && (
+          <button className={weakIds.length ? "btn-ghost" : "btn-primary"} onClick={onRestart}>
+            {restartLabel}
+          </button>
         )}
         {wrong > 0 && (
           <Link href="/mistakes" className="btn-ghost">
@@ -855,6 +906,22 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         {shareCard}
       </div>
     </div>
+  );
+}
+
+/** A folded section of the detailed analysis: the heading is the tap target. */
+function Fold({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <details className="group card">
+      <summary className="-my-1 flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+        <span>
+          {title}
+          {hint && <span className="ml-2 text-sm font-normal text-slate-500">{hint}</span>}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
   );
 }
 
