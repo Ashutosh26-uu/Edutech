@@ -1,4 +1,4 @@
-import { ArrowLeft, Briefcase, ChevronRight, Clock, ExternalLink, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Trophy, Zap, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,6 +18,33 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return exam ? { title: `${exam.name} preparation`, description: `${exam.fullName}: syllabus, practice questions and mock tests.` } : {};
 }
 
+interface Tool {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** The study tools that fit this kind of exam. */
+function examTools(e: Exam): Tool[] {
+  const formulas: Tool = { href: "/formulas", label: "Formula sheets", icon: Sigma };
+  if (e.category === "Engineering & Medical" || /^(jee|neet)/.test(e.id))
+    return [formulas, { href: "/tracker", label: "Syllabus tracker", icon: ListChecks }, { href: "/review", label: "Flashcards", icon: Layers }];
+  if (["SSC", "Banking", "Insurance", "Railways"].includes(e.category))
+    return [
+      { href: "/drills", label: "Speed drills", icon: Zap },
+      ...(e.id === "ssc-chsl" || e.id === "ssc-cgl" ? [{ href: "/typing", label: "Typing test", icon: Keyboard }] : []),
+      ...(isWeeklyExam(e.id) ? [{ href: "/mock-sunday", label: "Sunday mock", icon: Trophy }] : []),
+      formulas,
+    ];
+  if (e.category === "Campus Placement")
+    return [
+      { href: "/placement", label: "Placement hub", icon: Briefcase },
+      { href: "/interview", label: "Interview", icon: MessageSquare },
+      { href: "/resume", label: "Resume", icon: FileText },
+    ];
+  return [];
+}
+
 function negativeMarkingText(e: Exam) {
   if (e.negativeMarking === null) return "As per the official notification";
   if (e.negativeMarking === 0) return "None";
@@ -31,6 +58,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
   if (!exam) notFound();
   const hasPractice = examTopicIds(exam).length > 0;
   const plan = mockPlan(exam);
+  const tools = examTools(exam);
 
   return (
     <div className="space-y-8">
@@ -130,6 +158,20 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
           </Link>
         )}
+        {tools.length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Tools for this exam</h2>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {tools.map(({ href, label, icon: Icon }) => (
+                <li key={href}>
+                  <Link href={href} className="btn-ghost px-3 py-1.5 text-sm">
+                    <Icon className="h-4 w-4" /> {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {exam.category === "Campus Placement" && (
           <Link href="/placement" className="card-link flex items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
@@ -169,7 +211,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                         <TopicAccuracy topicId={tid} />
                       </div>
                       <span className="flex shrink-0 gap-1.5">
-                        <Link href={`/learn?topic=${encodeURIComponent(t.name)}`} className="btn-ghost px-3 py-1.5 text-xs">
+                        <Link href={`/topics/${tid}`} className="btn-ghost px-3 py-1.5 text-xs">
                           Notes
                         </Link>
                         <Link href={`/practice?exam=${exam.id}&topics=${tid}`} className="btn-ghost px-3 py-1.5 text-xs">
