@@ -302,11 +302,11 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     const moreSections = !!cur && section < (sections?.length ?? 0) - 1;
     const submitExam = () => {
       if (moreSections) {
-        if (confirm(`Submit ${cur!.name}? You can’t come back to it. ${sectionAnswered}/${cur!.count} answered.`)) nextSection();
+        if (confirm(`Submit ${cur!.name} and go to the next section?\n\n${sectionAnswered} of ${cur!.count} answered. You can’t come back to this section.\n\nTap Cancel to keep working on it.`)) nextSection();
         return;
       }
       const c = paletteCounts(questions.map((_, i) => paletteState(visited[i], chosen[i] !== null, marked[i])));
-      const msg = `Submit the test?\n\nAnswered: ${c.answered + c["answered-marked"]}\nNot answered: ${c["not-answered"]}\nNot visited: ${c["not-visited"]}\nMarked for review: ${c.marked + c["answered-marked"]}\n\nYou can’t change answers after submitting.`;
+      const msg = `Submit the test?\n\nAnswered: ${c.answered + c["answered-marked"]}\nNot answered: ${c["not-answered"]}\nNot visited: ${c["not-visited"]}\nMarked for review: ${c.marked + c["answered-marked"]}\n\nYou can’t change answers after submitting. Tap Cancel to keep going.`;
       if (confirm(msg)) finish();
     };
     return (
@@ -479,7 +479,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
             <button
               className="btn-primary"
               onClick={() => {
-                if (confirm(`Close ${cur.name}? You can’t come back to it. ${sectionAnswered}/${cur.count} answered.`)) nextSection();
+                if (confirm(`Submit ${cur.name} and go to the next section?\n\n${sectionAnswered} of ${cur.count} answered. You can’t come back to this section.\n\nTap Cancel to keep working on it.`)) nextSection();
               }}
             >
               Next section →
@@ -491,12 +491,12 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
               onClick={() => {
                 const unanswered = questions.length - answeredCount;
                 const flagged = marked.filter(Boolean).length;
-                if (mode === "mock" && (unanswered || flagged) && !confirm(`Submit the test?\n\n${answeredCount} answered · ${unanswered} not answered · ${flagged} marked for review.\n\nYou can’t change answers after submitting.`)) return;
-                if (mode === "practice" && unanswered && !confirm(`${unanswered} question${unanswered === 1 ? "" : "s"} skipped. See results anyway?`)) return;
+                if (mode === "mock" && (unanswered || flagged) && !confirm(`Submit the test?\n\n${answeredCount} answered · ${unanswered} not answered · ${flagged} marked for review.\n\nYou can’t change answers after submitting. Tap Cancel to keep going.`)) return;
+                if (mode === "practice" && unanswered && !confirm(`You skipped ${unanswered} question${unanswered === 1 ? "" : "s"}. Finish and see your results?\n\nTap Cancel to go back and answer ${unanswered === 1 ? "it" : "them"}.`)) return;
                 finish();
               }}
             >
-              {submitting ? "Submitting…" : mode === "mock" ? `Submit test (${answeredCount}/${questions.length} answered)` : "See results"}
+              {submitting ? "Submitting…" : mode === "mock" ? `Submit test (${answeredCount}/${questions.length} answered)` : "Finish & see results"}
             </button>
           )}
         </div>

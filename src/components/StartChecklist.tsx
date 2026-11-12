@@ -28,7 +28,7 @@ export function checklistItems(s: StoreData): Item[] {
     { id: "exam", label: "Choose your exam", cta: "Choose", href: "/exams", done: !!exam },
     { id: "practice", label: "Finish a practice set (10 questions)", cta: "Practise", href: exam ? `/practice?exam=${exam}&smart=1` : "/exams", done: attempted >= 10 || sum("questions") >= 10 },
     { id: "card", label: "Review a flashcard", cta: "Review", href: "/review", done: reviewed },
-    { id: "mock", label: "Take your free mock test", cta: "Take test", href: exam ? `/practice?exam=${exam}&mock=1` : "/exams", done: mocked },
+    { id: "mock", label: "Take your free mock test", cta: "Start test", href: exam ? `/practice?exam=${exam}&mock=1` : "/exams", done: mocked },
     { id: "date", label: "Set your exam date", cta: "Set date", href: "/today#exam-date", done: !!s.examDate },
   ];
 }
