@@ -15,6 +15,7 @@ import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, toggleBookmark } from "@/lib/storage";
+import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
 import type { Difficulty, MCQ } from "@/lib/types";
@@ -65,6 +66,9 @@ interface Props {
   examMode?: boolean;
   /** Name shown as the candidate in exam mode. */
   candidate?: string;
+  /** Untimed practice: progress to pick up from (a resumed set), and a callback on every change. */
+  initial?: QuizProgress | null;
+  onProgress?: (p: QuizProgress) => void;
 }
 
 /** Title and exam for the shareable score card on the results screen. */
@@ -126,12 +130,14 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate }: Props) {
-  const [idx, setIdx] = useState(0);
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate, initial, onProgress }: Props) {
+  // A resumed set only counts when it was saved for this many questions.
+  const start = initial && initial.chosen.length === questions.length ? initial : null;
+  const [idx, setIdx] = useState(start?.idx ?? 0);
   // Questions opened at least once, for "Not visited" vs "Not answered" in exam mode.
-  const [visited, setVisited] = useState<boolean[]>(() => questions.map((_, i) => i === 0));
-  const [chosen, setChosen] = useState<(number | null)[]>(() => questions.map(() => null));
-  const [revealed, setRevealed] = useState<boolean[]>(() => questions.map(() => false));
+  const [visited, setVisited] = useState<boolean[]>(() => start?.visited ?? questions.map((_, i) => i === 0));
+  const [chosen, setChosen] = useState<(number | null)[]>(() => start?.chosen ?? questions.map(() => null));
+  const [revealed, setRevealed] = useState<boolean[]>(() => start?.revealed ?? questions.map(() => false));
   // Mock tests: questions the user flagged to come back to, as in the real exam's "Mark for review".
   const [marked, setMarked] = useState<boolean[]>(() => questions.map(() => false));
   const [done, setDone] = useState(false);
@@ -230,6 +236,13 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     if (done) exitFullscreen();
     return () => exitFullscreen();
   }, [exam, done]);
+
+  // Untimed practice: report progress so the set can be picked up again after a refresh.
+  const progressRef = useRef(onProgress);
+  progressRef.current = onProgress;
+  useEffect(() => {
+    if (!done) progressRef.current?.({ idx, chosen, revealed, visited });
+  }, [idx, chosen, revealed, visited, done]);
 
   // Keyboard: 1–4 or A–D pick an option, ← / → move between questions (not while typing).
   useEffect(() => {
