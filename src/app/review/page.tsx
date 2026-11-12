@@ -15,6 +15,7 @@ import { previewIntervals, retrievability, type Grade } from "@/lib/fsrs";
 import { addCards, deleteCard, dueCards, gradeCard, type Flashcard } from "@/lib/storage";
 import { useStore } from "@/lib/useStore";
 import { formatTime } from "@/lib/youtube";
+import { InfoTip } from "@/components/InfoTip";
 
 const GRADES: { g: Grade; label: string; cls: string }[] = [
   { g: 1, label: "Again", cls: "bg-red-50 text-red-700 hover:bg-red-100" },
@@ -60,9 +61,14 @@ export default function ReviewPage() {
               Add a ready-made deck for a topic below, or write your own card. They will come back here when it’s time to revise.
             </EmptyState>
           ) : (
-            <button className="btn-primary" disabled={!due.length} onClick={() => setSession(true)}>
-              {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button className="btn-primary" disabled={!due.length} onClick={() => setSession(true)}>
+                {due.length ? `Start review (${due.length} cards)` : "Nothing due right now"}
+              </button>
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                What does “due” mean? <InfoTip id="cards-due" />
+              </span>
+            </div>
           )}
           <div id="add-decks" className="grid scroll-mt-20 gap-5 lg:grid-cols-2">
             <AddTopicDecks have={new Set(cards.map((c) => c.id))} examId={store.examId} />

@@ -8,6 +8,7 @@ import { useAccount } from "@/lib/account";
 import { FREE_PERKS, PRODUCTS } from "@/lib/products";
 import { useStore } from "@/lib/useStore";
 import { PageHeader } from "@/components/PageHeader";
+import { InfoTip } from "@/components/InfoTip";
 
 const FAQ = [
   ["Is there a subscription?", "No. You pay ₹19 only when you need a pack. Test credits never expire; a revision pack lasts 7 days for the exam you choose."],
@@ -24,7 +25,11 @@ export default function PricingPage() {
       <PageHeader
         path="/pricing"
         title="Free to study. ₹19 when the exam is close."
-        intro="Practice, notes and flashcards are free. Each exam also gets one free mock test. Buy a small pack only if you want more timed tests; there is no subscription."
+        intro={
+          <>
+            Practice, notes and flashcards are free. Each exam also gets one free mock test <InfoTip id="free-test" />. Buy a small pack of credits <InfoTip id="credits" /> only if you want more timed tests; there is no subscription.
+          </>
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

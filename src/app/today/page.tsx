@@ -11,15 +11,19 @@ import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
 import { focusTopics } from "@/lib/adaptive";
-import { dayKey, daysUntilExam, dueCards, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
+import { dayKey, daysUntilExam, dueCards, level, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
 import { MAX_FREEZES, FREEZE_EVERY } from "@/lib/streak";
 import { useStore } from "@/lib/useStore";
 import { StartChecklist } from "@/components/StartChecklist";
+import { InfoTip } from "@/components/InfoTip";
+import type { GlossaryId } from "@/lib/glossary";
 
 const DAY = 86_400_000;
 
 interface Task {
   title: string;
+  /** Plain-word explainer shown after the title. */
+  tip?: GlossaryId;
   detail: string;
   href: string;
   done: boolean;
@@ -54,6 +58,7 @@ export default function TodayPage() {
           ? [
               {
                 title: "Review your flashcards",
+                tip: "cards-due" as const,
                 detail: due ? `${due} cards due. Reviewing at the right time locks them into long-term memory.` : "Nothing due. Nice!",
                 href: "/review",
                 done: due === 0,
@@ -63,6 +68,7 @@ export default function TodayPage() {
           : []),
         {
           title: "Smart practice: 10 questions",
+          tip: "smart-practice",
           detail: "Adaptive questions from your weakest topics, mixed together.",
           href: `/practice?exam=${exam.id}&smart=1`,
           done: t.questions >= 10,
@@ -108,25 +114,31 @@ export default function TodayPage() {
           </div>
           <ExamPicker examId={store.examId} examDate={store.examDate} />
         </div>
-        <Link
-          href="/progress"
-          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-700 hover:border-brand-300"
+        <div
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-700"
           title={`Streak freezes: ${st.freezes} of ${MAX_FREEZES}. Earn one for every ${FREEZE_EVERY} days in a row; each covers a single missed day.`}
         >
           <span className="font-medium text-slate-900">{exam ? exam.name : "No exam chosen"}</span>
           {exam && days !== null && <span>· {days > 0 ? `${days} days left` : days === 0 ? "exam day" : "date passed"}</span>}
-          <span>· 🔥 {st.count} day streak</span>
+          <span className="inline-flex items-center gap-1">
+            · 🔥 {st.count} day streak <InfoTip id="streak" />
+          </span>
           {st.freezes > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-sky-600">
-              <Snowflake className="h-3.5 w-3.5" aria-hidden />
-              {st.freezes}
+            <span className="inline-flex items-center gap-1 text-sky-600">
+              <Snowflake className="h-3.5 w-3.5" aria-label="Streak freezes" />
+              {st.freezes} <InfoTip id="streak-freeze" />
             </span>
           )}
-          <span>
-            · {xpToday}/{store.dailyGoal} XP today
+          <span className="inline-flex items-center gap-1">
+            · {xpToday}/{store.dailyGoal} XP today <InfoTip id="xp" />
           </span>
-          <ArrowRight className="ml-auto h-4 w-4 text-slate-400" aria-hidden />
-        </Link>
+          <span className="inline-flex items-center gap-1">
+            · Level {level(store.xp).level} <InfoTip id="level" />
+          </span>
+          <Link href="/progress" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
+            My progress <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
         {st.pendingFreeze && <p className="text-xs text-slate-600">You missed yesterday. Study today and a streak freeze saves your streak.</p>}
       </div>
 
@@ -152,6 +164,7 @@ export default function TodayPage() {
                   <div className="min-w-0 flex-1">
                     <div className={`font-semibold ${task.done ? "text-slate-500 line-through" : "text-slate-900"}`}>
                       {task.title}
+                      {task.tip && <InfoTip id={task.tip} className="ml-1.5" />}
                       {task.optional && <span className="chip ml-2 bg-slate-100 align-middle text-[11px] font-medium text-slate-600">Optional</span>}
                     </div>
                     <div className="text-xs text-slate-600">{task.detail}</div>

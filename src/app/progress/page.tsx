@@ -12,6 +12,7 @@ import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { useAccount } from "@/lib/account";
 import { clearAll, load, type TopicStat } from "@/lib/storage";
+import { InfoTip } from "@/components/InfoTip";
 
 type Data = ReturnType<typeof load>;
 
@@ -28,7 +29,9 @@ function SubjectAccuracy({ topics }: { topics: { id: string; attempted: number; 
   const rows = [...bySubject].map(([subject, s]) => ({ subject, ...s, pct: s.attempted ? Math.round((s.correct / s.attempted) * 100) : 0 })).sort((a, b) => a.pct - b.pct);
   return (
     <section className="card">
-      <h2 className="font-semibold text-slate-900">Accuracy by subject</h2>
+      <h2 className="flex items-center gap-1.5 font-semibold text-slate-900">
+        Accuracy by subject <InfoTip id="accuracy" />
+      </h2>
       {rows.length ? (
         <ul className="mt-3 space-y-2.5">
           {rows.map((r) => (

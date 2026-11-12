@@ -7,6 +7,7 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { dueTopics } from "@/lib/revision-plan";
 import { useRevision } from "@/lib/useRevision";
 import type { StoreData } from "@/lib/useStore";
+import { InfoTip } from "@/components/InfoTip";
 
 /** Small card for Today: the top three topics due for revision, each one tap from practice. */
 export function RevisionDueCard({ store }: { store: StoreData }) {
@@ -19,7 +20,7 @@ export function RevisionDueCard({ store }: { store: StoreData }) {
     <section className="card" aria-labelledby="revise-due">
       <div className="flex items-center justify-between gap-2">
         <h2 id="revise-due" className="flex items-center gap-2 font-semibold text-slate-900">
-          <CalendarClock className="h-4 w-4 text-brand-600" /> Revise today ({due.length})
+          <CalendarClock className="h-4 w-4 text-brand-600" /> Revise today ({due.length}) <InfoTip id="revise-today" />
         </h2>
         <Link href="/tracker" className="text-xs font-medium text-brand-700 hover:underline">
           Syllabus tracker →
@@ -42,7 +43,12 @@ export function RevisionDueCard({ store }: { store: StoreData }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-1 text-sm text-slate-600">Nothing to revise today. Track your syllabus and topics you finish come back here at the right time.</p>
+        <div className="mt-1 space-y-2 text-sm text-slate-600">
+          <p>Nothing to revise today. Mark topics done in the syllabus tracker and they come back here at the right time.</p>
+          <Link href="/tracker" className="btn-ghost px-3 py-1.5 text-xs">
+            Open syllabus tracker
+          </Link>
+        </div>
       )}
     </section>
   );
