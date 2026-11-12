@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { BotContext, BotLink, Lang } from "@/lib/helpbot";
+import { useTimedTestRunning } from "@/lib/timedTest";
 import { track } from "@/lib/track";
 
 type Engine = typeof import("@/lib/helpbot");
@@ -78,6 +79,8 @@ export function HelpBot() {
   const [input, setInput] = useState("");
   const list = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLInputElement>(null);
+  // The floating button stays hidden while a timed test runs (see lib/timedTest.ts).
+  const inTimedTest = useTimedTestRunning();
 
   // Restore this tab's conversation.
   useEffect(() => {
@@ -146,7 +149,7 @@ export function HelpBot() {
 
   return (
     <div className="print:hidden">
-      {!open && (
+      {!open && !inTimedTest && (
         <button
           onClick={() => {
             setOpen(true);

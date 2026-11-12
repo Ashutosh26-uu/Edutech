@@ -15,6 +15,7 @@ import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, toggleBookmark } from "@/lib/storage";
+import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
 import type { Difficulty, MCQ } from "@/lib/types";
 import { formatTime } from "@/lib/youtube";
@@ -149,7 +150,9 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const since = useRef(Date.now());
 
   const timed = mode === "mock" && !!timeLimitSec;
-  const cur = sectional && sections ? sections[section] : null;
+  // Hides the help chat button while the clock runs.
+  useMarkTimedTest(timed && !done);
+  const cur =sectional && sections ? sections[section] : null;
   const first = cur ? cur.from : 0;
   const last = cur ? cur.from + cur.count - 1 : questions.length - 1;
 
