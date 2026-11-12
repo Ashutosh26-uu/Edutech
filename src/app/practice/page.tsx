@@ -299,8 +299,8 @@ function PracticeView() {
           : isTimedSet
             ? `Free: doesn’t use your free test or credits · ${size} adaptive questions · 1 minute per question · answers revealed after you submit`
           : isSmart
-            ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall. Every set ramps from easy to very hard."
-            : `${size} questions, ramping from easy to very hard · instant feedback with an explanation after every answer.`;
+            ? `${size} questions picked for you, more from topics you find hard or haven’t tried yet. They start easy and get harder. You see the answer and an explanation after each one.`
+            : `${size} questions that start easy and get harder. You see the answer and an explanation after each one.`;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">

@@ -372,6 +372,13 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         <div className="h-full bg-brand-500 transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
+      {/* First question of a practice set, nothing answered yet: say how it works in one line. */}
+      {mode === "practice" && idx === 0 && answeredCount === 0 && (
+        <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900">
+          Tap the option you think is right. You’ll see at once if it’s correct, with a short explanation. Not sure? Tap <b>Skip</b>.
+        </p>
+      )}
+
       {/* A div, not h3: a code block (pre) is not allowed inside a heading. */}
       <div role="heading" aria-level={3} className="text-lg font-semibold leading-snug whitespace-pre-line text-slate-900" lang={lang === "hi" && q.questionHi ? "hi" : undefined}><RichText text={text.question} /></div>
       <div className="grid gap-2">
