@@ -251,7 +251,7 @@ export const BANK_SIZES: Record<string, number> = {
   "phy-em-waves-dual-nature": 85,
   "phy-fluids-elasticity": 85,
   "phy-gravitation": 85,
-  "phy-kinematics": 95,
+  "phy-kinematics": 129,
   "phy-laws-of-motion": 95,
   "phy-magnetism-emi": 95,
   "phy-modern-physics": 94,
