@@ -160,7 +160,7 @@ export const BANK_SIZES: Record<string, number> = {
   "apt-verbal-placement": 74,
   "bank-awareness": 184,
   "bio-animal-kingdom": 90,
-  "bio-biomolecules-enzymes": 70,
+  "bio-biomolecules-enzymes": 100,
   "bio-biotechnology": 90,
   "bio-cell-structure-division": 70,
   "bio-ecology-environment": 70,
