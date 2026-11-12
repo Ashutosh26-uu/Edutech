@@ -232,7 +232,7 @@ export const BANK_SIZES: Record<string, number> = {
   "history-national-movement": 113,
   "history-reform-movements": 85,
   "math-3d-geometry": 118,
-  "math-conic-sections": 95,
+  "math-conic-sections": 128,
   "math-definite-integrals-area": 85,
   "math-differentiation-applications": 94,
   "math-integration": 95,
