@@ -171,7 +171,7 @@ export const BANK_SIZES: Record<string, number> = {
   "bio-living-world-plant-kingdom": 90,
   "bio-molecular-basis-inheritance": 70,
   "bio-neural-endocrine": 70,
-  "bio-plant-morphology-anatomy": 60,
+  "bio-plant-morphology-anatomy": 90,
   "bio-plant-physiology": 70,
   "bio-reproduction-health": 70,
   "cdp-child-development": 134,
