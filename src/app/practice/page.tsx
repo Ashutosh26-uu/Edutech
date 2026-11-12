@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Info, Loader2, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Info, Loader2, Sparkles, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +22,7 @@ import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
 import { track } from "@/lib/track";
+import { useStore } from "@/lib/useStore";
 import { isWeeklyExam } from "@/lib/weekly";
 
 export default function PracticePage() {
@@ -247,17 +248,7 @@ function PracticeView() {
     }
   };
 
-  if (!topicIds.length && !isMistakes && !isSaved && !challenge) {
-    return (
-      <div className="card text-sm">
-        Nothing to practise here yet.{" "}
-        <Link href="/exams" className="font-medium text-brand-700">
-          Choose an exam
-        </Link>{" "}
-        with practice topics.
-      </div>
-    );
-  }
+  if (!topicIds.length && !isMistakes && !isSaved && !challenge) return <PickPractice />;
   if (isTimed && server && !exam) {
     return <div className="card text-sm">Timed tests belong to an exam. <Link href="/exams" className="font-medium text-brand-700">Choose an exam</Link> first.</div>;
   }
@@ -424,6 +415,45 @@ function PracticeView() {
       </div>
       {finished && !isTimed && !isMistakes && <ChallengeBox results={finished} challenge={challenge} />}
       {IS_STATIC && isTimed && <p className="text-xs text-slate-500">Demo build: scores stay in this browser.</p>}
+    </div>
+  );
+}
+
+/**
+ * /practice with nothing chosen (an old link, or the address typed in): offer the student's own
+ * exam in one tap instead of a dead end, or the exam list when none is chosen yet.
+ */
+function PickPractice() {
+  const store = useStore();
+  const mine = EXAM_BY_ID.get(store?.examId ?? "");
+  const options = mine
+    ? [
+        { href: `/practice?exam=${mine.id}&smart=1`, icon: Sparkles, title: "Start practice", text: `10 ${mine.name} questions, picked for you, with an answer and explanation after each one.` },
+        { href: `/exams/${mine.id}`, icon: BookOpen, title: "Pick one topic", text: `Choose a single ${mine.name} topic to practise.` },
+        { href: `/practice?exam=${mine.id}&mock=1`, icon: Timer, title: "Take a mock test", text: "A full timed paper, like the real exam." },
+      ]
+    : [
+        { href: "/exams", icon: Sparkles, title: "Choose your exam", text: "Pick the exam you are preparing for. Practice sets follow its syllabus." },
+        { href: "/topics", icon: BookOpen, title: "Browse all topics", text: "Practise any topic without choosing an exam." },
+      ];
+  return (
+    <div className="mx-auto max-w-xl space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">Practice</h1>
+        <p className="text-sm text-slate-600">{mine ? `What would you like to do for ${mine.name}?` : "Choose what to practise first."}</p>
+      </div>
+      <div className="grid gap-2">
+        {options.map((o, i) => (
+          <Link key={o.href} href={o.href} className={`group flex items-center gap-3 rounded-xl p-4 transition-[opacity,border-color,background-color] ${i === 0 ? "bg-ink text-on-ink hover:opacity-90" : "border border-slate-200 bg-surface text-slate-900 hover:border-slate-300 hover:bg-slate-50"}`}>
+            <o.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{o.title}</span>
+              <span className={`block text-xs ${i === 0 ? "text-on-ink/70" : "text-slate-500"}`}>{o.text}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
