@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Loader2, Timer } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChallengeBox, readChallenge } from "@/components/Challenge";
 import { ExamModeSwitch, useExamModePref } from "@/components/ExamMode";
@@ -13,7 +13,8 @@ import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
 import { topicWeights } from "@/lib/adaptive";
-import { api, IS_STATIC } from "@/lib/api";
+import { api, IS_STATIC, postJson, request } from "@/lib/api";
+import { clearResume, readResume, writeResume, type QuizProgress } from "@/lib/practiceResume";
 import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
@@ -47,10 +48,6 @@ interface ServerTest {
   negativeMarking: number;
 }
 
-async function postJson(path: string, body: object) {
-  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  return { status: res.status, data: await res.json().catch(() => ({})) };
-}
 
 function PracticeView() {
   const params = useSearchParams();
@@ -93,6 +90,10 @@ function PracticeView() {
   // Exam mode (CBT-style full-screen layout) for timed tests; the choice is remembered.
   const [examMode, setExamMode] = useExamModePref();
   const key = topicIds.join(",");
+  // Untimed sets are kept in this tab per URL, so a refresh or reopened tab resumes them.
+  const resumeKey = !isTimed && !isTimedSet ? `${path}?${params.toString()}` : null;
+  const [resumed, setResumed] = useState<QuizProgress | null>(null);
+  const skipResume = useRef(false);
 
   // Full screen is requested on the Start click; leave it if the test didn't start after all.
   useEffect(() => {
@@ -102,7 +103,7 @@ function PracticeView() {
   // Smart practice weights come from the account's progress when signed in, else this browser's.
   const statsForWeights = useCallback(async (): Promise<Record<string, TopicStat>> => {
     if (server && account.user) {
-      const res = await fetch("/api/progress", { cache: "no-store" }).catch(() => null);
+      const res = await request("/api/progress", { cache: "no-store" }).catch(() => null);
       if (res?.ok) return ((await res.json()) as { topics: Record<string, TopicStat> }).topics;
     }
     return load().topics;
@@ -113,6 +114,15 @@ function PracticeView() {
     setQuestions(null);
     setError("");
     setFinished(null);
+    setResumed(null);
+    if (resumeKey) {
+      const saved = skipResume.current ? null : readResume(resumeKey);
+      skipResume.current = false;
+      if (saved) {
+        setResumed(saved.progress);
+        return setQuestions(saved.questions);
+      }
+    }
     if (challenge) {
       const found = await findQuestions(challenge.ids);
       const qs = challenge.ids.flatMap((id) => (found.has(id) ? [shuffleOptions(found.get(id)!)] : []));
@@ -157,7 +167,7 @@ function PracticeView() {
     if (!ok) setError(json.error);
     else setQuestions(json.questions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready, params]);
+  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready, params, resumeKey]);
 
   useEffect(() => {
     if (!account.ready) return;
@@ -181,7 +191,7 @@ function PracticeView() {
     if (!account.user) return loginFirst();
     setStarting(true);
     // The previous score of the same kind of test gives the "vs your last test" line.
-    fetch("/api/tests", { cache: "no-store" })
+    request("/api/tests", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { attempts: { examId: string; kind: string; score: number; total: number; marks: number }[] } | null) => {
         const kind = isWeekly ? "weekly" : isSectionTest ? "section" : isTopicTest ? "topic" : "full";
@@ -211,6 +221,8 @@ function PracticeView() {
   };
 
   const onFinish = (results: AnswerResult[]) => {
+    if (resumeKey) clearResume(resumeKey);
+    setResumed(null);
     if (!isTimed) setFinished(results);
     const answered = results.filter((r) => r.chosen !== null);
     recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
@@ -345,9 +357,28 @@ function PracticeView() {
         ) : !questions ? (
           <p className="text-sm text-slate-500">Preparing questions…</p>
         ) : (
+          <>
+          {resumed && (
+            <div className="-mx-1 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900" role="status">
+              <span>Resumed where you left off</span>
+              <button
+                type="button"
+                className="min-h-10 font-medium text-brand-700 underline underline-offset-2"
+                onClick={() => {
+                  if (resumeKey) clearResume(resumeKey);
+                  skipResume.current = true;
+                  setRound((r) => r + 1);
+                }}
+              >
+                Start fresh
+              </button>
+            </div>
+          )}
           <Quiz
             key={round}
             questions={questions}
+            initial={resumed}
+            onProgress={resumeKey ? (p) => writeResume(resumeKey, questions, p) : undefined}
             mode={isTimed || isTimedSet ? "mock" : "practice"}
             negativeMarking={isTimed ? negative : 0}
             marks={isTimed ? marks : 1}
@@ -368,6 +399,7 @@ function PracticeView() {
               else setRound((r) => r + 1);
             }}
           />
+          </>
         )}
       </div>
       {finished && !isTimed && !isMistakes && <ChallengeBox results={finished} challenge={challenge} />}

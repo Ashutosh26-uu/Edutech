@@ -1,6 +1,7 @@
 "use client";
 
 import type { AccountState } from "./account";
+import { postJson } from "./api";
 import { PRODUCTS, type ProductId } from "./products";
 import { recordPurchase } from "./storage";
 import { track } from "./track";
@@ -34,8 +35,8 @@ function loadRazorpay(): Promise<void> {
 }
 
 async function post(path: string, body: object) {
-  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  return { ok: res.ok, status: res.status, data: await res.json().catch(() => ({})) };
+  const { status, data } = await postJson(path, body);
+  return { ok: status >= 200 && status < 300, status, data };
 }
 
 export async function buy(account: AccountState, productId: ProductId, examId?: string): Promise<CheckoutResult> {

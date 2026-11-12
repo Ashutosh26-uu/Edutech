@@ -296,10 +296,11 @@ export function NewHereLink() {
 /** Compact streak and level indicator for the header. */
 export function HeaderStats() {
   const store = useStore();
-  if (!store) return null;
+  // Same footprint before progress loads, so the header doesn't shift when the numbers arrive.
+  if (!store) return <span className="hidden h-8 min-w-[5.5rem] shrink-0 sm:block" aria-hidden />;
   const s = streak(store);
   return (
-    <Link href="/today" className="hidden h-8 shrink-0 items-center gap-2 rounded-md px-2 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex" title={`${s}-day streak · level ${level(store.xp).level}`}>
+    <Link href="/today" className="hidden h-8 min-w-[5.5rem] shrink-0 items-center justify-center gap-2 rounded-md px-2 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex" title={`${s}-day streak · level ${level(store.xp).level}`}>
       <Flame className={`h-3.5 w-3.5 ${s ? "text-orange-500" : ""}`} strokeWidth={2.25} />
       <span className="font-medium tabular-nums text-slate-700">{s}</span>
       <span className="h-3 w-px bg-slate-200" />
