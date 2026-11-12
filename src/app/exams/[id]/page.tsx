@@ -1,4 +1,4 @@
-import { Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Trophy, Zap, type LucideIcon } from "lucide-react";
+import { Briefcase, ChevronRight, Clock, ExternalLink, FileText, Keyboard, Layers, ListChecks, MessageSquare, Sigma, Sparkles, Timer, Trophy, Zap, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -72,11 +72,22 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
           intro={
             <>
               {exam.fullName} ({exam.category} · {exam.level}).{" "}
-              {hasPractice ? "Start with smart practice, take a full mock test when ready, and see the syllabus below." : "See the exam pattern and syllabus below."}
+              {hasPractice ? "New here? Tap Start practice for 10 questions with an answer after each one. Take a full mock test when you feel ready." : "See the exam pattern and syllabus below."}
             </>
           }
         >
+          {/* The first-timer's step leads: practice with instant answers; the full mock comes second. */}
           <div className="flex flex-wrap items-center gap-2">
+            {hasPractice && (
+              <>
+                <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-primary w-full sm:w-auto">
+                  <Sparkles className="h-4 w-4" /> Start practice
+                </Link>
+                <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-ghost">
+                  <Timer className="h-4 w-4" /> {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
+                </Link>
+              </>
+            )}
             <MakeMyExamButton examId={exam.id} />
             {hasPractice && (
               <>
@@ -85,12 +96,6 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 </Link>
                 <Link href={`/leaderboard?exam=${exam.id}`} className="btn-ghost">
                   <Trophy className="h-4 w-4" /> Leaderboard
-                </Link>
-                <Link href={`/practice?exam=${exam.id}&smart=1`} className="btn-ghost">
-                  <Sparkles className="h-4 w-4" /> Smart practice
-                </Link>
-                <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
-                  {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
                 </Link>
               </>
             )}
