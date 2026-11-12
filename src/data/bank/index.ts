@@ -230,7 +230,7 @@ export const BANK_SIZES: Record<string, number> = {
   "history-delhi-sultanate": 110,
   "history-mughal": 138,
   "history-national-movement": 113,
-  "history-reform-movements": 85,
+  "history-reform-movements": 110,
   "math-3d-geometry": 85,
   "math-conic-sections": 95,
   "math-definite-integrals-area": 85,
