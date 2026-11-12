@@ -15,6 +15,7 @@ import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, toggleBookmark } from "@/lib/storage";
+import { useLeaveGuard } from "@/lib/leaveGuard";
 import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
@@ -236,6 +237,11 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
     if (done) exitFullscreen();
     return () => exitFullscreen();
   }, [exam, done]);
+
+  // Ask before leaving a running timed test, or a practice set that is part-way through (its
+  // answers are recorded only when it is finished). Never once the set is done.
+  const midway = mode === "practice" && chosen.some((c) => c !== null);
+  useLeaveGuard(!done && (timed || midway), timed ? "Leave the test? The timer keeps running and your answers so far may be lost." : "Leave this practice set? Your answers so far haven’t been saved yet.");
 
   // Untimed practice: report progress so the set can be picked up again after a refresh.
   const progressRef = useRef(onProgress);
