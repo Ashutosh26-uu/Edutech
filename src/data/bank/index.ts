@@ -242,7 +242,7 @@ export const BANK_SIZES: Record<string, number> = {
   "math-probability-pnc": 95,
   "math-quadratic-complex": 129,
   "math-sequences-series": 130,
-  "math-sets-relations-functions": 85,
+  "math-sets-relations-functions": 119,
   "math-statistics": 85,
   "math-straight-lines-circles": 94,
   "math-trigonometry": 127,
