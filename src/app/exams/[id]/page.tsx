@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
-import { TopicAccuracy, RememberExam } from "@/components/ExamClient";
+import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
 
@@ -47,8 +47,10 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <h1 className="mt-1 text-2xl font-semibold">{exam.name}</h1>
             <p className="mt-1 text-slate-600">{exam.fullName}</p>
           </div>
-          {hasPractice && (
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <MakeMyExamButton examId={exam.id} />
+            {hasPractice && (
+            <>
               <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
                 <Clock className="h-4 w-4" /> Exam tomorrow?
               </Link>
@@ -61,8 +63,9 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
               <Link href={`/practice?exam=${exam.id}&mock=1`} className="btn-primary">
                 {plan ? `Full mock (${plan.pattern.paper} pattern)` : "Take a mock test"}
               </Link>
-            </div>
-          )}
+            </>
+            )}
+          </div>
         </div>
         <dl className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 text-sm sm:grid-cols-3">
           <div className="bg-surface p-4">

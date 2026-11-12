@@ -1,7 +1,9 @@
 "use client";
 
+import { Check, Target } from "lucide-react";
 import { useEffect, useState } from "react";
-import { load, setExam, type TopicStat } from "@/lib/storage";
+import { load, setExam, setLastViewedExam, type TopicStat } from "@/lib/storage";
+import { useStore } from "@/lib/useStore";
 
 /** Shows the learner's accuracy on a topic from their saved practice history. */
 export function TopicAccuracy({ topicId }: { topicId: string }) {
@@ -16,7 +18,25 @@ export function TopicAccuracy({ topicId }: { topicId: string }) {
   );
 }
 
+/** Notes which exam page was viewed last. It never changes the student's chosen exam. */
 export function RememberExam({ examId }: { examId: string }) {
-  useEffect(() => setExam(examId), [examId]);
+  useEffect(() => setLastViewedExam(examId), [examId]);
   return null;
+}
+
+/** Lets the student choose this exam on purpose. Shows "Your exam" once it is the chosen one. */
+export function MakeMyExamButton({ examId }: { examId: string }) {
+  const store = useStore();
+  if (!store) return null;
+  if (store.examId === examId)
+    return (
+      <span className="chip bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10">
+        <Check className="h-3.5 w-3.5" strokeWidth={3} /> Your exam
+      </span>
+    );
+  return (
+    <button type="button" className="btn-ghost" onClick={() => setExam(examId)}>
+      <Target className="h-4 w-4" /> Make this my exam
+    </button>
+  );
 }

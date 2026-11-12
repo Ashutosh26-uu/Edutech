@@ -11,7 +11,6 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { loadBank } from "@/lib/bank";
 import { hasPass, testAccessFor, useAccount } from "@/lib/account";
 import { PRODUCTS } from "@/lib/products";
-import { setExam } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 import { useStore } from "@/lib/useStore";
 
@@ -48,10 +47,7 @@ function LastMinute() {
             id="exam-pick"
             className="input w-auto min-w-64"
             value={exam ? examId : ""}
-            onChange={(e) => {
-              setPicked(e.target.value);
-              if (e.target.value) setExam(e.target.value);
-            }}
+            onChange={(e) => setPicked(e.target.value)}
           >
             <option value="">Choose your exam…</option>
             {CATEGORIES.map((c) => {

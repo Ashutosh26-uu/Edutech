@@ -56,7 +56,10 @@ export interface Store {
   videos: SavedVideo[];
   topics: Record<string, TopicStat>;
   mocks: MockResult[];
+  /** The exam the student chose. Only changed when they pick it, never by just viewing an exam page. */
   examId?: string;
+  /** The exam page the student looked at most recently (does not change their chosen exam). */
+  lastViewedExamId?: string;
   examDate?: string; // YYYY-MM-DD
   cards: Record<string, Flashcard>;
   xp: number;
@@ -234,6 +237,14 @@ export function setExam(examId: string) {
   const s = load();
   if (s.examId === examId) return;
   s.examId = examId;
+  save(s);
+}
+
+/** Remembers which exam page was looked at last, without changing the chosen exam. */
+export function setLastViewedExam(examId: string) {
+  const s = load();
+  if (s.lastViewedExamId === examId) return;
+  s.lastViewedExamId = examId;
   save(s);
 }
 
