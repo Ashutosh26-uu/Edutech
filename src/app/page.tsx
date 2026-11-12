@@ -8,7 +8,7 @@ import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
 const FEATURES = [
   { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
   { icon: NotebookPen, title: "Notes, transcript and export", text: "Key points and facts linked to the exact second, a searchable transcript, your own notes, and export to Markdown or PDF." },
-  { icon: Layers, title: "Flashcards that schedule themselves", text: "The FSRS spaced-repetition algorithm brings each card back just before you would forget it." },
+  { icon: Layers, title: "Flashcards that schedule themselves", text: "Smart spaced repetition brings each card back just before you would forget it." },
   { icon: Target, title: "Practice that adapts", text: "Questions come more often from the topics you get wrong, mixed together, with an explanation after every answer." },
   { icon: CalendarCheck, title: "A plan for every day", text: "Set your exam date and get a daily checklist, mock tests on a schedule, and a clear view of your weak topics." },
   { icon: Mic, title: "Search by voice", text: "Ask for a topic or a question out loud, in English or Hindi, and listen to notes read back to you." },
