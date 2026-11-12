@@ -144,14 +144,14 @@ function TestLauncher({ examId, topics }: { examId: string; topics: string[] }) 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-slate-200 p-4">
           <h3 className="text-sm font-medium">Full-syllabus mock</h3>
-          <p className="mt-1 text-xs text-slate-500">25 questions · 25 minutes · all topics</p>
+          <p className="mt-1 text-xs text-slate-500">25 questions · 25 minutes · all topics · uses your free test or 1 credit</p>
           <Link href={`/practice?exam=${examId}&mock=1`} className="btn-primary mt-3 w-full">
             Start full mock
           </Link>
         </div>
         <div className="rounded-lg border border-slate-200 p-4">
           <h3 className="text-sm font-medium">Single-topic test</h3>
-          <p className="mt-1 text-xs text-slate-500">15 questions · 15 minutes · one topic</p>
+          <p className="mt-1 text-xs text-slate-500">15 questions · 15 minutes · one topic · uses your free test or 1 credit</p>
           <div className="mt-3 flex gap-2">
             <select className="input min-w-0 flex-1" value={topic} onChange={(e) => setTopic(e.target.value)} aria-label="Topic">
               {topics.map((t) => (
@@ -166,7 +166,7 @@ function TestLauncher({ examId, topics }: { examId: string; topics: string[] }) 
           </div>
         </div>
       </div>
-      <p className="mt-3 text-xs text-slate-500">Each test uses one credit. Your first test for each exam is free.</p>
+      <p className="mt-3 text-xs text-slate-500">Your first timed test for each exam (full, section or topic) is free; after that each one uses 1 credit. Untimed practice is always free.</p>
     </section>
   );
 }

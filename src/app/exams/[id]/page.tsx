@@ -105,7 +105,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                   <span>
                     <span className="font-medium text-slate-800">{s.subject}</span>
                     <span className="block text-xs text-slate-500">
-                      {s.questions} questions · {s.minutes} min
+                      {s.questions} questions · {s.minutes} min · uses your free test or 1 credit
                     </span>
                   </span>
                   <Link href={`/practice?exam=${exam.id}&mock=1&section=${encodeURIComponent(s.subject)}`} className="btn-ghost shrink-0 px-3 py-1.5 text-xs">
@@ -114,6 +114,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                 </li>
               ))}
             </ul>
+            <p className="mt-2 text-xs text-slate-500">Every timed test (full mock, section test or topic test) uses your free test for this exam or 1 credit. Untimed practice is always free.</p>
             {plan.pattern.sectional && <p className="mt-2 text-xs text-slate-500">In the full mock each section has its own timer and closes when it ends, as in the real paper.</p>}
           </div>
         )}

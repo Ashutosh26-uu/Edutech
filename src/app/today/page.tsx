@@ -10,6 +10,7 @@ import { WordFactOfDay } from "@/components/WordFactOfDay";
 import { RevisionDueCard } from "@/components/RevisionDueCard";
 import { CATEGORIES, EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
+import { testAccessFor, useAccount } from "@/lib/account";
 import { focusTopics } from "@/lib/adaptive";
 import { dayKey, daysUntilExam, dueCards, level, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
 import { MAX_FREEZES, FREEZE_EVERY } from "@/lib/streak";
@@ -27,6 +28,7 @@ interface Task {
 
 export default function TodayPage() {
   const store = useStore();
+  const account = useAccount();
   if (!store) return null;
 
   const exam = store.examId ? EXAM_BY_ID.get(store.examId) : undefined;
@@ -40,6 +42,9 @@ export default function TodayPage() {
   const focus = exam ? focusTopics(examTopicIds(exam), store.topics, 3) : [];
   const lastMock = store.mocks.find((m) => m.examId === exam?.id)?.takenAt ?? 0;
   const mockEvery = days !== null && days <= 30 ? 2 : 7; // revision mode in the last month
+  // Every timed test uses the exam's one free test, then 1 credit. With neither left, offer a free timed set instead.
+  const access = account.ready ? testAccessFor(account, exam?.id) : "free";
+  const noTestsLeft = access === "none";
 
   const tasks: Task[] = exam
     ? [
@@ -64,13 +69,21 @@ export default function TodayPage() {
           done: t.videos > 0,
           cta: "Open",
         },
-        {
-          title: mockEvery === 2 ? "Mock test (revision mode: every 2 days)" : "Weekly mock test",
-          detail: lastMock ? `Last mock: ${Math.floor((Date.now() - lastMock) / DAY)} days ago.` : "You haven’t taken a mock test yet.",
-          href: `/practice?exam=${exam.id}&mock=1`,
-          done: Date.now() - lastMock < mockEvery * DAY,
-          cta: "Take test",
-        },
+        noTestsLeft
+          ? {
+              title: "Free option today: a 20-question timed practice set",
+              detail: "You’ve used this exam’s free test and have no credits, so practise against the clock for free instead.",
+              href: `/practice?exam=${exam.id}&smart=1&timed=1`,
+              done: Date.now() - lastMock < mockEvery * DAY || t.questions >= 30,
+              cta: "Start",
+            }
+          : {
+              title: mockEvery === 2 ? "Mock test (revision mode: every 2 days)" : "Weekly mock test",
+              detail: `${lastMock ? `Last mock: ${Math.floor((Date.now() - lastMock) / DAY)} days ago.` : "You haven’t taken a mock test yet."} ${access === "free" ? "Uses your free test for this exam." : "Uses 1 test credit."}`,
+              href: `/practice?exam=${exam.id}&mock=1`,
+              done: Date.now() - lastMock < mockEvery * DAY,
+              cta: "Take test",
+            },
       ]
     : [];
   const doneCount = tasks.filter((x) => x.done).length;

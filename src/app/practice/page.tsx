@@ -34,6 +34,7 @@ export default function PracticePage() {
 const MOCK_SIZE = 25;
 const TOPIC_TEST_SIZE = 15;
 const PRACTICE_SIZE = 10;
+const TIMED_SET_SIZE = 20;
 
 type Phase = "start" | "paywall" | "running";
 
@@ -63,6 +64,8 @@ function PracticeView() {
   const isSmart = params.get("smart") === "1";
   const isMistakes = params.get("mistakes") === "1";
   const isSaved = params.get("saved") === "1";
+  // A free timed practice set: smart practice on a clock. It never uses the free test or credits.
+  const isTimedSet = isSmart && !isTimed && params.get("timed") === "1";
   // A friend's challenge link: the same questions they answered, plus their score.
   const challenge = readChallenge(params);
   const section = params.get("section") ?? "";
@@ -76,7 +79,7 @@ function PracticeView() {
   // The Sunday All-India Mock: a full mock on the week's shared paper, free, one attempt a week.
   const isWeekly = isFullMock && params.get("weekly") === "1" && !!exam && isWeeklyExam(exam.id);
   const topicIds = isSectionTest ? planSection!.topicIds : isTopicTest ? requestedTopics : (isTimed || isSmart) && exam ? examTopicIds(exam) : requestedTopics;
-  const size = isSectionTest ? planSection!.questions : isTopicTest ? TOPIC_TEST_SIZE : isFullMock ? (plan ? totalQuestions(plan.sections) : MOCK_SIZE) : PRACTICE_SIZE;
+  const size = isSectionTest ? planSection!.questions : isTopicTest ? TOPIC_TEST_SIZE : isFullMock ? (plan ? totalQuestions(plan.sections) : MOCK_SIZE) : isTimedSet ? TIMED_SET_SIZE : PRACTICE_SIZE;
 
   const [phase, setPhase] = useState<Phase>(isTimed ? "start" : "running");
   const [questions, setQuestions] = useState<MCQ[] | null>(null);
@@ -255,6 +258,8 @@ function PracticeView() {
         ? `${topicName}: timed test`
         : isFullMock
           ? `${exam?.name} full mock test${plan ? ` (${plan.pattern.paper} pattern)` : ""}`
+          : isTimedSet
+            ? `${exam?.name} timed practice set`
           : isSmart
             ? `${exam?.name} smart practice`
             : requestedTopics.length === 1
@@ -281,6 +286,8 @@ function PracticeView() {
         ? `${weeklyNote}${totalQuestions(plan.sections)} questions · ${totalMinutes(plan.sections)} minutes · ${plan.sections.map((s) => `${s.subject} ${s.questions}`).join(", ")}${plan.pattern.sectional ? " · sectional timing" : ""}${marking}`
         : isTimed
           ? `Up to ${size} questions from easy to very hard · 1 minute per question · answers revealed after you submit${marking}`
+          : isTimedSet
+            ? `Free: doesn’t use your free test or credits · ${size} adaptive questions · 1 minute per question · answers revealed after you submit`
           : isSmart
             ? "Adaptive: weak and unseen topics come up more often, mixed together for better long-term recall. Every set ramps from easy to very hard."
             : `${size} questions, ramping from easy to very hard · instant feedback with an explanation after every answer.`;
@@ -341,10 +348,10 @@ function PracticeView() {
           <Quiz
             key={round}
             questions={questions}
-            mode={isTimed ? "mock" : "practice"}
+            mode={isTimed || isTimedSet ? "mock" : "practice"}
             negativeMarking={isTimed ? negative : 0}
             marks={isTimed ? marks : 1}
-            timeLimitSec={isTimed ? timeLimit : undefined}
+            timeLimitSec={isTimed ? timeLimit : isTimedSet ? count * 60 : undefined}
             sections={isTimed ? sections : undefined}
             sectional={isTimed && sectional}
             previous={isTimed ? previous : null}
