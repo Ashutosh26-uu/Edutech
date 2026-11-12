@@ -202,7 +202,7 @@ export const BANK_SIZES: Record<string, number> = {
   "cs-oops-cpp-java": 97,
   "cs-operating-systems": 97,
   "cs-python": 100,
-  "cs-software-engineering": 75,
+  "cs-software-engineering": 97,
   "eco-basics": 133,
   "eco-money-inflation": 106,
   "eco-planning-budget": 106,
