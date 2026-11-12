@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col">
         <AccountProvider>
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-surface/80 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 lg:gap-6">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 lg:gap-4 xl:gap-6">
             <Logo />
             <div className="min-w-0 flex-1">
               <Nav />

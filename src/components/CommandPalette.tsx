@@ -147,10 +147,16 @@ export function CommandPalette() {
 
 export function PaletteButton() {
   return (
-    <button onClick={() => window.dispatchEvent(new Event("studyclip:palette"))} className="mr-1 hidden h-8 w-52 shrink-0 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs text-slate-400 hover:border-slate-300 lg:flex" title="Quick search (Ctrl + K)">
+    // Icon only at 1024px so the section menus fit; the full box from 1280px.
+    <button
+      onClick={() => window.dispatchEvent(new Event("studyclip:palette"))}
+      className="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-400 hover:border-slate-300 lg:flex xl:w-52 xl:justify-start xl:px-2.5"
+      title="Quick search (Ctrl + K)"
+      aria-label="Search (Ctrl + K)"
+    >
       <Search className="h-3.5 w-3.5" />
-      <span className="flex-1 text-left">Search…</span>
-      <kbd className="rounded border border-slate-200 bg-surface px-1 font-mono text-[10px] text-slate-500">Ctrl K</kbd>
+      <span className="hidden flex-1 text-left xl:inline">Search…</span>
+      <kbd className="hidden rounded border border-slate-200 bg-surface px-1 font-mono text-[10px] text-slate-500 xl:inline">Ctrl K</kbd>
     </button>
   );
 }
