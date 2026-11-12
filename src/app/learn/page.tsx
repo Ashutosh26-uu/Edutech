@@ -7,12 +7,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Quiz } from "@/components/Quiz";
 import { MicButton, SpeakButton } from "@/components/Speak";
 import { TopicNotesView } from "@/components/TopicNotesView";
-import { TOPICS } from "@/data/topics";
+import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
+import { TOPICS, TOPIC_BY_ID } from "@/data/topics";
 import { useAccount } from "@/lib/account";
+import { focusTopics } from "@/lib/adaptive";
 import { api, IS_STATIC } from "@/lib/api";
 import { cardsForTopic, type NewCard } from "@/lib/cards";
 import { addCards } from "@/lib/storage";
 import type { MCQ, SolveResult, Topic, TopicResult } from "@/lib/types";
+import { useStore } from "@/lib/useStore";
 
 export default function LearnPage() {
   return (
@@ -45,8 +48,31 @@ function LearnView() {
   );
 }
 
+/** A mixed list for students who haven't chosen an exam: a couple of topics from each subject. */
+const MIXED_TOPICS: Topic[] = (() => {
+  const bySubject = new Map<string, Topic[]>();
+  for (const t of TOPICS) bySubject.set(t.subject, [...(bySubject.get(t.subject) ?? []), t]);
+  const out: Topic[] = [];
+  for (let i = 0; out.length < 14 && i < 3; i++) for (const list of bySubject.values()) if (list[i] && out.length < 14) out.push(list[i]);
+  return out;
+})();
+
+/** The chosen exam's topics, those that need attention first; else a mix across subjects. */
+function usePopularTopics(): { topics: Topic[]; examName?: string } {
+  const store = useStore();
+  const exam = store?.examId ? EXAM_BY_ID.get(store.examId) : undefined;
+  const ids = exam ? examTopicIds(exam) : [];
+  if (!store || !exam || !ids.length) return { topics: MIXED_TOPICS };
+  const topics = focusTopics(ids, store.topics, 14).flatMap((f) => {
+    const t = TOPIC_BY_ID.get(f.id);
+    return t ? [t] : [];
+  });
+  return { topics, examName: exam.name };
+}
+
 function TopicSearch({ initial }: { initial: string }) {
   const [query, setQuery] = useState(initial);
+  const popular = usePopularTopics();
   const [data, setData] = useState<{ result: TopicResult | null; suggestions: Topic[] } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -75,16 +101,16 @@ function TopicSearch({ initial }: { initial: string }) {
       <form onSubmit={(e) => (e.preventDefault(), go(query))} className="flex max-w-2xl gap-2">
         <input className="input" placeholder="e.g. Fundamental Rights, Profit and Loss, Piaget…" value={query} onChange={(e) => setQuery(e.target.value)} />
         <MicButton onText={go} />
-        <button className="btn-primary" disabled={loading}>
+        <button className="btn-primary" disabled={loading || !query.trim()}>
           Search
         </button>
       </form>
 
       {!data && (
         <div>
-          <p className="mb-2 text-sm text-slate-500">Popular topics</p>
+          <p className="mb-2 text-sm text-slate-500">{popular.examName ? `Topics for ${popular.examName}, the ones to focus on first` : "Popular topics"}</p>
           <div className="flex flex-wrap gap-2">
-            {TOPICS.slice(0, 14).map((t) => (
+            {popular.topics.map((t) => (
               <button key={t.id} onClick={() => go(t.name)} className="chip bg-surface px-3 py-1.5 text-sm text-slate-700 ring-1 ring-slate-200 hover:ring-brand-300">
                 {t.name}
               </button>
@@ -98,7 +124,7 @@ function TopicSearch({ initial }: { initial: string }) {
           <p className="font-medium text-slate-800">No notes for “{query}” yet.</p>
           <p className="mt-1 text-slate-600">Try a shorter or different name for the topic (for example “percentage” or “Fundamental Rights”), or open one of these topics:</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {(data.suggestions.length ? data.suggestions : TOPICS.slice(0, 8)).map((t) => (
+            {(data.suggestions.length ? data.suggestions : popular.topics.slice(0, 8)).map((t) => (
               <button key={t.id} onClick={() => go(t.name)} className="chip bg-brand-50 px-3 py-1.5 text-sm text-brand-700">
                 {t.name}
               </button>
