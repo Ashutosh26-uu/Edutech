@@ -14,6 +14,7 @@ import { focusTopics } from "@/lib/adaptive";
 import { dayKey, daysUntilExam, dueCards, setDailyGoal, setExam, setExamDate, streakInfo, today } from "@/lib/storage";
 import { MAX_FREEZES, FREEZE_EVERY } from "@/lib/streak";
 import { useStore } from "@/lib/useStore";
+import { StartChecklist } from "@/components/StartChecklist";
 
 const DAY = 86_400_000;
 
@@ -98,6 +99,7 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-6">
+      <StartChecklist />
       <div className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -249,7 +251,7 @@ function ExamPicker({ examId, examDate }: { examId?: string; examDate?: string }
           </optgroup>
         ))}
       </select>
-      <label className="flex items-center gap-2 text-slate-600">
+      <label className="flex scroll-mt-24 items-center gap-2 text-slate-600" id="exam-date">
         Exam date
         <input type="date" className="input w-auto py-2" value={examDate ?? ""} onChange={(e) => setExamDate(e.target.value)} />
       </label>

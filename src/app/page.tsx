@@ -4,6 +4,7 @@ import { HomeTop } from "@/components/HomeTop";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
+import { StartChecklist } from "@/components/StartChecklist";
 
 const FEATURES = [
   { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
@@ -60,6 +61,9 @@ export default function Home() {
           </div>
         </section>
       </HomeTop>
+
+      {/* First steps for new students; hides itself once done or dismissed */}
+      <StartChecklist className="-mt-12" />
 
       {/* Last-minute offer */}
       <section className="-mt-12 flex flex-col items-start justify-between gap-4 rounded-xl border border-slate-200 bg-surface p-5 sm:flex-row sm:items-center">
