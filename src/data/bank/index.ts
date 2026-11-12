@@ -284,7 +284,7 @@ export const BANK_SIZES: Record<string, number> = {
   "quant-tsd": 64,
   "reason-analogy": 115,
   "reason-blood-relations": 114,
-  "reason-clock-calendar": 85,
+  "reason-clock-calendar": 155,
   "reason-coding": 114,
   "reason-critical-reasoning": 160,
   "reason-data-sufficiency": 160,
