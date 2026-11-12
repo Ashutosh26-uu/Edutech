@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
 import { EXAMS } from "@/data/exams";
 import { absoluteUrl } from "@/data/site";
+import { PUBLIC_PATHS } from "@/data/sitemap-nav";
 import { TOPICS } from "@/data/topics";
 import { formulaTopics } from "@/lib/formulas";
 
 // Built once at build time, so it also works in the static export.
 export const dynamic = "force-static";
 
-const PAGES = ["/", "/exams", "/topics", "/today", "/listen", "/review", "/last-minute", "/formulas", "/drills", "/typing", "/interview", "/resume", "/pricing", "/about", "/contact", "/privacy", "/terms", "/refund"];
+// Every public page in the nav config (personal pages like /mistakes and /login are left out).
+const PAGES = ["/", ...PUBLIC_PATHS];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
