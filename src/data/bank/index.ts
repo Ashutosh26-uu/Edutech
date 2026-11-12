@@ -270,7 +270,7 @@ export const BANK_SIZES: Record<string, number> = {
   "polity-preamble": 112,
   "polity-president-pm": 85,
   "polity-state-local-govt": 85,
-  "quant-algebra-geometry": 120,
+  "quant-algebra-geometry": 155,
   "quant-average": 68,
   "quant-ci": 64,
   "quant-data-interpretation": 170,
