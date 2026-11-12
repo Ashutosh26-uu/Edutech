@@ -84,6 +84,8 @@ function PracticeView() {
   const [localSections, setLocalSections] = useState<QuizSection[] | null>(null);
   const [previous, setPrevious] = useState<{ score: number; total: number } | null>(null);
   const [error, setError] = useState("");
+  // False when the "error" is really an empty list (no saved questions, nothing in the notebook): retrying won't help.
+  const [retryable, setRetryable] = useState(true);
   const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
   const [finished, setFinished] = useState<AnswerResult[] | null>(null);
@@ -113,6 +115,11 @@ function PracticeView() {
   const loadQuestions = useCallback(async () => {
     setQuestions(null);
     setError("");
+    setRetryable(true);
+    const nothing = (msg: string) => {
+      setRetryable(false);
+      setError(msg);
+    };
     setFinished(null);
     setResumed(null);
     if (resumeKey) {
@@ -126,22 +133,22 @@ function PracticeView() {
     if (challenge) {
       const found = await findQuestions(challenge.ids);
       const qs = challenge.ids.flatMap((id) => (found.has(id) ? [shuffleOptions(found.get(id)!)] : []));
-      if (!qs.length) return setError("This challenge link doesn’t match any questions. Ask your friend to send it again.");
+      if (!qs.length) return nothing("This challenge link doesn’t match any questions. Ask your friend to send it again.");
       return setQuestions(qs);
     }
     if (isSaved) {
       const saved = Object.values(load().bookmarks)
         .map((b) => b.question)
         .filter((q) => !requestedTopics.length || (q.topicId && requestedTopics.includes(q.topicId)));
-      if (!saved.length) return setError("No saved questions yet. Tap ☆ Save on any question after answering it.");
+      if (!saved.length) return nothing("No saved questions yet. Tap ☆ Save on any question after answering it.");
       return setQuestions(shuffle(saved).slice(0, 20).map((q) => shuffleOptions(q)));
     }
     if (isMistakes) {
-      if (!server) return setError("The mistake notebook needs an account. Log in on the full site to use it.");
+      if (!server) return nothing("The mistake notebook needs an account. Log in on the full site to use it.");
       if (!account.user) return router.push(`/login?next=${encodeURIComponent(path + location.search)}`);
       const { status, data } = await postJson("/api/mistakes", { topicId: requestedTopics[0], count: 20 });
       if (status !== 200) return setError(data.error ?? "Could not load your mistakes.");
-      if (!data.questions.length) return setError("Nothing in your mistake notebook for this yet. Wrong answers in practice and tests land here.");
+      if (!data.questions.length) return nothing("Nothing in your mistake notebook for this yet. Wrong answers in practice and tests land here.");
       return setQuestions(data.questions);
     }
     if (isFullMock && plan) {
@@ -353,7 +360,20 @@ function PracticeView() {
         ) : phase === "paywall" ? (
           <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
         ) : error ? (
-          <p className="text-sm text-red-600">{error}</p>
+          <div className="space-y-3 py-2 text-sm" role={retryable ? "alert" : "status"}>
+            <p className="font-semibold text-slate-900">{retryable ? "Couldn’t load the questions" : "Nothing to show here yet"}</p>
+            <p className="text-slate-600">{error}</p>
+            <div className="flex flex-wrap gap-2">
+              {retryable && (
+                <button type="button" className="btn-primary" onClick={() => setRound((r) => r + 1)}>
+                  Try again
+                </button>
+              )}
+              <Link href={exam ? `/exams/${exam.id}` : isSaved ? "/saved" : isMistakes ? "/mistakes" : "/topics"} className={retryable ? "btn-ghost" : "btn-primary"}>
+                {exam ? `Back to ${exam.name}` : isSaved ? "Saved questions" : isMistakes ? "Mistake notebook" : "Choose a topic"}
+              </Link>
+            </div>
+          </div>
         ) : !questions ? (
           <p className="text-sm text-slate-500">Preparing questions…</p>
         ) : (

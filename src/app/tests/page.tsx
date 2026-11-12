@@ -44,10 +44,27 @@ function TestAnalysis() {
     if (!id) return setError("Test not found.");
     fetch(`/api/tests/${id}`, { cache: "no-store" })
       .then(async (r) => (r.ok ? setAttempt(await r.json()) : setError((await r.json()).error ?? "Test not found.")))
-      .catch(() => setError("Could not load this test."));
+      .catch(() => setError("Couldn’t reach StudyClip. Check your internet connection and try again."));
   }, [id, account.ready, account.user]);
 
-  if (error) return <div className="card text-sm text-red-600">{error}</div>;
+  if (error)
+    return (
+      <div className="card mx-auto max-w-md space-y-3 text-sm" role="alert">
+        <p className="font-semibold text-slate-900">{account.user ? "We couldn’t open this test" : "Log in to see this test"}</p>
+        <p className="text-slate-600">{account.user ? error : "Your test results are saved to your account."}</p>
+        <div className="flex flex-wrap gap-2">
+          {account.user ? (
+            <Link href="/progress" className="btn-primary">
+              See all my tests
+            </Link>
+          ) : (
+            <Link href={`/login?next=${encodeURIComponent(`/tests?id=${id}`)}`} className="btn-primary">
+              Log in
+            </Link>
+          )}
+        </div>
+      </div>
+    );
   if (!attempt) return <PageSkeleton />;
 
   const exam = EXAM_BY_ID.get(attempt.examId);
