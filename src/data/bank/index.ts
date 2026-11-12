@@ -207,7 +207,7 @@ export const BANK_SIZES: Record<string, number> = {
   "eco-sectors-schemes": 39,
   "eng-cloze-rearrangement": 150,
   "eng-grammar": 174,
-  "eng-reading-comprehension": 40,
+  "eng-reading-comprehension": 65,
   "eng-vocabulary": 173,
   "env-ecology": 85,
   "geo-climate-monsoon": 85,
