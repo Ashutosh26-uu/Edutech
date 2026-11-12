@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Fundamental Rights (Indian Polity): 115 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Fundamental Rights (Indian Polity): 141 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"polity-fundamental-rights-1","question":"Fundamental Rights are contained in which Part of the Constitution?","options":["Part II","Part III","Part IV","Part V"],"answer":1,"explanation":"Part III (Articles 12–35) contains the Fundamental Rights.","difficulty":"easy"},
   {"id":"polity-fundamental-rights-2","question":"How many Fundamental Rights does the Constitution guarantee today?","options":["5","6","7","8"],"answer":1,"explanation":"Six: originally seven, but the Right to Property was removed in 1978.","difficulty":"easy"},

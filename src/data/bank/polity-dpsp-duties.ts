@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Directive Principles and Fundamental Duties (Indian Polity): 116 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Directive Principles and Fundamental Duties (Indian Polity): 142 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"polity-dpsp-duties-1","question":"Fundamental Duties are listed in which Article?","options":["Article 32","Article 44","Article 51A","Article 368"],"answer":2,"explanation":"Article 51A, in Part IVA, lists the Fundamental Duties.","difficulty":"easy"},
   {"id":"polity-dpsp-duties-2","question":"How many Fundamental Duties are there in the Constitution today?","options":["9","10","11","12"],"answer":2,"explanation":"There were 10 originally; the 86th Amendment (2002) added the 11th.","difficulty":"easy"},

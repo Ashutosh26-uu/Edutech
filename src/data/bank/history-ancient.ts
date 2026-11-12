@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Ancient India (History): 110 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Ancient India (History): 140 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"history-ancient-1","question":"Harappa, the first Indus Valley site to be excavated, was discovered in 1921 by:","options":["R. D. Banerji","Daya Ram Sahni","John Marshall","Mortimer Wheeler"],"answer":1,"explanation":"Daya Ram Sahni excavated Harappa in 1921; R. D. Banerji found Mohenjo-daro in 1922.","difficulty":"easy","source":"SSC CGL · RRB NTPC"},
   {"id":"history-ancient-2","question":"The Great Bath of the Indus Valley Civilisation was found at:","options":["Harappa","Lothal","Mohenjo-daro","Kalibangan"],"answer":2,"explanation":"The Great Bath is the best-known structure of Mohenjo-daro, in Sindh.","difficulty":"easy"},

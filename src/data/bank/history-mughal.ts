@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** The Mughal Empire (History): 110 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** The Mughal Empire (History): 138 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"history-mughal-1","question":"Who founded the Mughal Empire in India?","options":["Akbar","Babur","Humayun","Aurangzeb"],"answer":1,"explanation":"Babur founded the Mughal Empire after the First Battle of Panipat in 1526.","difficulty":"easy"},
   {"id":"history-mughal-2","question":"The Taj Mahal was built by:","options":["Akbar","Jahangir","Shah Jahan","Aurangzeb"],"answer":2,"explanation":"Shah Jahan built it in Agra in memory of his wife Mumtaz Mahal.","difficulty":"easy"},

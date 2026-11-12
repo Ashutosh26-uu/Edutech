@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Parliament of India (Indian Polity): 115 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Parliament of India (Indian Polity): 142 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"polity-parliament-1","question":"Which is the Upper House of the Indian Parliament?","options":["Lok Sabha","Rajya Sabha","Vidhan Sabha","Vidhan Parishad"],"answer":1,"explanation":"The Rajya Sabha (Council of States) is the Upper House.","difficulty":"easy"},
   {"id":"polity-parliament-2","question":"What is the maximum number of members the President can nominate to the Rajya Sabha?","options":["2","10","12","14"],"answer":2,"explanation":"The President nominates 12 members with special knowledge of literature, science, art and social service.","difficulty":"easy"},

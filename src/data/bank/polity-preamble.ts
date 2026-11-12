@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Preamble of the Constitution (Indian Polity): 115 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Preamble of the Constitution (Indian Polity): 142 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"polity-preamble-1","question":"The Preamble of the Indian Constitution begins with the words:","options":["We, the people of India","India, that is Bharat","Sovereign Socialist Secular","Justice, Liberty, Equality"],"answer":0,"explanation":"The Preamble opens with “We, the people of India”, showing that the people are the source of authority.","difficulty":"easy"},
   {"id":"polity-preamble-2","question":"According to the Preamble, the source of authority of the Indian Constitution is:","options":["Parliament","The President","The people of India","The Supreme Court"],"answer":2,"explanation":"“We, the people of India … adopt, enact and give to ourselves this Constitution.”","difficulty":"easy"},

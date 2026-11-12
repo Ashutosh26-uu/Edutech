@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Indian National Movement (1885–1947) (History): 111 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Indian National Movement (1885–1947) (History): 139 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"history-national-movement-1","question":"The Indian National Congress was founded in:","options":["1857","1885","1905","1920"],"answer":1,"explanation":"The INC was founded in 1885 by A. O. Hume.","difficulty":"easy"},
   {"id":"history-national-movement-2","question":"The Jallianwala Bagh massacre took place in:","options":["1905","1919","1930","1942"],"answer":1,"explanation":"On 13 April 1919, General Dyer’s troops fired on a peaceful gathering in Amritsar.","difficulty":"easy"},

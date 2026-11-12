@@ -1,6 +1,6 @@
 import type { BankQuestion } from "@/lib/bank";
 
-/** Child Development and Pedagogy (Child Development and Pedagogy): 75 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
+/** Child Development and Pedagogy (Child Development and Pedagogy): 134 questions. Append new ones at the end with the next id; never reuse or renumber an id. */
 const questions: BankQuestion[] = [
   {"id":"cdp-child-development-1","question":"The RTE Act, 2009 provides free and compulsory education for children aged:","options":["3–14 years","6–14 years","6–18 years","5–15 years"],"answer":1,"explanation":"It covers children aged 6 to 14.","difficulty":"easy"},
   {"id":"cdp-child-development-2","question":"RTE stands for:","options":["Right to Education","Rules of Teaching Excellence","Right to Employment","Reading, Teaching and Evaluation"],"answer":0,"explanation":"The Right of Children to Free and Compulsory Education Act, 2009.","difficulty":"easy"},
