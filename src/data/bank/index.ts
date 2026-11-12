@@ -244,7 +244,7 @@ export const BANK_SIZES: Record<string, number> = {
   "math-sequences-series": 130,
   "math-sets-relations-functions": 119,
   "math-statistics": 85,
-  "math-straight-lines-circles": 94,
+  "math-straight-lines-circles": 128,
   "math-trigonometry": 127,
   "phy-current-electricity": 95,
   "phy-electrostatics": 95,
