@@ -199,7 +199,7 @@ export const BANK_SIZES: Record<string, number> = {
   "cs-dbms-sql": 97,
   "cs-dsa-linear": 125,
   "cs-dsa-nonlinear": 125,
-  "cs-oops-cpp-java": 75,
+  "cs-oops-cpp-java": 97,
   "cs-operating-systems": 97,
   "cs-python": 100,
   "cs-software-engineering": 75,
