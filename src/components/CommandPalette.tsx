@@ -3,8 +3,9 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EXAMS } from "@/data/exams";
-import { TOPICS } from "@/data/topics";
+import type { EXAMS } from "@/data/exams";
+import { ALL_PAGES, visible } from "@/data/sitemap-nav";
+import type { TOPICS } from "@/data/topics";
 import { load } from "@/lib/storage";
 import { parseVideoId } from "@/lib/youtube";
 import { toggleTheme } from "./ThemeToggle";
@@ -16,12 +17,16 @@ interface Item {
   run: () => void;
 }
 
+/** Menu pages for quick search; the footer's legal pages are left out. */
+const PAGES = visible(ALL_PAGES).filter((p) => !["/privacy", "/terms", "/refund", "/login"].includes(p.href));
+
 /** Global quick-search (Ctrl/⌘ + K): pages, exams, topics, recent videos and actions. */
 export function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
+  const [data, setData] = useState<{ exams: typeof EXAMS; topics: typeof TOPICS } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,6 +54,18 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  // Exams and topics are large, so they load only when the palette is first opened.
+  useEffect(() => {
+    if (!open || data) return;
+    let live = true;
+    Promise.all([import("@/data/exams"), import("@/data/topics")])
+      .then(([e, t]) => live && setData({ exams: e.EXAMS, topics: t.TOPICS }))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [open, data]);
+
   const go = (href: string) => () => router.push(href);
 
   const items = useMemo<Item[]>(() => {
@@ -56,21 +73,16 @@ export function CommandPalette() {
     const store = load();
     const examId = store.examId;
     return [
-      { label: "Today’s plan", hint: "Daily goal, streak and tasks", group: "Pages", run: go("/today") },
-      { label: "Review flashcards", hint: "Spaced repetition", group: "Pages", run: go("/review") },
-      { label: "Mistake notebook", hint: "Questions you got wrong", group: "Pages", run: go("/mistakes") },
-      { label: "Saved questions", hint: "Questions you starred", group: "Pages", run: go("/saved") },
-      { label: "Break down a video", hint: "Paste a YouTube link", group: "Pages", run: go("/video") },
-      { label: "My progress", hint: "Accuracy and weak topics", group: "Pages", run: go("/progress") },
+      ...PAGES.map((p) => ({ label: p.label, hint: p.description, group: "Pages", run: go(p.href) })),
       ...(examId ? [{ label: "Start smart practice", hint: "Adaptive questions for your exam", group: "Actions", run: go(`/practice?exam=${examId}&smart=1`) }] : []),
       ...(examId ? [{ label: "Take a mock test", hint: "Timed, with negative marking", group: "Actions", run: go(`/practice?exam=${examId}&mock=1`) }] : []),
       { label: "Toggle dark mode", hint: "Switch theme", group: "Actions", run: toggleTheme },
-      ...EXAMS.map((e) => ({ label: e.name, hint: e.fullName, group: "Exams", run: go(`/exams/${e.id}`) })),
-      ...TOPICS.map((t) => ({ label: t.name, hint: t.subject, group: "Topics", run: go(`/learn?topic=${encodeURIComponent(t.name)}`) })),
+      ...(data?.exams ?? []).map((e) => ({ label: e.name, hint: e.fullName, group: "Exams", run: go(`/exams/${e.id}`) })),
+      ...(data?.topics ?? []).map((t) => ({ label: t.name, hint: t.subject, group: "Topics", run: go(`/learn?topic=${encodeURIComponent(t.name)}`) })),
       ...store.videos.map((v) => ({ label: v.title, hint: `${v.chapters} chapters`, group: "Recent videos", run: go(`/video?v=${v.videoId}`) })),
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, data]);
 
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
