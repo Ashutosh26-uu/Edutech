@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
 import { PASSAGES, type TypingPassage } from "@/data/typing-passages";
 import { readJson, writeJson } from "@/lib/localJson";
-import { awardSkillXp } from "@/lib/storage";
+import { awardXp } from "@/lib/storage";
 import { liveWpm, scoreTyping, splitWords, type DiffToken, type TypingScore } from "@/lib/typing";
 
 type Lang = "en" | "hi";
@@ -87,7 +87,7 @@ export function TypingTest() {
       writeJson(KEY, next);
       setSaved(next);
       xp = Math.min(50, Math.round(score.netWpm * Math.min(1, secs / 300)));
-      awardSkillXp(xp);
+      awardXp(xp);
     }
     setResult({ ...score, newBest, xp });
     setPhase("done");
