@@ -259,7 +259,7 @@ export const BANK_SIZES: Record<string, number> = {
   "phy-rotational-motion": 129,
   "phy-shm-waves": 118,
   "phy-thermodynamics-kinetic-theory": 129,
-  "phy-units-measurement": 105,
+  "phy-units-measurement": 138,
   "phy-work-energy-power": 128,
   "polity-amendments-emergency": 85,
   "polity-constitutional-bodies": 85,
