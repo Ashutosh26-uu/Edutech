@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { IS_STATIC } from "./api";
+import { IS_STATIC, request } from "./api";
 import { authAttempt, authClient, sendVerificationCode, verifyEmailCode, type AuthError } from "./auth-client";
 import { load } from "./storage";
 import { useStore } from "./useStore";
@@ -50,7 +50,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (IS_STATIC) return;
-    const [me, cfg] = await Promise.all([fetch("/api/me", { cache: "no-store" }).then((r) => r.json()).catch(() => null), fetch("/api/config").then((r) => r.json()).catch(() => null)]);
+    const [me, cfg] = await Promise.all([request("/api/me", { cache: "no-store" }).then((r) => r.json()).catch(() => null), request("/api/config").then((r) => r.json()).catch(() => null)]);
     setServer(me);
     if (cfg) setConfig(cfg);
     setReady(true);

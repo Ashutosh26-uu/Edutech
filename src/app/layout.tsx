@@ -8,6 +8,7 @@ import { FocusPill } from "@/components/FocusPill";
 import { HelpBot } from "@/components/HelpBot";
 import { Logo } from "@/components/Logo";
 import { HeaderStats, MobileNav, Nav } from "@/components/Nav";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { RegisterSW } from "@/components/RegisterSW";
 import { SiteEvents } from "@/components/SiteEvents";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
@@ -110,6 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CommandPalette />
         <HelpBot />
         <RegisterSW />
+        <OfflineBanner />
         <AccountSync />
         <SiteEvents />
         <FocusPill />

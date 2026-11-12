@@ -13,7 +13,7 @@ import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
 import { topicWeights } from "@/lib/adaptive";
-import { api, IS_STATIC } from "@/lib/api";
+import { api, IS_STATIC, postJson, request } from "@/lib/api";
 import { clearResume, readResume, writeResume, type QuizProgress } from "@/lib/practiceResume";
 import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
@@ -48,10 +48,6 @@ interface ServerTest {
   negativeMarking: number;
 }
 
-async function postJson(path: string, body: object) {
-  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  return { status: res.status, data: await res.json().catch(() => ({})) };
-}
 
 function PracticeView() {
   const params = useSearchParams();
@@ -107,7 +103,7 @@ function PracticeView() {
   // Smart practice weights come from the account's progress when signed in, else this browser's.
   const statsForWeights = useCallback(async (): Promise<Record<string, TopicStat>> => {
     if (server && account.user) {
-      const res = await fetch("/api/progress", { cache: "no-store" }).catch(() => null);
+      const res = await request("/api/progress", { cache: "no-store" }).catch(() => null);
       if (res?.ok) return ((await res.json()) as { topics: Record<string, TopicStat> }).topics;
     }
     return load().topics;
@@ -195,7 +191,7 @@ function PracticeView() {
     if (!account.user) return loginFirst();
     setStarting(true);
     // The previous score of the same kind of test gives the "vs your last test" line.
-    fetch("/api/tests", { cache: "no-store" })
+    request("/api/tests", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { attempts: { examId: string; kind: string; score: number; total: number; marks: number }[] } | null) => {
         const kind = isWeekly ? "weekly" : isSectionTest ? "section" : isTopicTest ? "topic" : "full";
