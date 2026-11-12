@@ -254,6 +254,18 @@ html.dark {
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
 
+/* Home page top: the picker and hero are server-rendered; a returning visitor (marked before
+   first paint by HomeTop) sees a placeholder instead until the dashboard is ready. */
+.home-wait {
+  display: none;
+}
+:root[data-home-exam] .home-pending > .home-wait {
+  display: block;
+}
+:root[data-home-exam] .home-pending > .home-fresh {
+  display: none;
+}
+
 /* Touch screens: 16px text in inputs so iPhones do not zoom in on focus (buttons get their 44px via the btn utility). */
 @media (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]),
