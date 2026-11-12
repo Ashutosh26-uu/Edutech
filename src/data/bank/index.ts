@@ -254,7 +254,7 @@ export const BANK_SIZES: Record<string, number> = {
   "phy-kinematics": 129,
   "phy-laws-of-motion": 128,
   "phy-magnetism-emi": 128,
-  "phy-modern-physics": 94,
+  "phy-modern-physics": 127,
   "phy-optics": 129,
   "phy-rotational-motion": 129,
   "phy-shm-waves": 118,
