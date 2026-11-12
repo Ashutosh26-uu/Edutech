@@ -24,7 +24,7 @@ const GA = [...POLITY, ...HISTORY, ...GEO, ...ECON, ...SCIENCE, ...GK];
 
 // Campus placement: programming, CS fundamentals, and aptitude pitched at company tests.
 const PROG = ["cs-c-programming", "cs-oops-cpp-java", "cs-python", "apt-pseudocode"];
-const DSA = ["cs-dsa-linear", "cs-dsa-nonlinear"];
+const DSA = ["cs-dsa-linear", "cs-dsa-nonlinear", "cs-coding-problems"];
 const CS_CORE = ["cs-dbms-sql", "cs-operating-systems", "cs-computer-networks", "cs-software-engineering"];
 const P_QUANT = ["apt-advanced-quant", "apt-pnc-probability", "quant-percentage", "quant-profit-loss", "quant-time-work", "quant-tsd", "quant-ratio", "quant-average", "quant-number-system", "quant-data-interpretation"];
 const P_LOGIC = ["apt-logical-placement", "reason-series", "reason-coding", "reason-blood-relations", "reason-direction", "reason-seating-puzzles", "reason-syllogism", "reason-data-sufficiency"];
