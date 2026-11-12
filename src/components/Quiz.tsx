@@ -818,7 +818,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
           </button>
         )}
         {weakIds.length > 0 && (
-          <Link href={`/practice?topics=${weakIds.join(",")}`} className="btn-ghost">
+          <Link href={`/practice?topics=${weakIds.join(",")}${share?.examId ? `&exam=${encodeURIComponent(share.examId)}` : ""}`} className="btn-ghost">
             Practise weak topics ({weakIds.length})
           </Link>
         )}
