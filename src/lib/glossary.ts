@@ -10,7 +10,7 @@ export const GLOSSARY = {
   },
   streak: {
     term: "Streak",
-    text: "How many days in a row you have studied. Study something every day to keep it growing; miss a day and it starts again from zero.",
+    text: "How many days in a row you have studied. Study something every day to keep it growing. If you miss a day it starts again from zero, unless a streak freeze covers that day.",
     hi: "Lagatar kitne din padhai ki.",
   },
   "streak-freeze": {
