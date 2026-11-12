@@ -262,7 +262,7 @@ export const BANK_SIZES: Record<string, number> = {
   "phy-units-measurement": 105,
   "phy-work-energy-power": 95,
   "polity-amendments-emergency": 85,
-  "polity-constitutional-bodies": 85,
+  "polity-constitutional-bodies": 114,
   "polity-dpsp-duties": 142,
   "polity-fundamental-rights": 141,
   "polity-judiciary": 115,
