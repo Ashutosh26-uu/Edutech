@@ -175,7 +175,7 @@ export const BANK_SIZES: Record<string, number> = {
   "bio-reproduction-health": 70,
   "cdp-child-development": 114,
   "cdp-pedagogy-subjects": 40,
-  "chem-amines-biomolecules": 85,
+  "chem-amines-biomolecules": 118,
   "chem-atomic-structure": 95,
   "chem-carbonyl-acids": 85,
   "chem-chemical-bonding": 95,
