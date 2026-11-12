@@ -254,6 +254,19 @@ html.dark {
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
 }
 
+/* Route loading skeletons stay invisible for the first 350 ms, so fast page loads never flash them. */
+.route-loading {
+  animation: route-loading-in 0.2s ease-out 0.35s backwards;
+}
+@keyframes route-loading-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Home page top: the picker and hero are server-rendered; a returning visitor (marked before
    first paint by HomeTop) sees a placeholder instead until the dashboard is ready. */
 .home-wait {
