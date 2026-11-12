@@ -285,7 +285,7 @@ export const BANK_SIZES: Record<string, number> = {
   "reason-analogy": 115,
   "reason-blood-relations": 114,
   "reason-clock-calendar": 155,
-  "reason-coding": 114,
+  "reason-coding": 169,
   "reason-critical-reasoning": 160,
   "reason-data-sufficiency": 160,
   "reason-direction": 103,
