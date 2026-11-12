@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useAccount } from "@/lib/account";
+import { StaticNotice } from "@/components/StaticNotice";
 import { IS_STATIC } from "@/lib/api";
 import { track } from "@/lib/track";
 
@@ -32,7 +33,7 @@ export default function InvitePage() {
   }, [account.ready, account.user]);
 
   if (IS_STATIC || (account.ready && account.mode === "local")) {
-    return <div className="card text-sm">Invites need an account and run on the full site, not this demo build.</div>;
+    return <StaticNotice>Invites need an account and run on the full site, not this demo build.</StaticNotice>;
   }
   if (!account.ready) return <PageSkeleton tiles={0} />;
   if (!account.user) {

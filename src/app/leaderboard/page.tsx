@@ -7,6 +7,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
 import { EXAM_BY_ID, EXAMS, examTopicIds } from "@/data/exams";
 import { useAccount } from "@/lib/account";
+import { StaticNotice } from "@/components/StaticNotice";
 import { IS_STATIC } from "@/lib/api";
 import { load } from "@/lib/storage";
 
@@ -67,7 +68,7 @@ function Leaderboard() {
   }, [account.ready, account.user, loadBoard]);
 
   if (IS_STATIC || (account.ready && account.mode === "local")) {
-    return <div className="card text-sm">Leaderboards need accounts and run on the full site, not this demo build.</div>;
+    return <StaticNotice>Leaderboards need accounts and run on the full site, not this demo build.</StaticNotice>;
   }
 
   const exam = EXAM_BY_ID.get(examId);
