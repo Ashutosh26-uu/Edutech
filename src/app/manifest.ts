@@ -13,7 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: `${base}/`,
     display: "standalone",
     background_color: "#f8fafc",
-    theme_color: "#4f46e5",
+    // Same as the viewport themeColor in layout.tsx.
+    theme_color: "#18181b",
     icons: [
       { src: `${base}/icon.svg`, sizes: "any", type: "image/svg+xml", purpose: "any" },
       { src: `${base}/icon.svg`, sizes: "any", type: "image/svg+xml", purpose: "maskable" },
