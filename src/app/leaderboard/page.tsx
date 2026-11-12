@@ -78,7 +78,7 @@ function Leaderboard() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-1">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          <Trophy className="h-6 w-6 text-amber-500" /> Weekly leaderboard
+          <Trophy className="h-6 w-6 text-amber-500" /> Leaderboards
         </h1>
         <p className="text-sm text-slate-600">
           Points are the sum of your score percentages in your best {data?.bestOf ?? 5} timed tests on the exam this week (Monday to Sunday, India time). Late submissions don’t count.
