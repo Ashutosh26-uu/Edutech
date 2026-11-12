@@ -44,6 +44,7 @@ export const NOTES_LOADERS: Record<string, () => Promise<{ default: TopicNotes }
   "comp-awareness": () => import("./comp-awareness"),
   "comp-ms-office-internet": () => import("./comp-ms-office-internet"),
   "cs-c-programming": () => import("./cs-c-programming"),
+  "cs-coding-problems": () => import("./cs-coding-problems"),
   "cs-computer-networks": () => import("./cs-computer-networks"),
   "cs-dbms-sql": () => import("./cs-dbms-sql"),
   "cs-dsa-linear": () => import("./cs-dsa-linear"),
