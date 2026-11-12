@@ -2091,6 +2091,23 @@ export const TOPICS: Topic[] = [
       "Greedy works for activity selection, fractional knapsack, Huffman and job sequencing; DP is needed for 0/1 knapsack, coin change with non-canonical coins, LCS, edit distance, LIS and matrix chain",
     ],
   },
+  {
+    id: "cs-coding-problems",
+    name: "Coding Interview Problems",
+    subject: "Data Structures & Algorithms",
+    aliases: ["leetcode-style", "dsa problems", "coding round", "online assessment", "coding interview questions"],
+    summary: "Original coding-round problems asked as code-reasoning MCQs, in the style of product-company online assessments and the coding sections of TCS NQT, Infosys and Accenture: read a short problem, then predict a function's output, pick the approach that fits n ≤ 10⁵, find the buggy line, handle an edge case or choose the right data structure. Covers arrays, strings, hashing, linked lists, trees, graphs, heaps, binary search, backtracking, DP, greedy, bit tricks and modular arithmetic.",
+    keyPoints: [
+      "Read the constraints first: n ≤ 10⁵ needs O(n log n) or better, n ≤ 20 allows 2ⁿ, n ≤ 500 allows O(n³)",
+      "Two pointers on sorted data and sliding windows (fixed or shrink-while-invalid) turn O(n²) subarray scans into O(n)",
+      "Prefix sums plus a hash map of seen prefixes count subarrays with sum k in O(n), even with negative numbers",
+      "Binary search on the answer works whenever feasibility is monotonic: minimum capacity, minimum speed, maximum minimum distance",
+      "Monotonic stacks give next greater/smaller elements and largest rectangle in O(n); a deque gives sliding-window maximum",
+      "BFS gives shortest paths in unweighted graphs and grids, DFS finds components and cycles, Kahn's algorithm gives a topological order or detects a cycle",
+      "DP: define the state, the transition and the base case; 0/1 knapsack loops capacity downwards, unbounded knapsack upwards",
+      "Heaps keep the top k in O(n log k), greedy needs an exchange argument, and union-find with path compression answers connectivity in near O(1)",
+    ],
+  },
 
   // ---------------- CS Fundamentals ----------------
   {
