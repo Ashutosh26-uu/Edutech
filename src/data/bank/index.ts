@@ -211,7 +211,7 @@ export const BANK_SIZES: Record<string, number> = {
   "eng-vocabulary": 113,
   "env-ecology": 85,
   "geo-climate-monsoon": 106,
-  "geo-indian-rivers": 114,
+  "geo-indian-rivers": 134,
   "geo-minerals-industries": 85,
   "geo-physical-india": 115,
   "geo-soils-agriculture": 85,
