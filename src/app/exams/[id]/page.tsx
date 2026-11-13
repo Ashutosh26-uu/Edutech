@@ -10,6 +10,7 @@ import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/Exam
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
 import { InfoTip } from "@/components/InfoTip";
+import { canUnlimited, UNLIMITED_HINT, unlimitedHref } from "@/lib/unlimited";
 
 export function generateStaticParams() {
   return EXAMS.map((e) => ({ id: e.id }));
@@ -224,6 +225,11 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
                           {t.name}
                         </Link>
                         <TopicAccuracy topicId={tid} />
+                        {canUnlimited(tid) && (
+                          <Link href={unlimitedHref(tid)} className="mt-0.5 block text-xs font-medium text-brand-700 hover:underline" title={UNLIMITED_HINT}>
+                            ∞ Unlimited practice
+                          </Link>
+                        )}
                       </div>
                       <span className="flex shrink-0 gap-1.5">
                         <Link href={`/topics/${tid}`} className="btn-ghost px-3 py-1.5 text-xs">

@@ -1,4 +1,4 @@
-import { ArrowLeft, ListChecks } from "lucide-react";
+import { ArrowLeft, Infinity as InfinityIcon, ListChecks } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,6 +6,7 @@ import { PrintButton } from "@/components/PrintButton";
 import { absoluteUrl } from "@/data/site";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { formulaTopics, hasFormulaSheet, loadNotes, shortTricks } from "@/lib/formulas";
+import { canUnlimited, UNLIMITED_HINT, unlimitedHref } from "@/lib/unlimited";
 
 // Only topics with a sheet are built; any other id is a 404.
 export const dynamicParams = false;
@@ -98,6 +99,11 @@ export default async function FormulaSheetPage({ params }: { params: Promise<{ i
           <Link href={`/topics/${id}`} className="btn-ghost">
             <ListChecks className="h-4 w-4" /> Notes and questions
           </Link>
+          {canUnlimited(id) && (
+            <Link href={unlimitedHref(id)} className="btn-ghost" title={UNLIMITED_HINT}>
+              <InfinityIcon className="h-4 w-4" /> Unlimited practice
+            </Link>
+          )}
           <PrintButton />
         </div>
       </div>
