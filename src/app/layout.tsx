@@ -14,6 +14,7 @@ import { RegisterSW } from "@/components/RegisterSW";
 import { SiteEvents } from "@/components/SiteEvents";
 import { ThemeToggle, themeInitScript } from "@/components/ThemeToggle";
 import { EXAM_BY_ID, EXAMS } from "@/data/exams";
+import { homeExamFlagScript } from "@/lib/homeFlag";
 import { COMPANY } from "@/data/site";
 import { COMPANY_LINKS, NAV_SECTIONS, visible } from "@/data/sitemap-nav";
 import { AccountProvider } from "@/lib/account";
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning className={`${sans.variable} ${mono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: homeExamFlagScript }} />
       </head>
       <body className="flex min-h-screen flex-col">
         <a href="#main-content" className="skip-link">
