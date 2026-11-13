@@ -193,7 +193,7 @@ export const BANK_SIZES: Record<string, number> = {
   "chem-thermodynamics": 129,
   "comp-awareness": 154,
   "comp-ms-office-internet": 149,
-  "cs-c-programming": 100,
+  "cs-c-programming": 130,
   "cs-coding-problems": 300,
   "cs-computer-networks": 97,
   "cs-dbms-sql": 97,
