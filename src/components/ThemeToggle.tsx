@@ -5,8 +5,11 @@ import { useEffect, useState } from "react";
 
 export const THEME_KEY = "studyclip:theme";
 
-/** Runs before first paint (inlined in <head>) so the page never flashes the wrong theme. */
-export const themeInitScript = `try{var t=localStorage.getItem("${THEME_KEY}");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
+/**
+ * Dark is the default: the server renders <html class="dark">, so first paint (and no-JS) is dark.
+ * This runs before first paint (inlined in <head>) and switches to light only for people who chose it.
+ */
+export const themeInitScript = `try{if(localStorage.getItem("${THEME_KEY}")==="light")document.documentElement.classList.remove("dark")}catch(e){}`;
 
 export function toggleTheme() {
   const dark = document.documentElement.classList.toggle("dark");
@@ -19,7 +22,7 @@ export function toggleTheme() {
 }
 
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   useEffect(() => {
     const sync = () => setDark(document.documentElement.classList.contains("dark"));
     sync();

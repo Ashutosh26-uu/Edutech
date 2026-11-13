@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: `${base}/today/`,
     scope: `${base}/`,
     display: "standalone",
-    background_color: "#f8fafc",
+    background_color: "#09090b",
     // Same as the viewport themeColor in layout.tsx.
     theme_color: "#18181b",
     icons: [
