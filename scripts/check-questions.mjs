@@ -396,10 +396,86 @@ const CHECKS = [
     const [p, q] = [+m[1], +m[2]];
     return fr(+m[3] * p + +m[4] * q, +m[5] * p - +m[6] * q);
   }],
+  // Data interpretation: the data is read back out of the question text
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the (average|total) of the yearly figures\?$/, (m) => {
+    const v = Object.values(yrs(m[1]));
+    const t = v.reduce((s, x) => s + x, 0);
+    return m[2] === "total" ? t : t / v.length;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. By how much does the figure for (\d{4}) exceed the figure for (\d{4})\?$/, (m) => {
+    const d = yrs(m[1])[m[2]] - yrs(m[1])[m[3]];
+    return d > 0 ? d : NaN;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the total of the figures for (\d{4}) and (\d{4})\?$/, (m) => yrs(m[1])[m[2]] + yrs(m[1])[m[3]]],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the ratio of the figure for (\d{4}) to the figure for (\d{4})\?$/, (m) => ratioStr(yrs(m[1])[m[2]], yrs(m[1])[m[3]])],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the percentage (increase|decrease) in the figure from (\d{4}) to (\d{4})\?$/, (m) => {
+    const [a, b] = [yrs(m[1])[m[3]], yrs(m[1])[m[4]]];
+    const change = ((b - a) / a) * 100;
+    return change > 0 === (m[2] === "increase") ? Math.abs(change) : NaN;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. The figure for (\d{4}) is what percent of the figure for (\d{4})\?$/, (m) => (yrs(m[1])[m[2]] / yrs(m[1])[m[3]]) * 100],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. The figure for (\d{4}) is what percent of the total for all the given years\?$/, (m) => (yrs(m[1])[m[2]] / Object.values(yrs(m[1])).reduce((s, x) => s + x, 0)) * 100],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. In which year was the percentage increase in the figure over the previous year the highest\?$/, (m) => {
+    const rows = Object.entries(yrs(m[1]));
+    return rows.slice(1).map(([y, v], i) => [y, (v - rows[i][1]) / rows[i][1]]).sort((a, b) => b[1] - a[1])[0][0];
+  }],
+  [/— ((?:\d{4}: (?:\d+|\?)(?:, )?)+)\. If the average of the five yearly figures is ([\d.]+), what is the missing figure for (\d{4})\?$/, (m) => {
+    const known = Object.values(yrs(m[1]));
+    return known.length === 4 && m[1].includes(m[3] + ": ?") ? 5 * +m[2] - known.reduce((s, x) => s + x, 0) : NaN;
+  }],
+  [/([\d,]+)[^\d—]*, split as — (.+?)\. (?:How much (?:is|was) spent on|How many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => (n(m[1]) * cats(m[2])[m[3]]) / 100],
+  [/([\d,]+)[^\d—]*, split as — (.+?)\. How (?:much more (?:is|was) spent on|many more students play) ([A-Z][A-Za-z ]*?) than (?:on )?([A-Z][A-Za-z ]*)\?$/, (m) => (n(m[1]) * (cats(m[2])[m[3]] - cats(m[2])[m[4]])) / 100],
+  [/([\d,]+)[^\d—]*, shown in a pie chart with central angles — (.+?)\. (?:How much (?:is|was) spent on|How many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => {
+    const c = cats(m[2]);
+    return Object.values(c).reduce((s, x) => s + x, 0) === 360 ? (n(m[1]) * c[m[3]]) / 360 : NaN;
+  }],
+  [/the central angles are — (.+?)\. If ₹?([\d,]+)(?: lakh)? (?:is spent on|was spent on|students play) ([A-Z][A-Za-z ]*), how (?:much (?:is|was) spent on|many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => {
+    const c = cats(m[1]);
+    return Object.values(c).reduce((s, x) => s + x, 0) === 360 ? (n(m[2]) / c[m[3]]) * c[m[4]] : NaN;
+  }],
+  [/School A: (\d+) boys and (\d+) girls; School B: (\d+) boys and (\d+) girls\. What percent of the students of School ([AB]) are girls\?/, (m) => {
+    const [b, gl] = m[5] === "A" ? [+m[1], +m[2]] : [+m[3], +m[4]];
+    return (gl / (b + gl)) * 100;
+  }],
+  [/School A: (\d+) boys and (\d+) girls; School B: (\d+) boys and (\d+) girls\. What is the ratio of the total number of boys to the total number of girls/, (m) => ratioStr(+m[1] + +m[3], +m[2] + +m[4])],
+  [/(?:Group|Section) A: (\d+) (?:workers|students), average ₹?(\d+); (?:Group|Section) B: (\d+) (?:workers|students), average ₹?(\d+)\. What is the average/, (m) => (+m[1] * +m[2] + +m[3] * +m[4]) / (+m[1] + +m[3])],
+  [/Factory A: ([^;]+); Factory B: ([^.]+)\. What is the ratio of the total production of Factory ([AB]) to that of Factory ([AB])/, (m) => {
+    const tot = (s) => Object.values(yrs(s)).reduce((a, x) => a + x, 0);
+    const t = { A: tot(m[1]), B: tot(m[2]) };
+    return m[3] !== m[4] ? ratioStr(t[m[3]], t[m[4]]) : "";
+  }],
+  [/— (.+?)\. Profit = income − expenditure\. What is the percentage increase in profit from (\d{4}) to (\d{4})\?/, (m) => {
+    const p = Object.fromEntries([...m[1].matchAll(/(\d{4}): income (\d+), expenditure (\d+)/g)].map((x) => [x[1], +x[2] - +x[3]]));
+    return ((p[m[3]] - p[m[2]]) / p[m[2]]) * 100;
+  }],
+  [/— (.+?)\. Profit percent = \(income − expenditure\) ÷ expenditure × 100\. In which year was the profit percent the highest\?/, (m) =>
+    [...m[1].matchAll(/(\d{4}): income (\d+), expenditure (\d+)/g)].map((x) => [x[1], (+x[2] - +x[3]) / +x[3]]).sort((a, b) => b[1] - a[1])[0][0]],
+  [/— (.+?)\. What is the percentage (increase|decrease) in the number of candidates who passed from (\d{4}) to (\d{4})\?/, (m) => {
+    const p = Object.fromEntries([...m[1].matchAll(/(\d{4}): (\d+) appeared, (\d+)% passed/g)].map((x) => [x[1], (+x[2] * +x[3]) / 100]));
+    const change = ((p[m[4]] - p[m[3]]) / p[m[3]]) * 100;
+    return change > 0 === (m[2] === "increase") ? Math.abs(change) : NaN;
+  }],
+  [/— (.+?)\. What is the overall pass percentage for the three years taken together\?/, (m) => {
+    const rows = [...m[1].matchAll(/(\d{4}): (\d+) appeared, (\d+)% passed/g)];
+    return rows.length === 3 ? (rows.reduce((s, x) => s + (+x[2] * +x[3]) / 100, 0) / rows.reduce((s, x) => s + +x[2], 0)) * 100 : NaN;
+  }],
+  [/A college has ([\d,]+) students in four departments — (.+?)\. The percentage of girls in each department is — (.+?)\. (?:How many girls are there in (\w+) and (\w+) together|How many boys are there in (\w+)|What percent of all the students of the college are girls)\?/, (m) => {
+    const [total, share, girls] = [n(m[1]), cats(m[2]), cats(m[3])];
+    const count = (d) => (total * share[d]) / 100;
+    const g = (d) => (count(d) * girls[d]) / 100;
+    if (m[4]) return g(m[4]) + g(m[5]);
+    if (m[6]) return count(m[6]) - g(m[6]);
+    return (Object.keys(share).reduce((s, d) => s + g(d), 0) / total) * 100;
+  }],
+  [/(\d{4}): Product A (\d+), Product B (\d+); (\d{4}): Product A (\d+), Product B (\d+)\. (?:What is the percentage growth in the combined sales of the two products from \d{4} to \d{4}|What was the share of Product A in the combined sales of the two products in (\d{4}))\?/, (m) => {
+    const [a1, b1, a2, b2] = [+m[2], +m[3], +m[5], +m[6]];
+    if (!m[7]) return ((a2 + b2 - a1 - b1) / (a1 + b1)) * 100;
+    return m[7] === m[4] ? (a2 / (a2 + b2)) * 100 : NaN;
+  }],
 ];
 let derived = 0;
-const NEW_TOPICS = ["quant-number-system", "quant-mensuration", "quant-algebra-geometry"];
-const BIG_TOPICS = ["quant-algebra-geometry"];
+const NEW_TOPICS = ["quant-number-system", "quant-mensuration", "quant-algebra-geometry", "quant-data-interpretation"];
+const BIG_TOPICS = ["quant-algebra-geometry", "quant-data-interpretation"];
 for (const id of NEW_TOPICS) if (!hasGenerator(id)) fail(`generator ${id}: missing`);
 // The new topics are checked directly, whether or not topics.ts lists them yet.
 const genTopics = [...new Set([...TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id), ...NEW_TOPICS])];

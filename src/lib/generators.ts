@@ -2422,6 +2422,703 @@ GENERATORS[AG] = {
   }),
 };
 
+// ---------------------------------------------------------------------------
+// Data interpretation: every question carries its own small data set as text
+// ---------------------------------------------------------------------------
+
+const DI = "quant-data-interpretation";
+/** True when x has at most one decimal place, so the answer prints cleanly. */
+const tidy = (x: number) => Math.abs(x * 10 - Math.round(x * 10)) < 1e-9;
+const round1 = (x: number) => Math.round(x * 10) / 10;
+const lowerFirst = (s: string) => s[0].toLowerCase() + s.slice(1);
+
+const DI_SERIES = [
+  { en: "Sales (in ₹ lakh) of a company", hi: "एक कंपनी की बिक्री (₹ लाख में)" },
+  { en: "Production (in thousand tonnes) of a steel plant", hi: "एक इस्पात संयंत्र का उत्पादन (हज़ार टन में)" },
+  { en: "Number of students enrolled in a college", hi: "एक महाविद्यालय में नामांकित विद्यार्थियों की संख्या" },
+  { en: "Exports (in ₹ crore) of a firm", hi: "एक फर्म का निर्यात (₹ करोड़ में)" },
+  { en: "Number of cars sold by a dealer", hi: "एक डीलर द्वारा बेची गई कारों की संख्या" },
+  { en: "Number of visitors (in thousands) to a museum", hi: "एक संग्रहालय में आए आगंतुकों की संख्या (हज़ार में)" },
+];
+interface Series {
+  years: number[];
+  vals: number[];
+  /** "Sales (in ₹ lakh) of a company — 2019: 120, 2020: 150." and the same in Hindi. */
+  en: string;
+  hi: string;
+}
+/** A yearly series of `n` distinct figures, all multiples of `step`. Each year moves by a round percentage, so changes work out cleanly. */
+function series(r: Rand, n: number, step = 1): Series {
+  const ctx = pick(DI_SERIES, r);
+  const y0 = rint(2012, 2020, r);
+  const years = Array.from({ length: n }, (_, i) => y0 + i);
+  const vals = until(() => {
+    const v = [step === 1 ? 40 * rint(2, 10, r) : 50 * rint(2, 8, r)];
+    while (v.length < n) {
+      const last = v[v.length - 1];
+      const nexts = [-25, -20, -10, 5, 10, 15, 20, 25, 30, 40, 50].map((p) => (last * (100 + p)) / 100).filter((x) => x % step === 0 && x >= 40 && x <= 900 && !v.includes(x));
+      if (!nexts.length) return null;
+      v.push(pick(nexts, r));
+    }
+    return v;
+  });
+  const list = years.map((y, i) => `${y}: ${vals[i]}`).join(", ");
+  return { years, vals, en: `${ctx.en} — ${list}.`, hi: `${ctx.hi} — ${list}।` };
+}
+/** Two different positions in a list of `n`, in order. */
+const twoOf = (n: number, r: Rand): [number, number] => {
+  const i = rint(0, n - 2, r);
+  return [i, rint(i + 1, n - 1, r)];
+};
+
+/**
+ * A numeric MCQ whose wrong options sit close to the answer and print as cleanly as it does (39.5% beside
+ * 37.5%, never 39.38%). `traps` are the answers that common mistakes lead to; they are offered first.
+ */
+function close(id: string, d: Difficulty, question: string, ans: number, explanation: string, hi: Hi, r: Rand, traps: number[] = [], unit = "", suffix = ""): MCQ {
+  const scale = ans >= 300 ? 10 : ans >= 100 ? 5 : ans >= 40 ? 2 : 1;
+  const offsets = d === "very-hard" ? [-4, -3, -2, -1, 1, 2, 3, 4] : [-8, -6, -5, -4, -2, 2, 4, 5, 6, 8];
+  const show = (v: number) => `${unit}${fmt(v)}${suffix}`;
+  const wrong = [...shuffle(traps.map(round1), r).slice(0, 2), ...shuffle(offsets, r).map((o) => round1(ans + o * scale))].filter((v) => v > 0 && Number.isFinite(v));
+  return choice(id, DI, d, question, show(ans), wrong.map(show), explanation, hi, r);
+}
+/** Wrong options for a ratio a : b, built from its lowest terms so they look as simple as the answer. */
+const ratioTraps = (a: number, b: number) => {
+  const g = gcd(a, b);
+  const [p, q] = [a / g, b / g];
+  return [ratio(q, p), ratio(p + 1, q), ratio(p, q + 1), ratio(p + q, q), ratio(p, p + q), ratio(p + 1, q + 2), ratio(p + 2, q + 1), ratio(p + 2, q + 3)];
+};
+
+interface PieCtx {
+  /** Opening words with the total: "The monthly expenditure of a family is ₹40,000". */
+  lead: (t: string) => string;
+  leadHi: (t: string) => string;
+  /** Opening words without a total: "In a pie chart of a family’s monthly expenditure". */
+  chart: string;
+  chartHi: string;
+  cats: [string, string][];
+  totals: number[];
+  unit: string;
+  suffix: string;
+  one: (c: string) => string;
+  oneHi: (c: string) => string;
+  more: (a: string, b: string) => string;
+  moreHi: (a: string, b: string) => string;
+  given: (c: string, amount: string) => string;
+  givenHi: (c: string, amount: string) => string;
+}
+const PIES: PieCtx[] = [
+  {
+    lead: (t) => `The monthly expenditure of a family is ₹${t}`,
+    leadHi: (t) => `एक परिवार का मासिक व्यय ₹${t} है`,
+    chart: "In a pie chart of a family’s monthly expenditure",
+    chartHi: "एक परिवार के मासिक व्यय के पाई चार्ट में",
+    cats: [["Food", "भोजन"], ["Rent", "किराया"], ["Education", "शिक्षा"], ["Transport", "परिवहन"], ["Clothing", "कपड़े"]],
+    totals: [20000, 24000, 30000, 36000, 40000, 48000, 50000, 60000, 72000, 80000],
+    unit: "₹",
+    suffix: "",
+    one: (c) => `How much is spent on ${c}?`,
+    oneHi: (c) => `${c} पर कितना व्यय होता है?`,
+    more: (a, b) => `How much more is spent on ${a} than on ${b}?`,
+    moreHi: (a, b) => `${a} पर ${b} की तुलना में कितना अधिक व्यय होता है?`,
+    given: (c, amount) => `If ₹${amount} is spent on ${c}`,
+    givenHi: (c, amount) => `यदि ${c} पर ₹${amount} व्यय होते हैं`,
+  },
+  {
+    lead: (t) => `The ${t} students of a school each play exactly one sport`,
+    leadHi: (t) => `एक विद्यालय के ${t} विद्यार्थियों में से प्रत्येक केवल एक खेल खेलता है`,
+    chart: "In a pie chart of the sports played by the students of a school",
+    chartHi: "एक विद्यालय के विद्यार्थियों द्वारा खेले जाने वाले खेलों के पाई चार्ट में",
+    cats: [["Cricket", "क्रिकेट"], ["Football", "फुटबॉल"], ["Hockey", "हॉकी"], ["Tennis", "टेनिस"], ["Kabaddi", "कबड्डी"]],
+    totals: [600, 800, 1200, 1600, 1800, 2000, 2400, 3000, 3600],
+    unit: "",
+    suffix: "",
+    one: (c) => `How many students play ${c}?`,
+    oneHi: (c) => `${c} खेलने वाले विद्यार्थी कितने हैं?`,
+    more: (a, b) => `How many more students play ${a} than ${b}?`,
+    moreHi: (a, b) => `${a} खेलने वाले विद्यार्थी ${b} खेलने वाले विद्यार्थियों से कितने अधिक हैं?`,
+    given: (c, amount) => `If ${amount} students play ${c}`,
+    givenHi: (c, amount) => `यदि ${amount} विद्यार्थी ${c} खेलते हैं`,
+  },
+  {
+    lead: (t) => `A company spent ₹${t} lakh in a year`,
+    leadHi: (t) => `एक कंपनी ने एक वर्ष में ₹${t} लाख व्यय किए`,
+    chart: "In a pie chart of a company’s yearly spending",
+    chartHi: "एक कंपनी के वार्षिक व्यय के पाई चार्ट में",
+    cats: [["Salaries", "वेतन"], ["Raw material", "कच्चा माल"], ["Marketing", "विपणन"], ["Transport", "परिवहन"], ["Research", "अनुसंधान"]],
+    totals: [120, 160, 180, 240, 300, 360, 400, 480, 600, 720],
+    unit: "₹",
+    suffix: " lakh",
+    one: (c) => `How much was spent on ${c}?`,
+    oneHi: (c) => `${c} पर कितना व्यय हुआ?`,
+    more: (a, b) => `How much more was spent on ${a} than on ${b}?`,
+    moreHi: (a, b) => `${a} पर ${b} की तुलना में कितना अधिक व्यय हुआ?`,
+    given: (c, amount) => `If ₹${amount} lakh was spent on ${c}`,
+    givenHi: (c, amount) => `यदि ${c} पर ₹${amount} लाख व्यय हुए`,
+  },
+];
+/** `n` different shares, each a multiple of 5 from 5 to 45, adding up to 100. */
+const shares = (n: number, r: Rand) =>
+  until(() => {
+    const p = Array.from({ length: n - 1 }, () => 5 * rint(1, 9, r));
+    const all = [...p, 100 - sum(p)];
+    return all[n - 1] >= 5 && all[n - 1] <= 45 && new Set(all).size === n ? all : null;
+  });
+interface Pie {
+  ctx: PieCtx;
+  total: number;
+  pct: number[];
+  /** "Food: 30%, Rent: 25%" (or the central angles with `degrees`), in English and Hindi. */
+  list: string;
+  listHi: string;
+}
+function pie(r: Rand, degrees: boolean): Pie {
+  const ctx = pick(PIES, r);
+  const pct = shares(ctx.cats.length, r);
+  const show = (p: number) => (degrees ? `${(p * 18) / 5}°` : `${p}%`);
+  return {
+    ctx,
+    total: pick(ctx.totals, r),
+    pct,
+    list: ctx.cats.map(([c], i) => `${c}: ${show(pct[i])}`).join(", "),
+    listHi: ctx.cats.map(([, c], i) => `${c}: ${show(pct[i])}`).join(", "),
+  };
+}
+const pieAnswer = (id: string, d: Difficulty, p: Pie, q: string, ans: number, e: string, hi: Hi, r: Rand) => numeric(id, DI, d, q, ans, e, hi, r, p.ctx.unit, p.ctx.suffix);
+/** "₹12,000" or "₹36 lakh" or "300", for explanations. */
+const money = (p: Pie, v: number) => `${p.ctx.unit}${fmt(v)}${p.ctx.suffix}`;
+const moneyHi = (p: Pie, v: number) => `${p.ctx.unit}${fmt(v)}${p.ctx.suffix ? " लाख" : ""}`;
+
+GENERATORS[DI] = {
+  easy: either((id, r) => {
+    // Average or total of a series.
+    const s = series(r, rint(4, 5, r), 10);
+    const total = sum(s.vals);
+    const n = s.vals.length;
+    const adds = s.vals.join(" + ");
+    if (r() < 0.7 && total % n === 0) {
+      const ans = total / n;
+      return numeric(
+        id, DI, "easy",
+        `${s.en} What is the average of the yearly figures?`,
+        ans,
+        `Average = (${adds}) ÷ ${n} = ${fmt(total)} ÷ ${n} = ${fmt(ans)}.`,
+        { q: `${s.hi} वार्षिक आँकड़ों का औसत क्या है?`, e: `औसत = (${adds}) ÷ ${n} = ${fmt(total)} ÷ ${n} = ${fmt(ans)}।` },
+        r,
+      );
+    }
+    return numeric(
+      id, DI, "easy",
+      `${s.en} What is the total of the yearly figures?`,
+      total,
+      `Total = ${adds} = ${fmt(total)}.`,
+      { q: `${s.hi} वार्षिक आँकड़ों का कुल योग क्या है?`, e: `कुल योग = ${adds} = ${fmt(total)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Difference or sum of two years.
+    const s = series(r, rint(4, 5, r), 10);
+    const [i, j] = twoOf(s.vals.length, r);
+    const [hiI, loI] = s.vals[i] > s.vals[j] ? [i, j] : [j, i];
+    if (r() < 0.5) {
+      const ans = s.vals[hiI] - s.vals[loI];
+      return numeric(
+        id, DI, "easy",
+        `${s.en} By how much does the figure for ${s.years[hiI]} exceed the figure for ${s.years[loI]}?`,
+        ans,
+        `${s.years[hiI]} figure − ${s.years[loI]} figure = ${s.vals[hiI]} − ${s.vals[loI]} = ${ans}.`,
+        { q: `${s.hi} ${s.years[hiI]} का आँकड़ा ${s.years[loI]} के आँकड़े से कितना अधिक है?`, e: `${s.years[hiI]} का आँकड़ा − ${s.years[loI]} का आँकड़ा = ${s.vals[hiI]} − ${s.vals[loI]} = ${ans}।` },
+        r,
+      );
+    }
+    const ans = s.vals[i] + s.vals[j];
+    return numeric(
+      id, DI, "easy",
+      `${s.en} What is the total of the figures for ${s.years[i]} and ${s.years[j]}?`,
+      ans,
+      `${s.vals[i]} + ${s.vals[j]} = ${fmt(ans)}.`,
+      { q: `${s.hi} ${s.years[i]} और ${s.years[j]} के आँकड़ों का योग कितना है?`, e: `${s.vals[i]} + ${s.vals[j]} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Ratio of two years.
+    const s = series(r, rint(4, 5, r), 10);
+    const [a, b] = r() < 0.5 ? twoOf(s.vals.length, r) : (twoOf(s.vals.length, r).reverse() as [number, number]);
+    const [va, vb] = [s.vals[a], s.vals[b]];
+    const ans = ratio(va, vb);
+    return choice(
+      id, DI, "easy",
+      `${s.en} What is the ratio of the figure for ${s.years[a]} to the figure for ${s.years[b]}?`,
+      ans,
+      ratioTraps(va, vb),
+      `${s.years[a]} : ${s.years[b]} = ${va} : ${vb} = ${ans} (divide both by ${gcd(va, vb)}).`,
+      { q: `${s.hi} ${s.years[a]} के आँकड़े का ${s.years[b]} के आँकड़े से अनुपात क्या है?`, e: `${s.years[a]} : ${s.years[b]} = ${va} : ${vb} = ${ans} (दोनों को ${gcd(va, vb)} से भाग दें)।` },
+      r,
+    );
+  }, (id, r) => {
+    // One slice of a pie chart given in percentages.
+    const p = pie(r, false);
+    const i = rint(0, p.pct.length - 1, r);
+    const [c, cHi] = p.ctx.cats[i];
+    const t = fmt(p.total);
+    const ans = (p.total * p.pct[i]) / 100;
+    return pieAnswer(
+      id, "easy", p,
+      `${p.ctx.lead(t)}, split as — ${p.list}. ${p.ctx.one(c)}`,
+      ans,
+      `${c} = ${p.pct[i]}% of ${t} = ${p.pct[i]} × ${t} ÷ 100 = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसका बँटवारा इस प्रकार है — ${p.listHi}। ${p.ctx.oneHi(cHi)}`, e: `${cHi} = ${t} का ${p.pct[i]}% = ${p.pct[i]} × ${t} ÷ 100 = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }),
+
+  moderate: either((id, r) => {
+    // Percentage change between two years.
+    const { s, i, j, change } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const [i, j] = twoOf(s.vals.length, r);
+      const change = ((s.vals[j] - s.vals[i]) * 100) / s.vals[i];
+      return tidy(change) ? { s, i, j, change } : null;
+    });
+    const up = change > 0;
+    const ans = round1(Math.abs(change));
+    const diff = Math.abs(s.vals[j] - s.vals[i]);
+    return close(
+      id, "moderate",
+      `${s.en} What is the percentage ${up ? "increase" : "decrease"} in the figure from ${s.years[i]} to ${s.years[j]}?`,
+      ans,
+      `Change = ${up ? `${s.vals[j]} − ${s.vals[i]}` : `${s.vals[i]} − ${s.vals[j]}`} = ${diff}. Percentage ${up ? "increase" : "decrease"} = ${diff} ÷ ${s.vals[i]} × 100 = ${fmt(ans)}% (always divide by the earlier value).`,
+      {
+        q: `${s.hi} ${s.years[i]} से ${s.years[j]} तक आँकड़े में कितने प्रतिशत की ${up ? "वृद्धि" : "कमी"} हुई?`,
+        e: `परिवर्तन = ${up ? `${s.vals[j]} − ${s.vals[i]}` : `${s.vals[i]} − ${s.vals[j]}`} = ${diff}। प्रतिशत ${up ? "वृद्धि" : "कमी"} = ${diff} ÷ ${s.vals[i]} × 100 = ${fmt(ans)}% (सदैव पहले वाले मान से भाग दें)।`,
+      },
+      r, [(diff * 100) / s.vals[j]], "", "%",
+    );
+  }, (id, r) => {
+    // One slice of a pie chart given in central angles.
+    const p = pie(r, true);
+    const i = rint(0, p.pct.length - 1, r);
+    const [c, cHi] = p.ctx.cats[i];
+    const t = fmt(p.total);
+    const deg = (p.pct[i] * 18) / 5;
+    const ans = (p.total * p.pct[i]) / 100;
+    return pieAnswer(
+      id, "moderate", p,
+      `${p.ctx.lead(t)}, shown in a pie chart with central angles — ${p.list}. ${p.ctx.one(c)}`,
+      ans,
+      `${c} = ${deg}/360 × ${t} = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसे एक पाई चार्ट में इन केंद्रीय कोणों से दिखाया गया है — ${p.listHi}। ${p.ctx.oneHi(cHi)}`, e: `${cHi} = ${deg}/360 × ${t} = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // One year as a percentage of another.
+    const { s, a, b, ans } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const [a, b] = r() < 0.5 ? twoOf(s.vals.length, r) : twoOf(s.vals.length, r).reverse();
+      const ans = (s.vals[a] * 100) / s.vals[b];
+      return tidy(ans) ? { s, a, b, ans: round1(ans) } : null;
+    });
+    return close(
+      id, "moderate",
+      `${s.en} The figure for ${s.years[a]} is what percent of the figure for ${s.years[b]}?`,
+      ans,
+      `Required % = ${s.vals[a]} ÷ ${s.vals[b]} × 100 = ${fmt(ans)}%.`,
+      { q: `${s.hi} ${s.years[a]} का आँकड़ा, ${s.years[b]} के आँकड़े का कितना प्रतिशत है?`, e: `अभीष्ट प्रतिशत = ${s.vals[a]} ÷ ${s.vals[b]} × 100 = ${fmt(ans)}%।` },
+      r, [(s.vals[b] * 100) / s.vals[a], Math.abs(ans - 100)], "", "%",
+    );
+  }, (id, r) => {
+    // Difference between two slices of a pie chart given in percentages.
+    const p = pie(r, false);
+    const [x, y] = twoOf(p.pct.length, r);
+    const [i, j] = p.pct[x] > p.pct[y] ? [x, y] : [y, x];
+    const [[a, aHi], [b, bHi]] = [p.ctx.cats[i], p.ctx.cats[j]];
+    const t = fmt(p.total);
+    const gap = p.pct[i] - p.pct[j];
+    const ans = (p.total * gap) / 100;
+    return pieAnswer(
+      id, "moderate", p,
+      `${p.ctx.lead(t)}, split as — ${p.list}. ${p.ctx.more(a, b)}`,
+      ans,
+      `Difference in shares = ${p.pct[i]}% − ${p.pct[j]}% = ${gap}%. ${gap}% of ${t} = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसका बँटवारा इस प्रकार है — ${p.listHi}। ${p.ctx.moreHi(aHi, bHi)}`, e: `हिस्सों का अंतर = ${p.pct[i]}% − ${p.pct[j]}% = ${gap}%। ${t} का ${gap}% = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // A two-row table: boys and girls in two schools.
+    const { v, pctGirls } = until(() => {
+      const v = Array.from({ length: 4 }, () => 20 * rint(5, 30, r));
+      const pctGirls = [(v[1] * 100) / (v[0] + v[1]), (v[3] * 100) / (v[2] + v[3])];
+      return new Set(v).size === 4 && pctGirls.every(tidy) && sum([v[0], v[2]]) !== sum([v[1], v[3]]) ? { v, pctGirls } : null;
+    });
+    const [ba, ga, bb, gb] = v;
+    const data = `Students in two schools — School A: ${ba} boys and ${ga} girls; School B: ${bb} boys and ${gb} girls.`;
+    const dataHi = `दो विद्यालयों के विद्यार्थी — विद्यालय A: ${ba} लड़के और ${ga} लड़कियाँ; विद्यालय B: ${bb} लड़के और ${gb} लड़कियाँ।`;
+    if (r() < 0.5) {
+      const k = rint(0, 1, r);
+      const school = "AB"[k];
+      const [boys, girls] = k ? [bb, gb] : [ba, ga];
+      const ans = round1(pctGirls[k]);
+      return close(
+        id, "moderate",
+        `${data} What percent of the students of School ${school} are girls?`,
+        ans,
+        `School ${school} has ${boys} + ${girls} = ${boys + girls} students. Girls = ${girls} ÷ ${boys + girls} × 100 = ${fmt(ans)}%.`,
+        { q: `${dataHi} विद्यालय ${school} के विद्यार्थियों में से कितने प्रतिशत लड़कियाँ हैं?`, e: `विद्यालय ${school} में ${boys} + ${girls} = ${boys + girls} विद्यार्थी हैं। लड़कियाँ = ${girls} ÷ ${boys + girls} × 100 = ${fmt(ans)}%।` },
+        r, [100 - ans, pctGirls[1 - k]], "", "%",
+      );
+    }
+    const [B, G] = [ba + bb, ga + gb];
+    const ans = ratio(B, G);
+    const wrong = [ratio(G, B), ...shuffle([ratio(ba, ga), ratio(bb, gb), ratio(ba + ga, bb + gb)], r).slice(0, 2), ...ratioTraps(B, G)];
+    return choice(
+      id, DI, "moderate",
+      `${data} What is the ratio of the total number of boys to the total number of girls in the two schools together?`,
+      ans,
+      wrong,
+      `Boys = ${ba} + ${bb} = ${B}; girls = ${ga} + ${gb} = ${G}. Ratio = ${B} : ${G} = ${ans}.`,
+      { q: `${dataHi} दोनों विद्यालयों को मिलाकर लड़कों की कुल संख्या का लड़कियों की कुल संख्या से अनुपात क्या है?`, e: `लड़के = ${ba} + ${bb} = ${B}; लड़कियाँ = ${ga} + ${gb} = ${G}। अनुपात = ${B} : ${G} = ${ans}।` },
+      r,
+    );
+  }),
+
+  hard: either((id, r) => {
+    // The year with the highest growth over the previous year.
+    const { s, growth, best } = until(() => {
+      const s = series(r, 5);
+      const growth = s.vals.slice(1).map((v, i) => ((v - s.vals[i]) * 100) / s.vals[i]);
+      const order = [...growth].sort((a, b) => b - a);
+      // One clear winner, so rounding never decides the answer.
+      return order[0] - order[1] >= 3 && order[0] > 0 ? { s, growth, best: growth.indexOf(order[0]) } : null;
+    });
+    const years = s.years.slice(1).map(String);
+    const show = (x: number) => `${x < 0 ? "−" : ""}${fmt(Math.abs(round1(x)))}%`;
+    const work = growth.map((gr, i) => `${years[i]}: (${s.vals[i + 1]} − ${s.vals[i]}) ÷ ${s.vals[i]} × 100 = ${show(gr)}`).join("; ");
+    return choice(
+      id, DI, "hard",
+      `${s.en} In which year was the percentage increase in the figure over the previous year the highest?`,
+      years[best],
+      years,
+      `${work}. The highest is in ${years[best]}.`,
+      { q: `${s.hi} किस वर्ष में आँकड़े में पिछले वर्ष की तुलना में प्रतिशत वृद्धि सबसे अधिक थी?`, e: `${work}। सबसे अधिक वृद्धि ${years[best]} में हुई।` },
+      r,
+    );
+  }, (id, r) => {
+    // Weighted average of two groups.
+    const wages = r() < 0.4;
+    const { n1, n2, a1, a2, ans } = until(() => {
+      const [n1, n2] = [5 * rint(3, 12, r), 5 * rint(3, 12, r)];
+      const [a1, a2] = wages ? [10 * rint(30, 80, r), 10 * rint(30, 80, r)] : [rint(40, 90, r), rint(40, 90, r)];
+      const ans = (n1 * a1 + n2 * a2) / (n1 + n2);
+      return n1 !== n2 && a1 !== a2 && tidy(ans) ? { n1, n2, a1, a2, ans: round1(ans) } : null;
+    });
+    const work = `(${n1} × ${a1} + ${n2} × ${a2}) ÷ (${n1} + ${n2}) = ${fmt(n1 * a1 + n2 * a2)} ÷ ${n1 + n2} = ${fmt(ans)}`;
+    if (wages) {
+      return close(
+        id, "hard",
+        `Daily wages in a factory — Group A: ${n1} workers, average ₹${a1}; Group B: ${n2} workers, average ₹${a2}. What is the average daily wage of all the workers together?`,
+        ans,
+        `Use totals, not the mean of the two averages: ${work}. Average = ₹${fmt(ans)}.`,
+        {
+          q: `एक कारखाने में दैनिक मज़दूरी — समूह A: ${n1} श्रमिक, औसत ₹${a1}; समूह B: ${n2} श्रमिक, औसत ₹${a2}। सभी श्रमिकों की मिलाकर औसत दैनिक मज़दूरी कितनी है?`,
+          e: `दोनों औसतों का औसत नहीं, कुल योग लें: ${work}। औसत = ₹${fmt(ans)}।`,
+        },
+        r, [(a1 + a2) / 2, (n2 * a1 + n1 * a2) / (n1 + n2)], "₹",
+      );
+    }
+    return close(
+      id, "hard",
+      `Marks of two sections of a class — Section A: ${n1} students, average ${a1}; Section B: ${n2} students, average ${a2}. What is the average marks of the whole class?`,
+      ans,
+      `Use totals, not the mean of the two averages: ${work}.`,
+      {
+        q: `एक कक्षा के दो वर्गों के अंक — वर्ग A: ${n1} विद्यार्थी, औसत ${a1}; वर्ग B: ${n2} विद्यार्थी, औसत ${a2}। पूरी कक्षा के औसत अंक कितने हैं?`,
+        e: `दोनों औसतों का औसत नहीं, कुल योग लें: ${work}।`,
+      },
+      r, [(a1 + a2) / 2, (n2 * a1 + n1 * a2) / (n1 + n2)],
+    );
+  }, (id, r) => {
+    // Pie chart in degrees: one slice's amount is given, another is asked.
+    const p = pie(r, true);
+    const [i, j] = r() < 0.5 ? twoOf(p.pct.length, r) : (twoOf(p.pct.length, r).reverse() as [number, number]);
+    const [[a, aHi], [b, bHi]] = [p.ctx.cats[i], p.ctx.cats[j]];
+    const [known, ans] = [(p.total * p.pct[i]) / 100, (p.total * p.pct[j]) / 100];
+    const [da, db] = [(p.pct[i] * 18) / 5, (p.pct[j] * 18) / 5];
+    return pieAnswer(
+      id, "hard", p,
+      `${p.ctx.chart}, the central angles are — ${p.list}. ${p.ctx.given(a, fmt(known))}, ${lowerFirst(p.ctx.one(b))}`,
+      ans,
+      `Amounts are in the ratio of the angles: ${b} = ${fmt(known)} × ${db}/${da} = ${money(p, ans)}. (The whole chart is ${fmt(known)} × 360/${da} = ${money(p, p.total)}.)`,
+      {
+        q: `${p.ctx.chartHi} केंद्रीय कोण इस प्रकार हैं — ${p.listHi}। ${p.ctx.givenHi(aHi, fmt(known))}, तो ${p.ctx.oneHi(bHi)}`,
+        e: `राशियाँ कोणों के अनुपात में होती हैं: ${bHi} = ${fmt(known)} × ${db}/${da} = ${moneyHi(p, ans)}। (पूरा चार्ट ${fmt(known)} × 360/${da} = ${moneyHi(p, p.total)} का है।)`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // One year's share of the total.
+    const { s, i, total, ans } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const i = rint(0, s.vals.length - 1, r);
+      const total = sum(s.vals);
+      const ans = (s.vals[i] * 100) / total;
+      return tidy(ans) ? { s, i, total, ans: round1(ans) } : null;
+    });
+    return close(
+      id, "hard",
+      `${s.en} The figure for ${s.years[i]} is what percent of the total for all the given years?`,
+      ans,
+      `Total = ${s.vals.join(" + ")} = ${fmt(total)}. Share of ${s.years[i]} = ${s.vals[i]} ÷ ${fmt(total)} × 100 = ${fmt(ans)}%.`,
+      {
+        q: `${s.hi} ${s.years[i]} का आँकड़ा, दिए गए सभी वर्षों के कुल योग का कितना प्रतिशत है?`,
+        e: `कुल योग = ${s.vals.join(" + ")} = ${fmt(total)}। ${s.years[i]} का हिस्सा = ${s.vals[i]} ÷ ${fmt(total)} × 100 = ${fmt(ans)}%।`,
+      },
+      r, [(s.vals[i] * 100) / (total - s.vals[i]), 100 / s.vals.length], "", "%",
+    );
+  }, (id, r) => {
+    // Two factories over three years: ratio of the totals.
+    const y0 = rint(2014, 2021, r);
+    const { a, b } = until(() => {
+      const [a, b] = [0, 1].map(() => Array.from({ length: 3 }, () => 5 * rint(4, 30, r)));
+      return sum(a) !== sum(b) && gcd(sum(a), sum(b)) >= 10 ? { a, b } : null;
+    });
+    const row = (v: number[]) => v.map((x, i) => `${y0 + i}: ${x}`).join(", ");
+    const [A, B] = [sum(a), sum(b)];
+    const first = r() < 0.5;
+    const ans = first ? ratio(A, B) : ratio(B, A);
+    const wrong = [...ratioTraps(first ? A : B, first ? B : A).slice(0, 1), pick([ratio(a[0], b[0]), ratio(a[2], b[2]), ratio(b[1], a[1])], r), ...ratioTraps(first ? A : B, first ? B : A).slice(1)];
+    const [x, y] = first ? ["A", "B"] : ["B", "A"];
+    return choice(
+      id, DI, "hard",
+      `Production (in thousand units) of two factories — Factory A: ${row(a)}; Factory B: ${row(b)}. What is the ratio of the total production of Factory ${x} to that of Factory ${y} over the three years?`,
+      ans,
+      wrong,
+      `Factory A = ${a.join(" + ")} = ${A}; Factory B = ${b.join(" + ")} = ${B}. Ratio ${x} : ${y} = ${first ? A : B} : ${first ? B : A} = ${ans}.`,
+      {
+        q: `दो कारखानों का उत्पादन (हज़ार इकाइयों में) — कारखाना A: ${row(a)}; कारखाना B: ${row(b)}। तीनों वर्षों में कारखाना ${x} के कुल उत्पादन का कारखाना ${y} के कुल उत्पादन से अनुपात क्या है?`,
+        e: `कारखाना A = ${a.join(" + ")} = ${A}; कारखाना B = ${b.join(" + ")} = ${B}। अनुपात ${x} : ${y} = ${first ? A : B} : ${first ? B : A} = ${ans}।`,
+      },
+      r,
+    );
+  }),
+
+  "very-hard": either((id, r) => {
+    // Income and expenditure over four years.
+    const y0 = rint(2014, 2020, r);
+    const years = [0, 1, 2, 3].map((i) => y0 + i);
+    const rows = (inc: number[], exp: number[]) => years.map((y, i) => `${y}: income ${inc[i]}, expenditure ${exp[i]}`).join("; ");
+    const rowsHi = (inc: number[], exp: number[]) => years.map((y, i) => `${y}: आय ${inc[i]}, व्यय ${exp[i]}`).join("; ");
+    // Expenditure drifts from year to year; income stays above it.
+    const books = () => {
+      const exp = [10 * rint(10, 36, r)];
+      while (exp.length < 4) exp.push(Math.max(80, exp[exp.length - 1] + 10 * rint(-2, 5, r)));
+      return { exp, inc: exp.map((e) => e + 10 * rint(2, 12, r)) };
+    };
+    if (r() < 0.5) {
+      const { inc, exp, i, j, ans } = until(() => {
+        const { inc, exp } = books();
+        const [i, j] = twoOf(4, r);
+        const [p1, p2] = [inc[i] - exp[i], inc[j] - exp[j]];
+        const ans = ((p2 - p1) * 100) / p1;
+        return p2 > p1 && ans <= 150 && tidy(ans) ? { inc, exp, i, j, ans: round1(ans) } : null;
+      });
+      const [p1, p2] = [inc[i] - exp[i], inc[j] - exp[j]];
+      return close(
+        id, "very-hard",
+        `Income and expenditure (in ₹ lakh) of a company — ${rows(inc, exp)}. Profit = income − expenditure. What is the percentage increase in profit from ${years[i]} to ${years[j]}?`,
+        ans,
+        `Profit in ${years[i]} = ${inc[i]} − ${exp[i]} = ${p1}; profit in ${years[j]} = ${inc[j]} − ${exp[j]} = ${p2}. Increase = (${p2} − ${p1}) ÷ ${p1} × 100 = ${fmt(ans)}%.`,
+        {
+          q: `एक कंपनी की आय और व्यय (₹ लाख में) — ${rowsHi(inc, exp)}। लाभ = आय − व्यय। ${years[i]} से ${years[j]} तक लाभ में कितने प्रतिशत की वृद्धि हुई?`,
+          e: `${years[i]} में लाभ = ${inc[i]} − ${exp[i]} = ${p1}; ${years[j]} में लाभ = ${inc[j]} − ${exp[j]} = ${p2}। वृद्धि = (${p2} − ${p1}) ÷ ${p1} × 100 = ${fmt(ans)}%।`,
+        },
+        r, [((p2 - p1) * 100) / p2, ((inc[j] - inc[i]) * 100) / inc[i]], "", "%",
+      );
+    }
+    const { inc, exp, pc, best } = until(() => {
+      const { inc, exp } = books();
+      const pc = inc.map((v, i) => ((v - exp[i]) * 100) / exp[i]);
+      const order = [...pc].sort((a, b) => b - a);
+      return order[0] - order[1] >= 2 ? { inc, exp, pc, best: pc.indexOf(order[0]) } : null;
+    });
+    const work = years.map((y, i) => `${y}: ${inc[i] - exp[i]} ÷ ${exp[i]} × 100 = ${fmt(round1(pc[i]))}%`).join("; ");
+    return choice(
+      id, DI, "very-hard",
+      `Income and expenditure (in ₹ lakh) of a company — ${rows(inc, exp)}. Profit percent = (income − expenditure) ÷ expenditure × 100. In which year was the profit percent the highest?`,
+      String(years[best]),
+      years.map(String),
+      `${work}. The highest profit percent is in ${years[best]}.`,
+      {
+        q: `एक कंपनी की आय और व्यय (₹ लाख में) — ${rowsHi(inc, exp)}। लाभ प्रतिशत = (आय − व्यय) ÷ व्यय × 100। किस वर्ष में लाभ प्रतिशत सबसे अधिक था?`,
+        e: `${work}। सबसे अधिक लाभ प्रतिशत ${years[best]} में था।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Candidates appeared and the percentage who passed: rebuild the counts first.
+    const y0 = rint(2015, 2021, r);
+    const years = [0, 1, 2].map((i) => y0 + i);
+    const rows = (ap: number[], pc: number[]) => years.map((y, i) => `${y}: ${ap[i]} appeared, ${pc[i]}% passed`).join("; ");
+    const rowsHi = (ap: number[], pc: number[]) => years.map((y, i) => `${y}: ${ap[i]} सम्मिलित, ${pc[i]}% उत्तीर्ण`).join("; ");
+    const lead = "Candidates who appeared in an examination and the percentage of them who passed";
+    const leadHi = "एक परीक्षा में सम्मिलित अभ्यर्थी और उनमें से उत्तीर्ण होने वालों का प्रतिशत";
+    if (r() < 0.5) {
+      const { ap, pc, i, j, change } = until(() => {
+        const ap = years.map(() => 50 * rint(4, 19, r));
+        const pc = years.map(() => 2 * rint(15, 42, r));
+        const [i, j] = twoOf(3, r);
+        const [a, b] = [(ap[i] * pc[i]) / 100, (ap[j] * pc[j]) / 100];
+        const change = ((b - a) * 100) / a;
+        return change !== 0 && Math.abs(change) <= 100 && tidy(change) && ap[i] !== ap[j] && pc[i] !== pc[j] ? { ap, pc, i, j, change } : null;
+      });
+      const [a, b] = [(ap[i] * pc[i]) / 100, (ap[j] * pc[j]) / 100];
+      const up = change > 0;
+      const ans = round1(Math.abs(change));
+      return close(
+        id, "very-hard",
+        `${lead} — ${rows(ap, pc)}. What is the percentage ${up ? "increase" : "decrease"} in the number of candidates who passed from ${years[i]} to ${years[j]}?`,
+        ans,
+        `Passed in ${years[i]} = ${pc[i]}% of ${ap[i]} = ${a}; passed in ${years[j]} = ${pc[j]}% of ${ap[j]} = ${b}. Percentage ${up ? "increase" : "decrease"} = ${Math.abs(b - a)} ÷ ${a} × 100 = ${fmt(ans)}%. (Comparing the two pass percentages directly would be wrong, because the number who appeared also changed.)`,
+        {
+          q: `${leadHi} — ${rowsHi(ap, pc)}। ${years[i]} से ${years[j]} तक उत्तीर्ण अभ्यर्थियों की संख्या में कितने प्रतिशत की ${up ? "वृद्धि" : "कमी"} हुई?`,
+          e: `${years[i]} में उत्तीर्ण = ${ap[i]} का ${pc[i]}% = ${a}; ${years[j]} में उत्तीर्ण = ${ap[j]} का ${pc[j]}% = ${b}। प्रतिशत ${up ? "वृद्धि" : "कमी"} = ${Math.abs(b - a)} ÷ ${a} × 100 = ${fmt(ans)}%। (दोनों उत्तीर्ण प्रतिशतों की सीधी तुलना गलत होगी, क्योंकि सम्मिलित अभ्यर्थियों की संख्या भी बदली है।)`,
+        },
+        r, [Math.abs(pc[j] - pc[i]), (Math.abs(b - a) * 100) / b], "", "%",
+      );
+    }
+    const { ap, pc, ans } = until(() => {
+      const ap = years.map(() => 50 * rint(4, 19, r));
+      const pc = years.map(() => 2 * rint(15, 42, r));
+      const ans = sum(ap.map((a, i) => a * pc[i])) / sum(ap);
+      return new Set(ap).size === 3 && new Set(pc).size === 3 && tidy(ans) ? { ap, pc, ans: round1(ans) } : null;
+    });
+    const passed = ap.map((a, i) => (a * pc[i]) / 100);
+    return close(
+      id, "very-hard",
+      `${lead} — ${rows(ap, pc)}. What is the overall pass percentage for the three years taken together?`,
+      ans,
+      `Passed = ${passed.join(" + ")} = ${fmt(sum(passed))}; appeared = ${ap.join(" + ")} = ${fmt(sum(ap))}. Overall pass % = ${fmt(sum(passed))} ÷ ${fmt(sum(ap))} × 100 = ${fmt(ans)}%. (Do not average the three percentages.)`,
+      {
+        q: `${leadHi} — ${rowsHi(ap, pc)}। तीनों वर्षों को मिलाकर कुल उत्तीर्ण प्रतिशत कितना है?`,
+        e: `उत्तीर्ण = ${passed.join(" + ")} = ${fmt(sum(passed))}; सम्मिलित = ${ap.join(" + ")} = ${fmt(sum(ap))}। कुल उत्तीर्ण प्रतिशत = ${fmt(sum(passed))} ÷ ${fmt(sum(ap))} × 100 = ${fmt(ans)}%। (तीनों प्रतिशतों का औसत न लें।)`,
+      },
+      r, [sum(pc) / 3], "", "%",
+    );
+  }, (id, r) => {
+    // Two linked charts: department shares, and the percentage of girls in each.
+    const depts: [string, string][] = [["Arts", "कला"], ["Science", "विज्ञान"], ["Commerce", "वाणिज्य"], ["Engineering", "इंजीनियरिंग"]];
+    const total = pick([1000, 1200, 1600, 1800, 2000, 2400, 3000, 4000], r);
+    const kind = pick(["two", "boys", "overall"] as const, r);
+    const { share, girlsPct, count, girls } = until(() => {
+      const share = shares(4, r);
+      const girlsPct = depts.map(() => 10 * rint(2, 7, r));
+      const count = share.map((s) => (total * s) / 100);
+      const girls = count.map((c, i) => (c * girlsPct[i]) / 100);
+      return new Set(girlsPct).size >= 3 && (kind !== "overall" || tidy((sum(girls) * 100) / total)) ? { share, girlsPct, count, girls } : null;
+    });
+    const t = fmt(total);
+    const en = `A college has ${t} students in four departments — ${depts.map(([d], i) => `${d}: ${share[i]}%`).join(", ")}. The percentage of girls in each department is — ${depts.map(([d], i) => `${d}: ${girlsPct[i]}%`).join(", ")}.`;
+    const hi = `एक महाविद्यालय के चार विभागों में ${t} विद्यार्थी हैं — ${depts.map(([, d], i) => `${d}: ${share[i]}%`).join(", ")}। प्रत्येक विभाग में लड़कियों का प्रतिशत इस प्रकार है — ${depts.map(([, d], i) => `${d}: ${girlsPct[i]}%`).join(", ")}।`;
+    if (kind === "two") {
+      const [i, j] = twoOf(4, r);
+      const ans = girls[i] + girls[j];
+      return numeric(
+        id, DI, "very-hard",
+        `${en} How many girls are there in ${depts[i][0]} and ${depts[j][0]} together?`,
+        ans,
+        `${depts[i][0]}: ${share[i]}% of ${t} = ${fmt(count[i])} students, of whom ${girlsPct[i]}% = ${girls[i]} are girls. ${depts[j][0]}: ${share[j]}% of ${t} = ${fmt(count[j])} students, of whom ${girlsPct[j]}% = ${girls[j]} are girls. Total = ${girls[i]} + ${girls[j]} = ${fmt(ans)}.`,
+        {
+          q: `${hi} ${depts[i][1]} और ${depts[j][1]} विभागों में मिलाकर कितनी लड़कियाँ हैं?`,
+          e: `${depts[i][1]}: ${t} का ${share[i]}% = ${fmt(count[i])} विद्यार्थी, जिनमें से ${girlsPct[i]}% = ${girls[i]} लड़कियाँ हैं। ${depts[j][1]}: ${t} का ${share[j]}% = ${fmt(count[j])} विद्यार्थी, जिनमें से ${girlsPct[j]}% = ${girls[j]} लड़कियाँ हैं। कुल = ${girls[i]} + ${girls[j]} = ${fmt(ans)}।`,
+        },
+        r,
+      );
+    }
+    if (kind === "boys") {
+      const i = rint(0, 3, r);
+      const ans = count[i] - girls[i];
+      return numeric(
+        id, DI, "very-hard",
+        `${en} How many boys are there in ${depts[i][0]}?`,
+        ans,
+        `${depts[i][0]} has ${share[i]}% of ${t} = ${fmt(count[i])} students. Boys = (100 − ${girlsPct[i]})% = ${100 - girlsPct[i]}% of ${fmt(count[i])} = ${fmt(ans)}.`,
+        {
+          q: `${hi} ${depts[i][1]} विभाग में कितने लड़के हैं?`,
+          e: `${depts[i][1]} विभाग में ${t} का ${share[i]}% = ${fmt(count[i])} विद्यार्थी हैं। लड़के = (100 − ${girlsPct[i]})% = ${fmt(count[i])} का ${100 - girlsPct[i]}% = ${fmt(ans)}।`,
+        },
+        r,
+      );
+    }
+    const allGirls = sum(girls);
+    const ans = round1((allGirls * 100) / total);
+    return close(
+      id, "very-hard",
+      `${en} What percent of all the students of the college are girls?`,
+      ans,
+      `Girls = ${girls.join(" + ")} = ${fmt(allGirls)}. Required % = ${fmt(allGirls)} ÷ ${t} × 100 = ${fmt(ans)}%. (This is a weighted average of the four percentages, not their simple mean.)`,
+      {
+        q: `${hi} महाविद्यालय के सभी विद्यार्थियों में से कितने प्रतिशत लड़कियाँ हैं?`,
+        e: `लड़कियाँ = ${girls.join(" + ")} = ${fmt(allGirls)}। अभीष्ट प्रतिशत = ${fmt(allGirls)} ÷ ${t} × 100 = ${fmt(ans)}%। (यह चारों प्रतिशतों का भारित औसत है, साधारण औसत नहीं।)`,
+      },
+      r, [sum(girlsPct) / 4], "", "%",
+    );
+  }, (id, r) => {
+    // Two products over two years: growth of the combined sales, and a product's share.
+    const y = rint(2015, 2022, r);
+    const growth = r() < 0.5;
+    const { a1, b1, a2, b2, ans } = until(() => {
+      const [a1, b1] = [10 * rint(8, 50, r), 10 * rint(8, 50, r)];
+      const [a2, b2] = [a1 + 10 * rint(-3, 15, r), b1 + 10 * rint(-3, 15, r)];
+      const ans = growth ? ((a2 + b2 - a1 - b1) * 100) / (a1 + b1) : (a2 * 100) / (a2 + b2);
+      return new Set([a1, b1, a2, b2]).size === 4 && a2 > 0 && b2 > 0 && ans > 0 && tidy(ans) ? { a1, b1, a2, b2, ans: round1(ans) } : null;
+    });
+    const en = `Sales (in ₹ lakh) of two products of a company — ${y}: Product A ${a1}, Product B ${b1}; ${y + 1}: Product A ${a2}, Product B ${b2}.`;
+    const hi = `एक कंपनी के दो उत्पादों की बिक्री (₹ लाख में) — ${y}: उत्पाद A ${a1}, उत्पाद B ${b1}; ${y + 1}: उत्पाद A ${a2}, उत्पाद B ${b2}।`;
+    if (growth) {
+      return close(
+        id, "very-hard",
+        `${en} What is the percentage growth in the combined sales of the two products from ${y} to ${y + 1}?`,
+        ans,
+        `Combined sales: ${y} = ${a1} + ${b1} = ${a1 + b1}; ${y + 1} = ${a2} + ${b2} = ${a2 + b2}. Growth = (${a2 + b2} − ${a1 + b1}) ÷ ${a1 + b1} × 100 = ${fmt(ans)}%. (Work from the totals; do not average the two products’ growth rates.)`,
+        {
+          q: `${hi} ${y} से ${y + 1} तक दोनों उत्पादों की संयुक्त बिक्री में कितने प्रतिशत की वृद्धि हुई?`,
+          e: `संयुक्त बिक्री: ${y} = ${a1} + ${b1} = ${a1 + b1}; ${y + 1} = ${a2} + ${b2} = ${a2 + b2}। वृद्धि = (${a2 + b2} − ${a1 + b1}) ÷ ${a1 + b1} × 100 = ${fmt(ans)}%। (कुल योग से हल करें; दोनों उत्पादों की वृद्धि दरों का औसत न लें।)`,
+        },
+        r, [(((a2 - a1) * 100) / a1 + ((b2 - b1) * 100) / b1) / 2, ((a2 + b2 - a1 - b1) * 100) / (a2 + b2)], "", "%",
+      );
+    }
+    return close(
+      id, "very-hard",
+      `${en} What was the share of Product A in the combined sales of the two products in ${y + 1}?`,
+      ans,
+      `Combined sales in ${y + 1} = ${a2} + ${b2} = ${a2 + b2}. Share of Product A = ${a2} ÷ ${a2 + b2} × 100 = ${fmt(ans)}%.`,
+      {
+        q: `${hi} ${y + 1} में दोनों उत्पादों की संयुक्त बिक्री में उत्पाद A का हिस्सा कितना था?`,
+        e: `${y + 1} में संयुक्त बिक्री = ${a2} + ${b2} = ${a2 + b2}। उत्पाद A का हिस्सा = ${a2} ÷ ${a2 + b2} × 100 = ${fmt(ans)}%।`,
+      },
+      r, [(a2 * 100) / b2, (a1 * 100) / (a1 + b1)], "", "%",
+    );
+  }, (id, r) => {
+    // A missing figure, from the average.
+    const { s, i, avg } = until(() => {
+      const s = series(r, 5);
+      return sum(s.vals) % 5 === 0 ? { s, i: rint(0, 4, r), avg: sum(s.vals) / 5 } : null;
+    });
+    const hide = (text: string) => text.replace(`${s.years[i]}: ${s.vals[i]}`, `${s.years[i]}: ?`);
+    const others = s.vals.filter((_, k) => k !== i);
+    return numeric(
+      id, DI, "very-hard",
+      `${hide(s.en)} If the average of the five yearly figures is ${avg}, what is the missing figure for ${s.years[i]}?`,
+      s.vals[i],
+      `Total of the five figures = 5 × ${avg} = ${fmt(5 * avg)}. The four known figures add up to ${others.join(" + ")} = ${fmt(sum(others))}. Missing figure = ${fmt(5 * avg)} − ${fmt(sum(others))} = ${s.vals[i]}.`,
+      {
+        q: `${hide(s.hi)} यदि पाँचों वार्षिक आँकड़ों का औसत ${avg} है, तो ${s.years[i]} का लुप्त आँकड़ा क्या है?`,
+        e: `पाँचों आँकड़ों का कुल योग = 5 × ${avg} = ${fmt(5 * avg)}। चार ज्ञात आँकड़ों का योग ${others.join(" + ")} = ${fmt(sum(others))}। लुप्त आँकड़ा = ${fmt(5 * avg)} − ${fmt(sum(others))} = ${s.vals[i]}।`,
+      },
+      r,
+    );
+  }),
+};
+
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const ordinal = (n: number) => `${n}${["th", "st", "nd", "rd"][n % 10 > 3 || Math.floor(n / 10) === 1 ? 0 : n % 10]}`;
 
