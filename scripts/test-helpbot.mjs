@@ -44,6 +44,8 @@ const CASES = [
   ["mera exam list mein nahi hai", "exam-missing"],
   ["how many questions are there", "question-count"],
   ["kitne question hai total", "question-count"],
+  ["are there unlimited questions", "unlimited-questions"],
+  ["unlimited practice kaise kare", "unlimited-questions"],
   ["are these pyq", "question-source"],
   ["previous year questions milenge?", "question-source"],
   ["questions bahut tough hai", "difficulty"],

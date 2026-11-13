@@ -9,7 +9,9 @@ import { NOTES_LOADERS } from "@/data/notes";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { PATTERNS, mockPlan } from "@/data/patterns";
 import { localProvider } from "@/lib/ai/local";
-import { generateQuestions, hasGenerator } from "@/lib/generators";
+import { generatedSet, generateQuestions, hasGenerator } from "@/lib/generators";
+import { handlePractice } from "@/lib/handlers";
+import { UNLIMITED_LEVELS, UNLIMITED_SET_SIZE, UNLIMITED_TOPIC_IDS } from "@/lib/unlimited";
 import { DIFFICULTIES, MIN_SET_SIZE, tierQuota } from "@/lib/difficulty";
 
 let fails = 0;
@@ -108,6 +110,20 @@ const num = (s) => Number(String(s).replace(/[^\d.]/g, ""));
 const n = (s) => Number(String(s).replace(/,/g, ""));
 const g = (a, b) => (b ? g(b, a % b) : a);
 const ratioStr = (a, b) => `${a / g(a, b)} : ${b / g(a, b)}`;
+/** p/q in lowest terms, or a whole number. */
+const fr = (p, q) => (q / g(p, q) === 1 ? `${p / g(p, q)}` : `${p / g(p, q)}/${q / g(p, q)}`);
+/** A length in metres the way the options print it: "24 m", "8√3 m" or "12(√3 + 1) m". */
+const surd = (v) => {
+  const whole = (x) => Math.abs(x - Math.round(x)) < 1e-6;
+  if (whole(v)) return `${Math.round(v)} m`;
+  if (whole(v / Math.sqrt(3))) return `${Math.round(v / Math.sqrt(3))}√3 m`;
+  if (whole(v / (Math.sqrt(3) + 1))) return `${Math.round(v / (Math.sqrt(3) + 1))}(√3 + 1) m`;
+  return "";
+};
+/** "2019: 120, 2020: 150" → { 2019: 120, 2020: 150 } (a year shown as "?" is left out). */
+const yrs = (s) => Object.fromEntries([...s.matchAll(/(\d{4}): (\d+)/g)].map((m) => [m[1], +m[2]]));
+/** "Food: 30%, Rent: 90°" → { Food: 30, Rent: 90 }. */
+const cats = (s) => Object.fromEntries([...s.matchAll(/([A-Z][A-Za-z ]*): (\d+)[%°]/g)].map((m) => [m[1], +m[2]]));
 const CHECKS = [
   [/first increased by (\d+)%, then decreased by (\d+)%, and then increased by (\d+)%\. If the final number is ([\d,]+)/, (m) => (n(m[4]) * 1e6) / ((100 + +m[1]) * (100 - +m[2]) * (100 + +m[3]))],
   [/sold it at a gain of (\d+)%\. Had he bought it at (\d+)% less and sold it for ₹([\d,]+) less, he would have gained (\d+)%/, (m) => (n(m[3]) * 1e4) / ((100 + +m[1]) * 100 - (100 - +m[2]) * (100 + +m[4]))],
@@ -133,6 +149,7 @@ const CHECKS = [
     return (milk * +m[5]) / +m[4] - (+m[1] - milk);
   }],
   [/Convert (\d+) km\/h into metres per second/, (m) => (+m[1] * 5) / 18],
+  [/Convert ([\d.]+) m\/s into kilometres per hour/, (m) => +m[1] * 3.6],
   [/A train (\d+) m long runs at (\d+) km\/h\. How long/, (m) => +m[1] / ((+m[2] * 5) / 18)],
   [/A train (\d+) m long crosses a (\d+) m long platform in (\d+) seconds/, (m) => ((+m[1] + +m[2]) / +m[3]) * 3.6],
   [/Two trains, (\d+) m and (\d+) m long, .* at (\d+) km\/h and (\d+) km\/h/, (m) => (+m[1] + +m[2]) / (((+m[3] + +m[4]) * 5) / 18)],
@@ -260,9 +277,208 @@ const CHECKS = [
     const [l, b, h, w, rate] = [+m[1], +m[2], +m[3], +m[4], +m[5]];
     return (2 * l * h + 2 * b * h + l * b - 2 * 1.5 - w * 1.5 * 1) * rate;
   }],
+  // Algebra, geometry and trigonometry
+  [/^If (\d+)x ([+−]) (\d+) = (\d+), what is the value of x\?/, (m) => (m[2] === "+" ? +m[4] - +m[3] : +m[4] + +m[3]) / +m[1]],
+  [/sum of the interior angles of a polygon with (\d+) sides/, (m) => (+m[1] - 2) * 180],
+  [/How many diagonals does a polygon with (\d+) sides have/, (m) => {
+    // Count the pairs of corners that are not next to each other.
+    let c = 0;
+    for (let i = 0; i < +m[1]; i++) for (let j = i + 1; j < +m[1]; j++) if (j - i !== 1 && j - i !== +m[1] - 1) c++;
+    return c;
+  }],
+  [/Two angles of a triangle measure (\d+)° and (\d+)°/, (m) => 180 - +m[1] - +m[2]],
+  [/distance between the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => Math.hypot(+m[3] - +m[1], +m[4] - +m[2])],
+  [/^What is the value of ((?:(?: \+ )?(?:\d+ )?(?:cosec|sin|cos|tan|cot|sec)²? \d+°)+)\?$/, (m) => {
+    const rad = (x) => (x * Math.PI) / 180;
+    const fn = { sin: Math.sin, cos: Math.cos, tan: Math.tan, cot: (x) => 1 / Math.tan(x), sec: (x) => 1 / Math.cos(x), cosec: (x) => 1 / Math.sin(x) };
+    return [...m[1].matchAll(/(\d+ )?(cosec|sin|cos|tan|cot|sec)(²)? (\d+)°/g)].reduce((s, t) => s + (t[1] ? +t[1] : 1) * fn[t[2]](rad(+t[4])) ** (t[3] ? 2 : 1), 0);
+  }],
+  [/cost of (\d+) pens and (\d+) notebooks is ₹([\d,]+), and the cost of (\d+) pens and (\d+) notebooks is ₹([\d,]+)\. What is the cost of one (pen|notebook)/, (m) => {
+    // Cramer's rule on ap + bn = X, cp + dn = Y.
+    const [a, b, X, c, d, Y] = [+m[1], +m[2], n(m[3]), +m[4], +m[5], n(m[6])];
+    const det = a * d - b * c;
+    return m[7] === "pen" ? (X * d - b * Y) / det : (a * Y - X * c) / det;
+  }],
+  [/sum of two numbers is (\d+) and their difference is (\d+)\. What is the (larger|smaller) number/, (m) => (+m[1] + (m[3] === "larger" ? 1 : -1) * +m[2]) / 2],
+  [/^If a \+ b = (\d+) and ab = (\d+), what is the value of a(²|³) \+ b[²³]\?/, (m) => {
+    // Find a and b themselves, then raise them to the power.
+    const root = Math.sqrt((+m[1]) ** 2 - 4 * +m[2]);
+    const [a, b, p] = [(+m[1] + root) / 2, (+m[1] - root) / 2, m[3] === "²" ? 2 : 3];
+    return a ** p + b ** p;
+  }],
+  [/^If x ([+−]) 1\/x = (\d+), what is the value of x(²|³|⁴) ([+−]) 1\/x[²³⁴]\?/, (m) => {
+    // Solve for x, then evaluate directly.
+    const k = +m[2];
+    const x = (k + Math.sqrt(k * k + (m[1] === "+" ? -4 : 4))) / 2;
+    const p = "²³⁴".indexOf(m[3]) + 2;
+    return x ** p + (m[4] === "+" ? 1 : -1) * x ** -p;
+  }],
+  [/Each (exterior|interior) angle of a regular polygon measures (\d+)°/, (m) => 360 / (m[1] === "exterior" ? +m[2] : 180 - +m[2])],
+  [/slope of the line passing through the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => fr(+m[4] - +m[2], +m[3] - +m[1])],
+  [/midpoint of the line segment joining the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => `(${(+m[1] + +m[3]) / 2}, ${(+m[2] + +m[4]) / 2})`],
+  [/chord of length (\d+) cm is drawn in a circle of radius (\d+) cm\. What is the distance of the chord from the centre/, (m) => Math.sqrt((+m[2]) ** 2 - (+m[1] / 2) ** 2)],
+  [/chord of a circle of radius (\d+) cm is at a distance of (\d+) cm from the centre\. What is the length of the chord/, (m) => 2 * Math.sqrt((+m[1]) ** 2 - (+m[2]) ** 2)],
+  [/point P is (\d+) cm away from the centre of a circle of radius (\d+) cm\. What is the length of the tangent/, (m) => Math.sqrt((+m[1]) ** 2 - (+m[2]) ** 2)],
+  [/ladder leaning against a wall makes an angle of 60° with the ground\. If the foot of the ladder is (\d+) m away from the wall/, (m) => +m[1] / Math.cos(Math.PI / 3)],
+  [/A (\d+) m long ladder leaning against a wall makes an angle of 30° with the ground\. How high/, (m) => +m[1] * Math.sin(Math.PI / 6)],
+  [/sides of a triangle are (\d+) cm, (\d+) cm and (\d+) cm\. What is its area/, (m) => {
+    const [a, b, c] = [+m[1], +m[2], +m[3]];
+    const s = (a + b + c) / 2;
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }],
+  [/AB : PQ = (\d+) : (\d+)\. If the area of triangle ABC is (\d+) cm², what is the area of triangle PQR/, (m) => +m[3] * (+m[2] / +m[1]) ** 2],
+  [/roots of the equation x² − (\d+)x \+ (\d+) = 0, what is the value of (α² \+ β²|α³ \+ β³|1\/α \+ 1\/β)\?/, (m) => {
+    // The roots are whole numbers: find them by trial, then evaluate.
+    const [S, P] = [+m[1], +m[2]];
+    const a = Array.from({ length: S }, (_, i) => i + 1).find((x) => x * (S - x) === P);
+    if (!a) return NaN;
+    const b = S - a;
+    return m[3] === "α² + β²" ? a * a + b * b : m[3] === "α³ + β³" ? a ** 3 + b ** 3 : fr(a + b, a * b);
+  }],
+  [/From a point on the ground (\d+) m away from the foot of a tower, the angle of elevation of the top of the tower is (\d+)°\. What is the height/, (m) => surd(+m[1] * Math.tan((+m[2] * Math.PI) / 180))],
+  [/top of a (\d+) m high tower from a point on the ground is (\d+)°\. How far is the point/, (m) => surd(+m[1] / Math.tan((+m[2] * Math.PI) / 180))],
+  [/area of the triangle whose vertices are \((\d+), (\d+)\), \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => {
+    // Half the cross product of two sides.
+    const [x1, y1, x2, y2, x3, y3] = m.slice(1, 7).map(Number);
+    return Math.abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2;
+  }],
+  [/centroid of the triangle whose vertices are \((\d+), (\d+)\), \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => `(${(+m[1] + +m[3] + +m[5]) / 3}, ${(+m[2] + +m[4] + +m[6]) / 3})`],
+  [/∠A = (\d+)°\. If [IOH] is the (incentre|circumcentre|orthocentre) of the triangle/, (m) => {
+    // Build a real triangle with that angle A on the unit circle and measure the angle at the centre in question.
+    const A = (+m[1] * Math.PI) / 180;
+    const B = (Math.PI - A) / 2 + 0.1;
+    const C = Math.PI - A - B;
+    const at = (t) => [Math.cos(t), Math.sin(t)];
+    const [pb, pc, pa] = [at(0), at(2 * A), at(2 * A + 2 * B)];
+    const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    const [a, b, c] = [d(pb, pc), d(pa, pc), d(pa, pb)];
+    const X = {
+      circumcentre: [0, 0],
+      orthocentre: [pa[0] + pb[0] + pc[0], pa[1] + pb[1] + pc[1]],
+      incentre: [(a * pa[0] + b * pb[0] + c * pc[0]) / (a + b + c), (a * pa[1] + b * pb[1] + c * pc[1]) / (a + b + c)],
+    }[m[2]];
+    if (Math.abs(Math.sin(C)) < 1e-9) return NaN;
+    const [u, v] = [[pb[0] - X[0], pb[1] - X[1]], [pc[0] - X[0], pc[1] - X[1]]];
+    return (Math.acos((u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v))) * 180) / Math.PI;
+  }],
+  [/tan θ = (\d+)\/(\d+) and θ is an acute angle, what is the value of sin θ \+ cos θ/, (m) => {
+    const h = Math.hypot(+m[1], +m[2]);
+    return Number.isInteger(h) ? fr(+m[1] + +m[2], h) : NaN;
+  }],
+  [/are 30° and 60°\. If the two points are (\d+) m apart, what is the height of the tower/, (m) => surd(+m[1] / (1 / Math.tan(Math.PI / 6) - 1 / Math.tan(Math.PI / 3)))],
+  [/becomes (\d+) m longer when the sun’s angle of elevation falls from 60° to 30°\. What is the height of the pole/, (m) => surd(+m[1] / (1 / Math.tan(Math.PI / 6) - 1 / Math.tan(Math.PI / 3)))],
+  [/top of a (\d+) m high cliff, the angles of depression of two boats on the same side of the cliff and in line with its foot are 30° and 60°/, (m) => surd(+m[1] / Math.tan(Math.PI / 6) - +m[1] / Math.tan(Math.PI / 3))],
+  [/top of a (\d+) m high building, the angle of depression of the foot of a tower is 45° and the angle of elevation of the top of the tower is 60°/, (m) => {
+    const away = +m[1] / Math.tan(Math.PI / 4);
+    return surd(+m[1] + away * Math.tan(Math.PI / 3));
+  }],
+  [/^If a \+ b \+ c = (\d+) and (ab \+ bc \+ ca|a² \+ b² \+ c²) = (\d+), what is the value of (a² \+ b² \+ c²|ab \+ bc \+ ca|a³ \+ b³ \+ c³ − 3abc)\?/, (m) => {
+    // Find whole numbers a, b, c that fit, then evaluate what is asked.
+    const val = { "ab + bc + ca": (a, b, c) => a * b + b * c + c * a, "a² + b² + c²": (a, b, c) => a * a + b * b + c * c, "a³ + b³ + c³ − 3abc": (a, b, c) => a ** 3 + b ** 3 + c ** 3 - 3 * a * b * c };
+    for (let a = 1; a <= 9; a++) for (let b = a; b <= 9; b++) {
+      const c = +m[1] - a - b;
+      if (c >= b && c <= 9 && val[m[2]](a, b, c) === +m[3]) return val[m[4]](a, b, c);
+    }
+    return NaN;
+  }],
+  [/positive value of k does the equation x² − kx \+ (\d+) = 0 have equal roots/, (m) => {
+    for (let k = 1; k <= 200; k++) if (k * k === 4 * +m[1]) return k;
+    return NaN;
+  }],
+  [/one root of the equation x² − (\d+)x \+ k = 0 is (\d+), what is the value of k/, (m) => +m[1] * +m[2] - (+m[2]) ** 2],
+  [/Two circles of radii (\d+) cm and (\d+) cm touch each other externally\. What is the length of their direct common tangent/, (m) => Math.sqrt((+m[1] + +m[2]) ** 2 - (+m[1] - +m[2]) ** 2)],
+  [/Two circles of radii (\d+) cm and (\d+) cm intersect at two points, and the distance between their centres is (\d+) cm/, (m) => {
+    // The two radii and the line of centres form a triangle; the chord is twice its height on that line.
+    const [a, b, c] = [+m[1], +m[2], +m[3]];
+    const s = (a + b + c) / 2;
+    return (4 * Math.sqrt(s * (s - a) * (s - b) * (s - c))) / c;
+  }],
+  [/The line (\d+)x \+ (\d+)y = (\d+) meets the x-axis at A and the y-axis at B/, (m) => (+m[3] / +m[1]) * (+m[3] / +m[2]) * 0.5],
+  [/^If tan θ = (\d+)\/(\d+), what is the value of \((\d+) sin θ \+ (\d+) cos θ\)\/\((\d+) sin θ − (\d+) cos θ\)\?/, (m) => {
+    // Use a triangle with perpendicular p and base q: sin θ = p/h and cos θ = q/h, and h cancels.
+    const [p, q] = [+m[1], +m[2]];
+    return fr(+m[3] * p + +m[4] * q, +m[5] * p - +m[6] * q);
+  }],
+  // Data interpretation: the data is read back out of the question text
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the (average|total) of the yearly figures\?$/, (m) => {
+    const v = Object.values(yrs(m[1]));
+    const t = v.reduce((s, x) => s + x, 0);
+    return m[2] === "total" ? t : t / v.length;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. By how much does the figure for (\d{4}) exceed the figure for (\d{4})\?$/, (m) => {
+    const d = yrs(m[1])[m[2]] - yrs(m[1])[m[3]];
+    return d > 0 ? d : NaN;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the total of the figures for (\d{4}) and (\d{4})\?$/, (m) => yrs(m[1])[m[2]] + yrs(m[1])[m[3]]],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the ratio of the figure for (\d{4}) to the figure for (\d{4})\?$/, (m) => ratioStr(yrs(m[1])[m[2]], yrs(m[1])[m[3]])],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. What is the percentage (increase|decrease) in the figure from (\d{4}) to (\d{4})\?$/, (m) => {
+    const [a, b] = [yrs(m[1])[m[3]], yrs(m[1])[m[4]]];
+    const change = ((b - a) / a) * 100;
+    return change > 0 === (m[2] === "increase") ? Math.abs(change) : NaN;
+  }],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. The figure for (\d{4}) is what percent of the figure for (\d{4})\?$/, (m) => (yrs(m[1])[m[2]] / yrs(m[1])[m[3]]) * 100],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. The figure for (\d{4}) is what percent of the total for all the given years\?$/, (m) => (yrs(m[1])[m[2]] / Object.values(yrs(m[1])).reduce((s, x) => s + x, 0)) * 100],
+  [/— ((?:\d{4}: \d+(?:, )?)+)\. In which year was the percentage increase in the figure over the previous year the highest\?$/, (m) => {
+    const rows = Object.entries(yrs(m[1]));
+    return rows.slice(1).map(([y, v], i) => [y, (v - rows[i][1]) / rows[i][1]]).sort((a, b) => b[1] - a[1])[0][0];
+  }],
+  [/— ((?:\d{4}: (?:\d+|\?)(?:, )?)+)\. If the average of the five yearly figures is ([\d.]+), what is the missing figure for (\d{4})\?$/, (m) => {
+    const known = Object.values(yrs(m[1]));
+    return known.length === 4 && m[1].includes(m[3] + ": ?") ? 5 * +m[2] - known.reduce((s, x) => s + x, 0) : NaN;
+  }],
+  [/([\d,]+)[^\d—]*, split as — (.+?)\. (?:How much (?:is|was) spent on|How many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => (n(m[1]) * cats(m[2])[m[3]]) / 100],
+  [/([\d,]+)[^\d—]*, split as — (.+?)\. How (?:much more (?:is|was) spent on|many more students play) ([A-Z][A-Za-z ]*?) than (?:on )?([A-Z][A-Za-z ]*)\?$/, (m) => (n(m[1]) * (cats(m[2])[m[3]] - cats(m[2])[m[4]])) / 100],
+  [/([\d,]+)[^\d—]*, shown in a pie chart with central angles — (.+?)\. (?:How much (?:is|was) spent on|How many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => {
+    const c = cats(m[2]);
+    return Object.values(c).reduce((s, x) => s + x, 0) === 360 ? (n(m[1]) * c[m[3]]) / 360 : NaN;
+  }],
+  [/the central angles are — (.+?)\. If ₹?([\d,]+)(?: lakh)? (?:is spent on|was spent on|students play) ([A-Z][A-Za-z ]*), how (?:much (?:is|was) spent on|many students play) ([A-Z][A-Za-z ]*)\?$/, (m) => {
+    const c = cats(m[1]);
+    return Object.values(c).reduce((s, x) => s + x, 0) === 360 ? (n(m[2]) / c[m[3]]) * c[m[4]] : NaN;
+  }],
+  [/School A: (\d+) boys and (\d+) girls; School B: (\d+) boys and (\d+) girls\. What percent of the students of School ([AB]) are girls\?/, (m) => {
+    const [b, gl] = m[5] === "A" ? [+m[1], +m[2]] : [+m[3], +m[4]];
+    return (gl / (b + gl)) * 100;
+  }],
+  [/School A: (\d+) boys and (\d+) girls; School B: (\d+) boys and (\d+) girls\. What is the ratio of the total number of boys to the total number of girls/, (m) => ratioStr(+m[1] + +m[3], +m[2] + +m[4])],
+  [/(?:Group|Section) A: (\d+) (?:workers|students), average ₹?(\d+); (?:Group|Section) B: (\d+) (?:workers|students), average ₹?(\d+)\. What is the average/, (m) => (+m[1] * +m[2] + +m[3] * +m[4]) / (+m[1] + +m[3])],
+  [/Factory A: ([^;]+); Factory B: ([^.]+)\. What is the ratio of the total production of Factory ([AB]) to that of Factory ([AB])/, (m) => {
+    const tot = (s) => Object.values(yrs(s)).reduce((a, x) => a + x, 0);
+    const t = { A: tot(m[1]), B: tot(m[2]) };
+    return m[3] !== m[4] ? ratioStr(t[m[3]], t[m[4]]) : "";
+  }],
+  [/— (.+?)\. Profit = income − expenditure\. What is the percentage increase in profit from (\d{4}) to (\d{4})\?/, (m) => {
+    const p = Object.fromEntries([...m[1].matchAll(/(\d{4}): income (\d+), expenditure (\d+)/g)].map((x) => [x[1], +x[2] - +x[3]]));
+    return ((p[m[3]] - p[m[2]]) / p[m[2]]) * 100;
+  }],
+  [/— (.+?)\. Profit percent = \(income − expenditure\) ÷ expenditure × 100\. In which year was the profit percent the highest\?/, (m) =>
+    [...m[1].matchAll(/(\d{4}): income (\d+), expenditure (\d+)/g)].map((x) => [x[1], (+x[2] - +x[3]) / +x[3]]).sort((a, b) => b[1] - a[1])[0][0]],
+  [/— (.+?)\. What is the percentage (increase|decrease) in the number of candidates who passed from (\d{4}) to (\d{4})\?/, (m) => {
+    const p = Object.fromEntries([...m[1].matchAll(/(\d{4}): (\d+) appeared, (\d+)% passed/g)].map((x) => [x[1], (+x[2] * +x[3]) / 100]));
+    const change = ((p[m[4]] - p[m[3]]) / p[m[3]]) * 100;
+    return change > 0 === (m[2] === "increase") ? Math.abs(change) : NaN;
+  }],
+  [/— (.+?)\. What is the overall pass percentage for the three years taken together\?/, (m) => {
+    const rows = [...m[1].matchAll(/(\d{4}): (\d+) appeared, (\d+)% passed/g)];
+    return rows.length === 3 ? (rows.reduce((s, x) => s + (+x[2] * +x[3]) / 100, 0) / rows.reduce((s, x) => s + +x[2], 0)) * 100 : NaN;
+  }],
+  [/A college has ([\d,]+) students in four departments — (.+?)\. The percentage of girls in each department is — (.+?)\. (?:How many girls are there in (\w+) and (\w+) together|How many boys are there in (\w+)|What percent of all the students of the college are girls)\?/, (m) => {
+    const [total, share, girls] = [n(m[1]), cats(m[2]), cats(m[3])];
+    const count = (d) => (total * share[d]) / 100;
+    const g = (d) => (count(d) * girls[d]) / 100;
+    if (m[4]) return g(m[4]) + g(m[5]);
+    if (m[6]) return count(m[6]) - g(m[6]);
+    return (Object.keys(share).reduce((s, d) => s + g(d), 0) / total) * 100;
+  }],
+  [/(\d{4}): Product A (\d+), Product B (\d+); (\d{4}): Product A (\d+), Product B (\d+)\. (?:What is the percentage growth in the combined sales of the two products from \d{4} to \d{4}|What was the share of Product A in the combined sales of the two products in (\d{4}))\?/, (m) => {
+    const [a1, b1, a2, b2] = [+m[2], +m[3], +m[5], +m[6]];
+    if (!m[7]) return ((a2 + b2 - a1 - b1) / (a1 + b1)) * 100;
+    return m[7] === m[4] ? (a2 / (a2 + b2)) * 100 : NaN;
+  }],
 ];
 let derived = 0;
-const NEW_TOPICS = ["quant-number-system", "quant-mensuration"];
+const NEW_TOPICS = ["quant-number-system", "quant-mensuration", "quant-algebra-geometry", "quant-data-interpretation"];
+const BIG_TOPICS = ["quant-algebra-geometry", "quant-data-interpretation"];
 for (const id of NEW_TOPICS) if (!hasGenerator(id)) fail(`generator ${id}: missing`);
 // The new topics are checked directly, whether or not topics.ts lists them yet.
 const genTopics = [...new Set([...TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id), ...NEW_TOPICS])];
@@ -272,7 +488,8 @@ const numbers = (s) => (s.match(/\d[\d,.]*/g) ?? []).map((x) => x.replace(/[.,]+
 let hindi = 0;
 for (const id of genTopics) {
   for (const d of DIFFICULTIES) {
-    const qs = generateQuestions(id, 120, Math.random, d);
+    // The two big topics have many templates per tier, so they get a larger sample: every answer check must be exercised.
+    const qs = generateQuestions(id, BIG_TOPICS.includes(id) ? 400 : 120, Math.random, d);
     if (qs.length < 5) fail(`generator ${id}/${d}: too few distinct questions`, `${qs.length}`);
     for (const q of qs) {
       if (q.difficulty !== d || q.options.length !== 4 || new Set(q.options).size !== 4 || !(q.answer >= 0 && q.answer < 4)) fail(`generator ${id}/${d}: malformed`, q.question);
@@ -307,6 +524,39 @@ for (const id of genTopics) {
 CHECKS.forEach(([re], i) => {
   if (!hits[i]) fail("answer check never matched a generated question", String(re));
 });
+
+// 6. Unlimited practice: the topic list matches the generators, and its sets are generated questions only
+const quant = TOPICS.filter((x) => x.subject === "Quantitative Aptitude").map((x) => x.id);
+for (const id of quant) if (!hasGenerator(id)) fail(`unlimited: Quant topic ${id} has no generator`);
+if ([...UNLIMITED_TOPIC_IDS].sort().join() !== TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id).sort().join()) fail("unlimited: UNLIMITED_TOPIC_IDS is out of step with the generators");
+const isGenerated = (q, ids) => ids.includes(q.topicId) && q.id.startsWith(`${q.topicId}-g`) && !q.source && !q.pyq;
+for (const id of UNLIMITED_TOPIC_IDS) {
+  for (const level of UNLIMITED_LEVELS) {
+    const qs = generatedSet([id], UNLIMITED_SET_SIZE, level);
+    if (qs.length !== UNLIMITED_SET_SIZE || new Set(qs.map((q) => q.question)).size !== qs.length) fail(`unlimited ${id}/${level}: not ${UNLIMITED_SET_SIZE} distinct questions`, `${qs.length}`);
+    if (!qs.every((q) => isGenerated(q, [id]))) fail(`unlimited ${id}/${level}: a question is not generated`);
+    if (!qs.every((q) => q.questionHi && q.explanationHi)) fail(`unlimited ${id}/${level}: a question has no Hindi`);
+    const want = level === "mixed" ? tierQuota(UNLIMITED_SET_SIZE) : { ...Object.fromEntries(DIFFICULTIES.map((d) => [d, 0])), [level]: UNLIMITED_SET_SIZE };
+    if (JSON.stringify(tiers(qs)) !== JSON.stringify(want)) fail(`unlimited ${id}/${level}: wrong mix of tiers`, JSON.stringify(tiers(qs)));
+    if (qs.some((q, i) => i && DIFFICULTIES.indexOf(q.difficulty) < DIFFICULTIES.indexOf(qs[i - 1].difficulty))) fail(`unlimited ${id}/${level}: does not ramp`);
+  }
+}
+{
+  // Several topics share a set; topics without a generator are refused; the level is validated.
+  const many = await handlePractice({ topicIds: [...UNLIMITED_TOPIC_IDS, "polity-constitution-basics", "no-such-topic"], count: 10, generated: true, level: "hard" });
+  const qs = many.json.questions ?? [];
+  if (many.status !== 200 || qs.length !== 10 || !qs.every((q) => isGenerated(q, UNLIMITED_TOPIC_IDS) && q.difficulty === "hard")) fail("unlimited: handlePractice with many topics", JSON.stringify(many.json).slice(0, 200));
+  if (new Set(qs.map((q) => q.topicId)).size < 8) fail("unlimited: topics do not take turns in a set", qs.map((q) => q.topicId).join());
+  const nonQuant = TOPICS.find((x) => !hasGenerator(x.id)).id;
+  for (const ids of [[nonQuant], ["constructor"], ["__proto__"], []]) {
+    const res = await handlePractice({ topicIds: ids, generated: true });
+    if (res.status !== 400) fail("unlimited: handlePractice accepted topics without a generator", ids.join());
+  }
+  const odd = await handlePractice({ topicIds: ["quant-percentage"], generated: true, level: "nonsense", count: 9999 });
+  if (odd.status !== 200 || odd.json.questions.length !== 50 || !odd.json.questions.every((q) => isGenerated(q, ["quant-percentage"]))) fail("unlimited: handlePractice limits", `${odd.json.questions?.length}`);
+  const plain = await handlePractice({ topicIds: ["quant-percentage"], count: 10 });
+  if (plain.status !== 200 || plain.json.questions.length !== 10) fail("practice: a normal set is no longer built");
+}
 
 console.log(`Checked ${QUESTION_BANK.length} bank questions, ${TOPICS.length} topics, ${EXAMS.length} exams, ${derived} generated answers, ${hindi} Hindi versions.`);
 console.log(fails ? `\n${fails} check(s) failed` : "All checks passed");

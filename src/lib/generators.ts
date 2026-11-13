@@ -1,4 +1,4 @@
-import { DIFFICULTIES } from "./difficulty";
+import { DIFFICULTIES, tierQuota } from "./difficulty";
 import type { Difficulty, MCQ } from "./types";
 import { shuffle } from "./nlp";
 
@@ -39,6 +39,9 @@ const UNIT_HI: Record<string, string> = {
   cm: "सेमी",
   "cm²": "वर्ग सेमी",
   "cm³": "घन सेमी",
+  units: "इकाई",
+  "sq units": "वर्ग इकाई",
+  lakh: "लाख",
 };
 /** Hindi for a unit used inside question text: "cm" → "सेमी". */
 const unitHi = (u: string) => UNIT_HI[u];
@@ -133,7 +136,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Successive change: net = a − b − ab/100.
-      const [a, b] = pick([[20, 10], [25, 10], [30, 20], [10, 20], [20, 25], [40, 25], [50, 20], [15, 10]], r);
+      const [a, b] = until(() => {
+        const v = [pick([5, 10, 15, 20, 25, 30, 40, 50, 60], r), pick([5, 10, 15, 20, 25, 30, 40, 50], r)];
+        return v[0] !== v[1] && v[0] - v[1] - (v[0] * v[1]) / 100 !== 0 ? v : null;
+      });
       const net = a - b - (a * b) / 100;
       const up = net > 0;
       const ans = Math.abs(net);
@@ -149,8 +155,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const pop = pick([10000, 20000, 40000, 50000, 80000], r);
-      const rate = pick([5, 10, 20], r);
+      const [pop, rate] = until(() => {
+        const v = [2000 * rint(2, 60, r), pick([5, 10, 15, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) * (100 + v[1])) / 10000) ? v : null;
+      });
       const ans = (pop * (100 + rate) * (100 + rate)) / 10000;
       const factor = (((100 + rate) / 100) ** 2).toFixed(4).replace(/0+$/, "");
       return numeric(
@@ -278,7 +286,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Dishonest dealer: false weight plus a markup on cost.
-      const [g, x, ans] = pick([[800, 20, 50], [900, 8, 20], [960, 20, 25], [800, 10, 37.5], [750, 5, 40], [900, 0, 11.11], [950, 14, 20]], r);
+      const [g, x, ans] = until(() => {
+        if (r() < 0.1) return [900, 0, 11.11];
+        const [w, up] = [pick([600, 625, 720, 750, 800, 840, 875, 880, 900, 920, 950, 960, 980], r), pick([0, 4, 5, 8, 10, 12, 14, 15, 17, 20, 25, 26], r)];
+        const gain = (1000 * (100 + up)) / w - 100;
+        // Keep answers that are exact to two decimal places.
+        return Math.abs(gain * 100 - Math.round(gain * 100)) < 1e-9 ? [w, up, Math.round(gain * 100) / 100] : null;
+      });
       return numeric(
         id, "quant-profit-loss", "hard",
         x
@@ -295,7 +309,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const [mark, disc] = pick([[50, 20], [40, 25], [60, 25], [25, 12], [100, 40], [30, 10], [50, 10], [20, 10], [75, 20]], r);
+      const [mark, disc] = until(() => {
+        const v = [pick([20, 25, 30, 40, 50, 60, 75, 80, 100, 120, 150], r), pick([5, 10, 12, 15, 20, 25, 30, 40], r)];
+        const sp = ((100 + v[0]) * (100 - v[1])) / 100;
+        return Number.isInteger(sp) && sp > 100 ? v : null;
+      });
       const ans = Math.round(((100 + mark) * (100 - disc)) / 100 - 100);
       const sp = fmt(((100 + mark) * (100 - disc)) / 100);
       return numeric(
@@ -537,7 +555,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-time-work": {
     easy: (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [12, 6], [20, 5], [30, 60], [18, 9], [24, 8], [21, 42], [15, 10], [40, 60]], r);
+      const [a, b] = workPair(r);
       const t = (a * b) / (a + b);
       return numeric(
         id, "quant-time-work", "easy",
@@ -552,7 +570,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [30, 60], [15, 10], [40, 60], [21, 42], [24, 8], [18, 9], [20, 5], [12, 6]], r);
+      const [a, b] = workPair(r);
       const t = (a * b) / (a + b);
       return numeric(
         id, "quant-time-work", "moderate",
@@ -568,7 +586,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Men × days × hours stays constant for the same work.
-      const [m1, d1, h1, m2, h2] = pick([[12, 18, 8, 16, 9], [15, 20, 6, 10, 9], [20, 12, 9, 24, 6], [8, 24, 6, 12, 8], [18, 10, 8, 12, 6], [25, 12, 8, 20, 10]], r);
+      const [m1, d1, h1, m2, h2] = until(() => {
+        const v = [rint(6, 30, r), rint(6, 30, r), pick([5, 6, 8, 9, 10], r), rint(6, 30, r), pick([5, 6, 8, 9, 10], r)];
+        return v[0] !== v[3] && v[2] !== v[4] && Number.isInteger((v[0] * v[1] * v[2]) / (v[3] * v[4])) ? v : null;
+      });
       const ans = (m1 * d1 * h1) / (m2 * h2);
       return numeric(
         id, "quant-time-work", "hard",
@@ -582,8 +603,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " days",
       );
     }, (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [30, 60], [40, 60], [21, 42], [15, 10]], r);
-      const k = pick([1, 2, 3, 4, 5], r);
+      const [a, b] = workPair(r);
+      const k = pick([1, 2, 3, 4, 5, 6, 8], r);
       const ans = b * (1 - k / a - k / b);
       if (ans <= 0 || !Number.isInteger(ans)) return GENERATORS["quant-time-work"].hard(id, r);
       const done = fmt((k * (a + b)) / (a * b));
@@ -602,10 +623,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     }),
     "very-hard": either((id, r) => {
       // Pipes: A and B fill, C empties; after t hours C is shut, and A + B finish the rest.
-      const [a, b, c, t] = pick([[10, 15, 30, 5], [6, 12, 8, 4], [20, 30, 60, 5], [15, 20, 60, 3], [8, 12, 24, 1], [12, 16, 48, 1]], r);
-      const filled = t * (1 / a + 1 / b - 1 / c);
-      const ans = Math.round(((1 - filled) / (1 / a + 1 / b)) * 1e6) / 1e6;
-      if (!Number.isInteger(ans) || ans <= 0) return GENERATORS["quant-time-work"]["very-hard"](id, r);
+      const tank = [6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 36, 40, 45, 48, 60];
+      const [a, b, c, t, ans] = until(() => {
+        const v = [pick(tank, r), pick(tank, r), pick(tank, r), rint(1, 8, r)];
+        const rest = Math.round(((1 - v[3] * (1 / v[0] + 1 / v[1] - 1 / v[2])) / (1 / v[0] + 1 / v[1])) * 1e6) / 1e6;
+        // C must be slower than A and B together, and the tank must still be filling when C is closed.
+        return v[0] !== v[1] && v[2] > v[0] && v[2] > v[1] && Number.isInteger(rest) && rest > 0 ? [...v, rest] : null;
+      });
       const L = (a * b * c) / gcd(gcd(a, b), c);
       const net = L / a + L / b - L / c;
       return numeric(
@@ -621,10 +645,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // Pairwise rates: A+B, B+C, C+A given; find one person alone.
-      const [a, b, c] = pick([[20, 30, 60], [30, 60, 20], [40, 60, 120], [15, 30, 30], [6, 12, 12], [60, 20, 30]], r);
       const pair = (x: number, y: number) => (x * y) / (x + y);
+      const days = [6, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45, 60, 72, 90, 120];
+      const [a, b, c] = until(() => {
+        const v = [pick(days, r), pick(days, r), pick(days, r)];
+        return new Set(v).size > 1 && [pair(v[0], v[1]), pair(v[1], v[2]), pair(v[2], v[0]), pair(pair(v[0], v[1]), v[2])].every(Number.isInteger) ? v : null;
+      });
       const [ab, bc, ca] = [pair(a, b), pair(b, c), pair(c, a)];
-      if (![ab, bc, ca].every(Number.isInteger)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
       const who = pick(["A", "C"], r);
       const ans = who === "A" ? a : c;
       const all = pair(pair(a, b), c);
@@ -641,7 +668,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " days",
       );
     }, (id, r) => {
-      const [a, b, c, ans] = pick([[6, 12, 8, 8], [12, 18, 36, 9], [20, 30, 60, 15], [8, 12, 24, 6], [15, 20, 30, 12], [6, 8, 24, 4]], r);
+      const pipes = [4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 36, 40, 45, 48, 60];
+      const [a, b, c, ans] = until(() => {
+        const v = [pick(pipes, r), pick(pipes, r), pick(pipes, r)];
+        const time = Math.round((1 / (1 / v[0] + 1 / v[1] - 1 / v[2])) * 1e6) / 1e6;
+        return v[0] !== v[1] && v[2] !== v[0] && v[2] !== v[1] && Number.isInteger(time) && time > 0 ? [...v, time] : null;
+      });
       const lcm = [a, b, c].reduce((x, y) => (x * y) / gcd(x, y));
       const net = lcm / a + lcm / b - lcm / c;
       return numeric(
@@ -657,7 +689,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // One worker k times as efficient as the other.
-      const [k, t] = pick([[2, 18], [3, 12], [2, 12], [4, 20], [3, 24], [2, 24]], r);
+      const k = rint(2, 5, r);
+      const t = k * rint(2, 15, r);
       const askA = r() < 0.5;
       const ans = askA ? (t * (k + 1)) / k : t * (k + 1);
       const units = (k + 1) * t;
@@ -674,10 +707,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // A works alone for a third of his time, then B joins: back out B's rate from the finishing time.
-      const [a, b] = pick([[18, 9], [15, 10], [30, 20], [36, 12], [36, 18], [18, 36], [45, 30], [27, 54], [24, 24], [30, 30]], r);
+      const [a, b] = until(() => {
+        const v = [3 * rint(3, 30, r), rint(6, 90, r)];
+        return Number.isInteger((2 * v[0] * v[1]) / (3 * (v[0] + v[1]))) ? v : null;
+      });
       const n = a / 3;
       const m = (2 * a * b) / (3 * (a + b));
-      if (!Number.isInteger(m)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
       const lcm = (a * b) / gcd(a, b);
       const left = lcm - n * (lcm / a);
       return numeric(
@@ -732,7 +767,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Average speed over equal distances is the harmonic mean, not the plain average.
-      const [x, y] = pick([[40, 60], [30, 60], [60, 90], [20, 30], [45, 90], [36, 45], [60, 40]], r);
+      const [x, y] = until(() => {
+        const v = [rint(10, 120, r), rint(10, 120, r)];
+        return v[0] !== v[1] && Number.isInteger((2 * v[0] * v[1]) / (v[0] + v[1])) ? v : null;
+      });
       const ans = (2 * x * y) / (x + y);
       return numeric(
         id, "quant-average", "hard",
@@ -746,9 +784,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " km/h",
       );
     }, (id, r) => {
-      const n = pick([20, 24, 29, 30, 35, 39], r);
-      const avg = pick([12, 14, 15, 16], r);
-      const d = pick([1, 2], r);
+      const [n, avg, d] = until(() => {
+        const v = [rint(15, 49, r), rint(10, 18, r), pick([1, 1, 2], r)];
+        // Keep the teacher at a believable age.
+        const age = v[1] + (v[0] + 1) * v[2];
+        return age >= 26 && age <= 62 ? v : null;
+      });
       const ans = avg + (n + 1) * d;
       return numeric(
         id, "quant-average", "hard",
@@ -842,8 +883,15 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const [a, b] = pick([[2, 3], [3, 4], [4, 5], [5, 6], [2, 5], [3, 7]], r);
-      const [c, d] = pick([[4, 5], [2, 3], [5, 7], [3, 4], [6, 7], [3, 8]], r);
+      const [a, b, c, d] = until(() => {
+        const v = [rint(1, 9, r), rint(2, 9, r), rint(1, 9, r), rint(2, 9, r)];
+        if (v[0] === v[1] || v[2] === v[3] || gcd(v[0], v[1]) !== 1 || gcd(v[2], v[3]) !== 1) return null;
+        // At least three wrong options that differ from the answer and from each other.
+        const right = ratio(v[0] * v[2], v[1] * v[3]);
+        const wrong = new Set([ratio(v[0] * v[3], v[1] * v[2]), ratio(v[1] * v[3], v[0] * v[2]), ratio(v[0], v[3]), ratio(v[0] * v[2], v[3]), ratio(v[0] + v[2], v[1] + v[3])]);
+        wrong.delete(right);
+        return wrong.size >= 3 ? v : null;
+      });
       const ans = ratio(a * c, b * d);
       return choice(
         id, "quant-ratio", "moderate",
@@ -937,7 +985,19 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-tsd": {
     easy: (id, r) => {
-      const kmh = pick([18, 36, 54, 72, 90, 108, 126, 144], r);
+      if (r() < 0.5) {
+        const mps = pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 12.5, 7.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5], r);
+        const speed = (mps * 18) / 5;
+        return numeric(
+          id, "quant-tsd", "easy",
+          `Convert ${mps} m/s into kilometres per hour.`,
+          speed,
+          `Multiply by 18/5: ${mps} × 18/5 = ${speed} km/h.`,
+          { q: `${mps} मीटर/सेकंड को किमी/घंटा में बदलिए।`, e: `18/5 से गुणा करें: ${mps} × 18/5 = ${speed} किमी/घंटा।` },
+          r, "", " km/h",
+        );
+      }
+      const kmh = 9 * rint(2, 30, r);
       const ms = (kmh * 5) / 18;
       return numeric(
         id, "quant-tsd", "easy",
@@ -949,9 +1009,9 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const kmh = pick([36, 54, 72, 90, 108], r);
+      const kmh = 18 * rint(2, 8, r);
       const v = (kmh * 5) / 18;
-      const t = pick([6, 8, 9, 10, 12, 15, 18], r);
+      const t = rint(5, 30, r);
       return numeric(
         id, "quant-tsd", "moderate",
         `A train ${v * t} m long runs at ${kmh} km/h. How long does it take to pass a pole?`,
@@ -1074,7 +1134,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-ci": {
     easy: (id, r) => {
-      const [p, rate] = pick([[5000, 10], [8000, 10], [2000, 20], [4000, 5], [8000, 5], [5000, 8], [10000, 4], [12000, 10], [2500, 20]], r);
+      const [p, rate] = until(() => {
+        const v = [500 * rint(2, 60, r), pick([4, 5, 8, 10, 12, 15, 20, 25], r)];
+        return Number.isInteger((v[0] * (200 * v[1] + v[1] * v[1])) / 10000) ? v : null;
+      });
       const ci = (p * (200 * rate + rate * rate)) / 10000;
       return numeric(
         id, "quant-ci", "easy",
@@ -1089,8 +1152,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const p = pick([5000, 8000, 10000, 12000, 20000, 25000], r);
-      const rate = pick([4, 5, 8, 10, 12], r);
+      const p = 1000 * rint(2, 50, r);
+      const rate = pick([2, 4, 5, 6, 8, 10, 12, 15, 20, 25], r);
       const ans = (p * rate * rate) / 10000;
       if (!Number.isInteger(ans)) return GENERATORS["quant-ci"].moderate(id, r);
       return numeric(
@@ -1106,7 +1169,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     hard: (id, r) => {
-      const p = pick([1000, 2000, 5000, 8000, 10000, 15000, 20000], r);
+      const p = 1000 * rint(1, 60, r);
       const rate = pick([10, 20], r);
       const amt = (p * (100 + rate) ** 3) / 1e6;
       const factor = (((100 + rate) / 100) ** 3).toFixed(3);
@@ -1124,23 +1187,25 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     "very-hard": either((id, r) => {
       // Three-year CI − SI = P × r²(300 + r)/10⁶: the two-year shortcut P(r/100)² is the trap.
-      const [rate, p] = pick([[10, 10000], [10, 20000], [10, 5000], [5, 8000], [5, 16000], [5, 40000], [20, 5000], [20, 2500], [20, 10000]], r);
+      const [rate, p] = until(() => {
+        const v = [pick([5, 10, 20], r), 500 * rint(2, 100, r)];
+        return Number.isInteger((v[1] * v[0] * v[0] * (300 + v[0])) / 1e6) ? v : null;
+      });
       const diff = (p * rate * rate * (300 + rate)) / 1e6;
-      if (!Number.isInteger(diff)) return GENERATORS["quant-ci"]["very-hard"](id, r);
       return numeric(
         id, "quant-ci", "very-hard",
         `The difference between the compound interest and the simple interest on a sum for 3 years at ${rate}% per annum is ₹${fmt(diff)}. What is the sum?`,
         p,
-        `For 3 years, CI − SI = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}. So P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}. (The 2-year formula P(r/100)² would give the wrong sum.)`,
+        `For 3 years, CI − SI = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${String((rate * rate * (300 + rate)) / 1e6)}. So P = ${fmt(diff)} ÷ ${String((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}. (The 2-year formula P(r/100)² would give the wrong sum.)`,
         {
           q: `किसी धनराशि पर ${rate}% वार्षिक दर से 3 वर्ष के चक्रवृद्धि ब्याज और साधारण ब्याज का अंतर ₹${fmt(diff)} है। वह धनराशि क्या है?`,
-          e: `3 वर्ष के लिए चक्रवृद्धि ब्याज − साधारण ब्याज = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}। अतः P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}। (2 वर्ष वाला सूत्र P(r/100)² यहाँ गलत उत्तर देगा।)`,
+          e: `3 वर्ष के लिए चक्रवृद्धि ब्याज − साधारण ब्याज = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${String((rate * rate * (300 + rate)) / 1e6)}। अतः P = ${fmt(diff)} ÷ ${String((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}। (2 वर्ष वाला सूत्र P(r/100)² यहाँ गलत उत्तर देगा।)`,
         },
         r, "₹",
       );
     }, (id, r) => {
-      const n = pick([3, 4, 5, 6, 8, 10], r);
-      const [times, pow] = pick([[4, 2], [8, 3], [16, 4]], r);
+      const n = rint(3, 15, r);
+      const [times, pow] = pick([[4, 2], [8, 3], [16, 4], [32, 5]], r);
       return numeric(
         id, "quant-ci", "very-hard",
         `A sum of money doubles itself in ${n} years at compound interest. In how many years will it become ${times} times itself?`,
@@ -1153,7 +1218,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " years",
       );
     }, (id, r) => {
-      const [p, rate] = pick([[10000, 10], [20000, 10], [40000, 5], [10000, 20], [5000, 20], [16000, 25]], r);
+      const [p, rate] = until(() => {
+        const v = [1000 * rint(2, 80, r), pick([5, 10, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) ** 2) / 1e4) && Number.isInteger((v[0] * (100 + v[1]) ** 3) / 1e6) ? v : null;
+      });
       const a2 = (p * (100 + rate) ** 2) / 1e4;
       const a3 = (a2 * (100 + rate)) / 100;
       return numeric(
@@ -1168,7 +1236,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const [p, rate] = pick([[10000, 10], [8000, 5], [20000, 10], [5000, 20], [15625, 4], [30000, 10]], r);
+      const [p, rate] = until(() => {
+        const v = [1000 * rint(2, 60, r), pick([4, 5, 10, 20], r)];
+        // The answer must come out in whole paise.
+        return Number.isInteger((v[0] * v[1] * v[1] * (300 + v[1])) / 1e4) ? v : null;
+      });
       const ans = Math.round(((p * rate * rate) / 1e4) * (3 + rate / 100) * 100) / 100;
       return numeric(
         id, "quant-ci", "very-hard",
@@ -1183,10 +1255,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // Two equal annual instalments: P = x/q + x/q² with q = 1 + R/100, so x = P × q²/(1 + q).
-      const [p, rate] = pick([[2100, 10], [4200, 10], [6300, 10], [5500, 20], [2200, 20], [3300, 20], [8200, 5], [4100, 5], [3600, 25], [7200, 25], [1800, 25], [5100, 4]], r);
+      const [p, rate] = until(() => {
+        const v = [100 * rint(10, 300, r), pick([4, 5, 10, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) ** 2) / (100 * (200 + v[1]))) ? v : null;
+      });
       const q = 100 + rate;
       const ans = (p * q * q) / (100 * (100 + q));
-      if (!Number.isInteger(ans)) return GENERATORS["quant-ci"]["very-hard"](id, r);
       // Exact decimals (1.1025, not 1.1), so the working can be followed.
       const q1 = String(q / 100);
       const q2 = String((q * q) / 1e4);
@@ -1206,7 +1280,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-number-system": {
     easy: either((id, r) => {
-      const [a, b] = pick([[12, 18], [15, 20], [24, 36], [16, 40], [21, 28], [18, 27], [30, 45], [14, 35], [20, 32], [36, 48], [25, 40], [42, 56]], r);
+      const [a, b] = until(() => {
+        const v = [rint(6, 60, r), rint(6, 60, r)];
+        const f = gcd(v[0], v[1]);
+        // Two different numbers that share a factor, neither a multiple of the other.
+        return v[0] < v[1] && f > 1 && f < v[0] && (v[0] * v[1]) / f <= 720 ? v : null;
+      });
       const h = gcd(a, b);
       const l = (a * b) / h;
       return numeric(
@@ -1221,7 +1300,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r,
       );
     }, (id, r) => {
-      const [a, b, c] = pick([[24, 36, 60], [18, 30, 42], [16, 40, 56], [27, 45, 63], [32, 48, 80], [21, 35, 56], [36, 54, 90], [25, 75, 100], [44, 66, 110]], r);
+      const [a, b, c] = until(() => {
+        const f = rint(2, 16, r);
+        const m = [rint(1, 9, r), rint(2, 10, r), rint(3, 12, r)];
+        return m[0] < m[1] && m[1] < m[2] && gcd(gcd(m[0], m[1]), m[2]) === 1 ? m.map((x) => x * f) : null;
+      });
       const h = gcd(gcd(a, b), c);
       return numeric(
         id, "quant-number-system", "easy",
@@ -1637,10 +1720,1493 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Algebra, geometry and trigonometry (the SSC "advance maths" block)
+// ---------------------------------------------------------------------------
+
+const AG = "quant-algebra-geometry";
+/** Days for two workers (never equal) who finish together in a whole number of days. */
+const WORK_PAIRS: [number, number][] = [];
+for (let a = 3; a <= 90; a++) for (let b = 3; b <= 90; b++) if (a !== b && (a * b) % (a + b) === 0) WORK_PAIRS.push([a, b]);
+const workPair = (r: Rand) => pick(WORK_PAIRS, r);
+/** A whole number from lo to hi, both included. */
+const rint = (lo: number, hi: number, r: Rand) => lo + Math.floor(r() * (hi - lo + 1));
+/** Keeps drawing until the numbers come out clean (`make` returns null for a draw it rejects). */
+function until<T>(make: () => T | null): T {
+  for (let i = 0; i < 2000; i++) {
+    const v = make();
+    if (v !== null) return v;
+  }
+  throw new Error("generator: no clean numbers found");
+}
+/** p/q in lowest terms ("7/5"), or a whole number when q divides p. */
+const frac = (p: number, q: number) => {
+  const g = gcd(Math.abs(p), Math.abs(q));
+  return q / g === 1 ? `${p / g}` : `${p / g}/${q / g}`;
+};
+const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+const pt = (x: number, y: number) => `(${x}, ${y})`;
+/** Pythagorean triples; the first five are primitive. */
+const TRIPLES: [number, number, number][] = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29], [6, 8, 10], [9, 12, 15], [12, 16, 20], [10, 24, 26], [15, 20, 25]];
+/** Triangles with whole-number sides and a whole-number area (Heron). */
+const HERON: [number, number, number][] = [[13, 14, 15], [5, 5, 6], [5, 5, 8], [10, 13, 13], [13, 13, 24], [9, 10, 17], [7, 15, 20], [11, 13, 20], [12, 17, 25], [13, 20, 21], [10, 17, 21], [17, 25, 26], [17, 25, 28], [4, 13, 15], [3, 25, 26], [15, 26, 37], [6, 25, 29], [15, 28, 41], [15, 34, 35], [8, 29, 35], [11, 25, 30], [25, 29, 36]];
+/** Standard-angle values as [name, numerator, denominator]. */
+const TRIG: [string, number, number][] = [
+  ["sin 30°", 1, 2], ["cos 60°", 1, 2], ["tan 45°", 1, 1], ["cot 45°", 1, 1], ["sec 60°", 2, 1], ["cosec 30°", 2, 1],
+  ["sin² 45°", 1, 2], ["cos² 45°", 1, 2], ["sin² 60°", 3, 4], ["cos² 30°", 3, 4], ["tan² 60°", 3, 1], ["tan² 30°", 1, 3],
+  ["sin² 30°", 1, 4], ["cos² 60°", 1, 4], ["cot² 30°", 3, 1], ["sec² 45°", 2, 1],
+];
+/** A heights-and-distances MCQ: the options are lengths in metres, some in surd form ("20√3 m"). */
+function lengths(id: string, difficulty: Difficulty, question: string, answer: string, base: number, explanation: string, hi: Hi, r: Rand, extra: string[] = []): MCQ {
+  const cands = [
+    ...extra,
+    `${base} m`, `${base}√3 m`, `${2 * base} m`, `${2 * base}√3 m`, `${3 * base} m`,
+    ...(base % 3 === 0 ? [`${base / 3}√3 m`, `${(2 * base) / 3}√3 m`] : []),
+    ...(base % 2 === 0 ? [`${base / 2}√3 m`, `${base / 2} m`] : []),
+  ];
+  const options = Object.fromEntries([answer, ...cands].map((o) => [o, o.replace(/ m$/, " मीटर")]));
+  return choice(id, AG, difficulty, question, answer, shuffle(cands, r), explanation, { ...hi, options }, r);
+}
+
+GENERATORS[AG] = {
+  easy: either((id, r) => {
+    // A one-step linear equation.
+    const [a, x, b] = [rint(2, 9, r), rint(2, 15, r), rint(1, 25, r)];
+    const minus = r() < 0.4 && a * x > b;
+    const c = minus ? a * x - b : a * x + b;
+    const [s, back] = minus ? ["−", "+"] : ["+", "−"];
+    return numeric(
+      id, AG, "easy",
+      `If ${a}x ${s} ${b} = ${c}, what is the value of x?`,
+      x,
+      `${a}x = ${c} ${back} ${b} = ${a * x}, so x = ${a * x} ÷ ${a} = ${x}.`,
+      { q: `यदि ${a}x ${s} ${b} = ${c} है, तो x का मान क्या है?`, e: `${a}x = ${c} ${back} ${b} = ${a * x}, अतः x = ${a * x} ÷ ${a} = ${x}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Polygons: angle sum and number of diagonals.
+    const n = rint(5, 20, r);
+    if (r() < 0.5) {
+      const ans = (n - 2) * 180;
+      return numeric(
+        id, AG, "easy",
+        `What is the sum of the interior angles of a polygon with ${n} sides?`,
+        ans,
+        `Sum of interior angles = (n − 2) × 180° = (${n} − 2) × 180° = ${fmt(ans)}°.`,
+        { q: `${n} भुजाओं वाले बहुभुज के अंतः कोणों का योग कितना होता है?`, e: `अंतः कोणों का योग = (n − 2) × 180° = (${n} − 2) × 180° = ${fmt(ans)}°।` },
+        r, "", "°",
+      );
+    }
+    const ans = (n * (n - 3)) / 2;
+    return numeric(
+      id, AG, "easy",
+      `How many diagonals does a polygon with ${n} sides have?`,
+      ans,
+      `Number of diagonals = n(n − 3)/2 = ${n} × ${n - 3} ÷ 2 = ${ans}.`,
+      { q: `${n} भुजाओं वाले बहुभुज में कितने विकर्ण होते हैं?`, e: `विकर्णों की संख्या = n(n − 3)/2 = ${n} × ${n - 3} ÷ 2 = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // The angles of a triangle add up to 180°.
+    const [a, b] = until(() => {
+      const [p, q] = [5 * rint(4, 17, r), 5 * rint(4, 17, r)];
+      return p + q <= 160 && p !== q ? [p, q] : null;
+    });
+    const ans = 180 - a - b;
+    return numeric(
+      id, AG, "easy",
+      `Two angles of a triangle measure ${a}° and ${b}°. What is the measure of the third angle?`,
+      ans,
+      `The angles of a triangle add up to 180°, so the third angle = 180° − ${a}° − ${b}° = ${ans}°.`,
+      { q: `एक त्रिभुज के दो कोण ${a}° और ${b}° हैं। तीसरे कोण का माप कितना है?`, e: `त्रिभुज के तीनों कोणों का योग 180° होता है, अतः तीसरा कोण = 180° − ${a}° − ${b}° = ${ans}°।` },
+      r, "", "°",
+    );
+  }, (id, r) => {
+    // Distance formula on a Pythagorean triple.
+    const [p, q, d] = pick(TRIPLES, r);
+    const [dx, dy] = r() < 0.5 ? [p, q] : [q, p];
+    const [x1, y1] = [rint(0, 9, r), rint(0, 9, r)];
+    const [x2, y2] = [x1 + dx, y1 + dy];
+    return numeric(
+      id, AG, "easy",
+      `What is the distance between the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+      d,
+      `Distance = √[(${x2} − ${x1})² + (${y2} − ${y1})²] = √(${dx}² + ${dy}²) = √${dx * dx + dy * dy} = ${d} units.`,
+      { q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} के बीच की दूरी कितनी है?`, e: `दूरी = √[(${x2} − ${x1})² + (${y2} − ${y1})²] = √(${dx}² + ${dy}²) = √${dx * dx + dy * dy} = ${d} इकाई।` },
+      r, "", " units",
+    );
+  }, (id, r) => {
+    // Values of trigonometric ratios at the standard angles.
+    const parts = shuffle(TRIG, r).slice(0, rint(2, 3, r)).map(([name, n, d]) => ({ name, n, d, c: d * rint(1, 3, r) }));
+    const expr = parts.map((p) => `${p.c === 1 ? "" : `${p.c} `}${p.name}`).join(" + ");
+    const total = sum(parts.map((p) => (p.c * p.n) / p.d));
+    const values = parts.map((p) => `${p.name} = ${frac(p.n, p.d)}`).join(", ");
+    const work = parts.map((p) => (p.c === 1 ? frac(p.n, p.d) : `${p.c} × ${frac(p.n, p.d)}`)).join(" + ");
+    return numeric(
+      id, AG, "easy",
+      `What is the value of ${expr}?`,
+      total,
+      `${values}. So the value = ${work} = ${total}.`,
+      { q: `${expr} का मान क्या है?`, e: `${values}। अतः मान = ${work} = ${total}।` },
+      r,
+    );
+  }),
+
+  moderate: either((id, r) => {
+    // Two equations in two unknowns, in word form.
+    const [p, n] = [rint(4, 15, r), 5 * rint(4, 12, r)];
+    const [a, b, c, d] = until(() => {
+      const k = [rint(2, 6, r), rint(2, 6, r), rint(2, 6, r), rint(2, 6, r)];
+      return k[0] * k[3] !== k[1] * k[2] ? k : null;
+    });
+    const [X, Y] = [a * p + b * n, c * p + d * n];
+    const pen = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `The cost of ${a} pens and ${b} notebooks is ₹${fmt(X)}, and the cost of ${c} pens and ${d} notebooks is ₹${fmt(Y)}. What is the cost of one ${pen ? "pen" : "notebook"}?`,
+      pen ? p : n,
+      `Let a pen cost ₹p and a notebook ₹n. Then ${a}p + ${b}n = ${fmt(X)} and ${c}p + ${d}n = ${fmt(Y)}. Multiply the first by ${c} and the second by ${a} and subtract: ${Math.abs(b * c - a * d)}n = ${fmt(Math.abs(c * X - a * Y))}, so n = ${n}. Then ${a}p = ${fmt(X)} − ${b} × ${n} = ${a * p}, so p = ${p}. One ${pen ? "pen" : "notebook"} costs ₹${pen ? p : n}.`,
+      {
+        q: `${a} पेन और ${b} कॉपियों का मूल्य ₹${fmt(X)} है, तथा ${c} पेन और ${d} कॉपियों का मूल्य ₹${fmt(Y)} है। एक ${pen ? "पेन" : "कॉपी"} का मूल्य कितना है?`,
+        e: `माना एक पेन का मूल्य ₹p और एक कॉपी का मूल्य ₹n है। तब ${a}p + ${b}n = ${fmt(X)} और ${c}p + ${d}n = ${fmt(Y)}। पहले समीकरण को ${c} से और दूसरे को ${a} से गुणा करके घटाने पर: ${Math.abs(b * c - a * d)}n = ${fmt(Math.abs(c * X - a * Y))}, अतः n = ${n}। फिर ${a}p = ${fmt(X)} − ${b} × ${n} = ${a * p}, अतः p = ${p}। एक ${pen ? "पेन" : "कॉपी"} का मूल्य ₹${pen ? p : n} है।`,
+      },
+      r, "₹",
+    );
+  }, (id, r) => {
+    // Sum and difference of two numbers.
+    const [small, gap] = [rint(8, 60, r), rint(3, 40, r)];
+    const big = small + gap;
+    const larger = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `The sum of two numbers is ${small + big} and their difference is ${gap}. What is the ${larger ? "larger" : "smaller"} number?`,
+      larger ? big : small,
+      `Let the numbers be x and y with x + y = ${small + big} and x − y = ${gap}. Adding, 2x = ${small + big + gap}, so x = ${big}; then y = ${small + big} − ${big} = ${small}. The ${larger ? "larger" : "smaller"} number is ${larger ? big : small}.`,
+      {
+        q: `दो संख्याओं का योग ${small + big} और उनका अंतर ${gap} है। ${larger ? "बड़ी" : "छोटी"} संख्या कौन-सी है?`,
+        e: `माना संख्याएँ x और y हैं, जहाँ x + y = ${small + big} और x − y = ${gap}। जोड़ने पर 2x = ${small + big + gap}, अतः x = ${big}; तब y = ${small + big} − ${big} = ${small}। ${larger ? "बड़ी" : "छोटी"} संख्या ${larger ? big : small} है।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // a² + b² from a + b and ab.
+    const a = rint(2, 12, r);
+    const b = until(() => {
+      const v = rint(1, 12, r);
+      return v !== a ? v : null;
+    });
+    const [s, p] = [a + b, a * b];
+    const ans = s * s - 2 * p;
+    return numeric(
+      id, AG, "moderate",
+      `If a + b = ${s} and ab = ${p}, what is the value of a² + b²?`,
+      ans,
+      `a² + b² = (a + b)² − 2ab = ${s}² − 2 × ${p} = ${s * s} − ${2 * p} = ${ans}.`,
+      { q: `यदि a + b = ${s} और ab = ${p} है, तो a² + b² का मान क्या है?`, e: `a² + b² = (a + b)² − 2ab = ${s}² − 2 × ${p} = ${s * s} − ${2 * p} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // x ± 1/x → x² + 1/x².
+    const k = rint(3, 15, r);
+    const plus = r() < 0.6;
+    const ans = plus ? k * k - 2 : k * k + 2;
+    const s = plus ? "+" : "−";
+    return numeric(
+      id, AG, "moderate",
+      `If x ${s} 1/x = ${k}, what is the value of x² + 1/x²?`,
+      ans,
+      `Squaring, x² + 1/x² ${s} 2 = ${k}² = ${k * k}, so x² + 1/x² = ${k * k} ${plus ? "−" : "+"} 2 = ${ans}.`,
+      { q: `यदि x ${s} 1/x = ${k} है, तो x² + 1/x² का मान क्या है?`, e: `वर्ग करने पर x² + 1/x² ${s} 2 = ${k}² = ${k * k}, अतः x² + 1/x² = ${k * k} ${plus ? "−" : "+"} 2 = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Regular polygon: sides from one angle.
+    const n = pick([5, 6, 8, 9, 10, 12, 15, 18, 20, 24, 30, 36], r);
+    const ext = 360 / n;
+    const exterior = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `Each ${exterior ? "exterior" : "interior"} angle of a regular polygon measures ${exterior ? ext : 180 - ext}°. How many sides does the polygon have?`,
+      n,
+      exterior
+        ? `The exterior angles of any polygon add up to 360°, so the number of sides = 360° ÷ ${ext}° = ${n}.`
+        : `Each exterior angle = 180° − ${180 - ext}° = ${ext}°. The exterior angles add up to 360°, so the number of sides = 360° ÷ ${ext}° = ${n}.`,
+      {
+        q: `एक सम बहुभुज का प्रत्येक ${exterior ? "बाह्य" : "अंतः"} कोण ${exterior ? ext : 180 - ext}° है। बहुभुज की कितनी भुजाएँ हैं?`,
+        e: exterior
+          ? `किसी भी बहुभुज के बाह्य कोणों का योग 360° होता है, अतः भुजाओं की संख्या = 360° ÷ ${ext}° = ${n}।`
+          : `प्रत्येक बाह्य कोण = 180° − ${180 - ext}° = ${ext}°। बाह्य कोणों का योग 360° होता है, अतः भुजाओं की संख्या = 360° ÷ ${ext}° = ${n}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Coordinate geometry: slope and midpoint.
+    const [x1, y1] = [rint(0, 9, r), rint(0, 9, r)];
+    if (r() < 0.5) {
+      const [dx, dy] = until(() => {
+        const v = [rint(1, 6, r), rint(1, 9, r)];
+        return v[0] !== v[1] ? v : null;
+      });
+      const [x2, y2] = [x1 + dx, y1 + dy];
+      const ans = frac(dy, dx);
+      const wrong = [frac(dx, dy), frac(dy + dx, dx), frac(dy, dx + 1), frac(dy + 1, dx), frac(2 * dy, dx), frac(dy, 2 * dx), frac(dx + dy, dy)];
+      return choice(
+        id, AG, "moderate",
+        `What is the slope of the line passing through the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+        ans,
+        shuffle(wrong, r),
+        `Slope = (y₂ − y₁)/(x₂ − x₁) = (${y2} − ${y1})/(${x2} − ${x1}) = ${dy}/${dx}${ans === `${dy}/${dx}` ? "" : ` = ${ans}`}.`,
+        {
+          q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} से होकर जाने वाली रेखा की ढाल (प्रवणता) क्या है?`,
+          e: `ढाल = (y₂ − y₁)/(x₂ − x₁) = (${y2} − ${y1})/(${x2} − ${x1}) = ${dy}/${dx}${ans === `${dy}/${dx}` ? "" : ` = ${ans}`}।`,
+        },
+        r,
+      );
+    }
+    const [i, j] = until(() => {
+      const v = [rint(1, 5, r), rint(1, 5, r)];
+      return v[0] !== v[1] ? v : null;
+    });
+    const [x2, y2] = [x1 + 2 * i, y1 + 2 * j];
+    const [mx, my] = [x1 + i, y1 + j];
+    const wrong = [pt(my, mx), pt(i, j), pt(x1 + x2, y1 + y2), pt(mx + 1, my), pt(mx, my + 1), pt(mx + 1, my + 1)];
+    return choice(
+      id, AG, "moderate",
+      `What is the midpoint of the line segment joining the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+      pt(mx, my),
+      shuffle(wrong, r),
+      `Midpoint = ((x₁ + x₂)/2, (y₁ + y₂)/2) = ((${x1} + ${x2})/2, (${y1} + ${y2})/2) = ${pt(mx, my)}.`,
+      {
+        q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} को मिलाने वाले रेखाखंड का मध्य बिंदु क्या है?`,
+        e: `मध्य बिंदु = ((x₁ + x₂)/2, (y₁ + y₂)/2) = ((${x1} + ${x2})/2, (${y1} + ${y2})/2) = ${pt(mx, my)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Chord of a circle: the perpendicular from the centre bisects it.
+    const [p, q, c] = pick(TRIPLES, r);
+    const [half, dist] = r() < 0.5 ? [p, q] : [q, p];
+    if (r() < 0.5) {
+      return numeric(
+        id, AG, "moderate",
+        `A chord of length ${2 * half} cm is drawn in a circle of radius ${c} cm. What is the distance of the chord from the centre?`,
+        dist,
+        `The perpendicular from the centre bisects the chord, so half the chord = ${half} cm. Distance = √(${c}² − ${half}²) = √${dist * dist} = ${dist} cm.`,
+        {
+          q: `${c} सेमी त्रिज्या वाले वृत्त में ${2 * half} सेमी लंबी एक जीवा खींची गई है। केंद्र से जीवा की दूरी कितनी है?`,
+          e: `केंद्र से डाला गया लंब जीवा को समद्विभाजित करता है, अतः आधी जीवा = ${half} सेमी। दूरी = √(${c}² − ${half}²) = √${dist * dist} = ${dist} सेमी।`,
+        },
+        r, "", " cm",
+      );
+    }
+    return numeric(
+      id, AG, "moderate",
+      `A chord of a circle of radius ${c} cm is at a distance of ${dist} cm from the centre. What is the length of the chord?`,
+      2 * half,
+      `Half the chord = √(${c}² − ${dist}²) = √${half * half} = ${half} cm, so the chord = 2 × ${half} = ${2 * half} cm.`,
+      {
+        q: `${c} सेमी त्रिज्या वाले वृत्त की एक जीवा केंद्र से ${dist} सेमी की दूरी पर है। जीवा की लंबाई कितनी है?`,
+        e: `आधी जीवा = √(${c}² − ${dist}²) = √${half * half} = ${half} सेमी, अतः जीवा = 2 × ${half} = ${2 * half} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // Tangent from an external point.
+    const [p, q, c] = pick(TRIPLES, r);
+    const [rad, t] = r() < 0.5 ? [p, q] : [q, p];
+    return numeric(
+      id, AG, "moderate",
+      `A point P is ${c} cm away from the centre of a circle of radius ${rad} cm. What is the length of the tangent drawn from P to the circle?`,
+      t,
+      `The tangent is perpendicular to the radius at the point of contact, so tangent = √(${c}² − ${rad}²) = √${t * t} = ${t} cm.`,
+      {
+        q: `एक बिंदु P, ${rad} सेमी त्रिज्या वाले वृत्त के केंद्र से ${c} सेमी दूर है। P से वृत्त पर खींची गई स्पर्श रेखा की लंबाई कितनी है?`,
+        e: `स्पर्श बिंदु पर स्पर्श रेखा त्रिज्या पर लंब होती है, अतः स्पर्श रेखा = √(${c}² − ${rad}²) = √${t * t} = ${t} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // A ladder against a wall: cos 60° = sin 30° = 1/2.
+    const d = rint(2, 15, r);
+    if (r() < 0.5) {
+      return numeric(
+        id, AG, "moderate",
+        `A ladder leaning against a wall makes an angle of 60° with the ground. If the foot of the ladder is ${d} m away from the wall, what is the length of the ladder?`,
+        2 * d,
+        `cos 60° = distance from the wall ÷ length of the ladder, so 1/2 = ${d} ÷ length and the length = ${2 * d} m.`,
+        {
+          q: `दीवार के सहारे टिकी एक सीढ़ी भूमि के साथ 60° का कोण बनाती है। यदि सीढ़ी का पाद दीवार से ${d} मीटर दूर है, तो सीढ़ी की लंबाई कितनी है?`,
+          e: `cos 60° = दीवार से दूरी ÷ सीढ़ी की लंबाई, अतः 1/2 = ${d} ÷ लंबाई और लंबाई = ${2 * d} मीटर।`,
+        },
+        r, "", " m",
+      );
+    }
+    return numeric(
+      id, AG, "moderate",
+      `A ${2 * d} m long ladder leaning against a wall makes an angle of 30° with the ground. How high up the wall does the ladder reach?`,
+      d,
+      `sin 30° = height ÷ length of the ladder, so height = ${2 * d} × 1/2 = ${d} m.`,
+      {
+        q: `दीवार के सहारे टिकी ${2 * d} मीटर लंबी एक सीढ़ी भूमि के साथ 30° का कोण बनाती है। सीढ़ी दीवार पर कितनी ऊँचाई तक पहुँचती है?`,
+        e: `sin 30° = ऊँचाई ÷ सीढ़ी की लंबाई, अतः ऊँचाई = ${2 * d} × 1/2 = ${d} मीटर।`,
+      },
+      r, "", " m",
+    );
+  }),
+
+  hard: either((id, r) => {
+    // Heron's formula, on triangles whose area is a whole number.
+    const k = pick([1, 1, 2, 3], r);
+    const [a, b, c] = pick(HERON, r).map((x) => x * k);
+    const s = (a + b + c) / 2;
+    const prod = s * (s - a) * (s - b) * (s - c);
+    const ans = Math.round(Math.sqrt(prod));
+    return numeric(
+      id, AG, "hard",
+      `The sides of a triangle are ${a} cm, ${b} cm and ${c} cm. What is its area?`,
+      ans,
+      `s = (${a} + ${b} + ${c})/2 = ${s}. Area = √[s(s − a)(s − b)(s − c)] = √(${s} × ${s - a} × ${s - b} × ${s - c}) = √${prod} = ${fmt(ans)} cm².`,
+      {
+        q: `एक त्रिभुज की भुजाएँ ${a} सेमी, ${b} सेमी और ${c} सेमी हैं। उसका क्षेत्रफल कितना है?`,
+        e: `s = (${a} + ${b} + ${c})/2 = ${s}। क्षेत्रफल = √[s(s − a)(s − b)(s − c)] = √(${s} × ${s - a} × ${s - b} × ${s - c}) = √${prod} = ${fmt(ans)} वर्ग सेमी।`,
+      },
+      r, "", " cm²",
+    );
+  }, (id, r) => {
+    // Similar triangles: areas are in the ratio of the squares of the sides.
+    const [p, q] = pick([[2, 3], [3, 4], [2, 5], [3, 5], [4, 5], [1, 2], [1, 3], [5, 6], [4, 7], [3, 2], [5, 3], [4, 3], [5, 2], [2, 1], [3, 1], [7, 4]], r);
+    const k = rint(2, 9, r);
+    const [given, ans] = [p * p * k, q * q * k];
+    return numeric(
+      id, AG, "hard",
+      `Triangles ABC and PQR are similar and AB : PQ = ${p} : ${q}. If the area of triangle ABC is ${given} cm², what is the area of triangle PQR?`,
+      ans,
+      `Areas of similar triangles are in the ratio of the squares of corresponding sides: ${given} : area of PQR = ${p}² : ${q}² = ${p * p} : ${q * q}. So area of PQR = ${given} × ${q * q} ÷ ${p * p} = ${ans} cm².`,
+      {
+        q: `त्रिभुज ABC और PQR समरूप हैं तथा AB : PQ = ${p} : ${q} है। यदि त्रिभुज ABC का क्षेत्रफल ${given} वर्ग सेमी है, तो त्रिभुज PQR का क्षेत्रफल कितना है?`,
+        e: `समरूप त्रिभुजों के क्षेत्रफलों का अनुपात संगत भुजाओं के वर्गों के अनुपात के बराबर होता है: ${given} : PQR का क्षेत्रफल = ${p}² : ${q}² = ${p * p} : ${q * q}। अतः PQR का क्षेत्रफल = ${given} × ${q * q} ÷ ${p * p} = ${ans} वर्ग सेमी।`,
+      },
+      r, "", " cm²",
+    );
+  }, (id, r) => {
+    // x + 1/x → x³ + 1/x³.
+    const k = rint(3, 9, r);
+    const ans = k ** 3 - 3 * k;
+    return numeric(
+      id, AG, "hard",
+      `If x + 1/x = ${k}, what is the value of x³ + 1/x³?`,
+      ans,
+      `x³ + 1/x³ = (x + 1/x)³ − 3(x + 1/x) = ${k}³ − 3 × ${k} = ${k ** 3} − ${3 * k} = ${ans}.`,
+      { q: `यदि x + 1/x = ${k} है, तो x³ + 1/x³ का मान क्या है?`, e: `x³ + 1/x³ = (x + 1/x)³ − 3(x + 1/x) = ${k}³ − 3 × ${k} = ${k ** 3} − ${3 * k} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // a³ + b³ from a + b and ab.
+    const a = rint(2, 9, r);
+    const b = until(() => {
+      const v = rint(1, 9, r);
+      return v !== a ? v : null;
+    });
+    const [s, p] = [a + b, a * b];
+    const ans = s ** 3 - 3 * p * s;
+    return numeric(
+      id, AG, "hard",
+      `If a + b = ${s} and ab = ${p}, what is the value of a³ + b³?`,
+      ans,
+      `a³ + b³ = (a + b)³ − 3ab(a + b) = ${s}³ − 3 × ${p} × ${s} = ${fmt(s ** 3)} − ${fmt(3 * p * s)} = ${fmt(ans)}.`,
+      { q: `यदि a + b = ${s} और ab = ${p} है, तो a³ + b³ का मान क्या है?`, e: `a³ + b³ = (a + b)³ − 3ab(a + b) = ${s}³ − 3 × ${p} × ${s} = ${fmt(s ** 3)} − ${fmt(3 * p * s)} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Sum and product of the roots of a quadratic.
+    const p = rint(1, 9, r);
+    const q = until(() => {
+      const v = rint(2, 9, r);
+      return v !== p ? v : null;
+    });
+    const [S, P] = [p + q, p * q];
+    const eq = `x² − ${S}x + ${P} = 0`;
+    if (r() < 0.5) {
+      const ans = S * S - 2 * P;
+      return numeric(
+        id, AG, "hard",
+        `If α and β are the roots of the equation ${eq}, what is the value of α² + β²?`,
+        ans,
+        `α + β = ${S} and αβ = ${P}. α² + β² = (α + β)² − 2αβ = ${S * S} − ${2 * P} = ${ans}.`,
+        { q: `यदि α और β समीकरण ${eq} के मूल हैं, तो α² + β² का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। α² + β² = (α + β)² − 2αβ = ${S * S} − ${2 * P} = ${ans}।` },
+        r,
+      );
+    }
+    const ans = frac(S, P);
+    const wrong = [frac(P, S), frac(S, P + 1), frac(S + 1, P), `${S}`, frac(S * S - 2 * P, P), frac(1, P), frac(S, 2 * P), frac(2 * S, P)];
+    return choice(
+      id, AG, "hard",
+      `If α and β are the roots of the equation ${eq}, what is the value of 1/α + 1/β?`,
+      ans,
+      shuffle(wrong, r),
+      `α + β = ${S} and αβ = ${P}. 1/α + 1/β = (α + β)/αβ = ${S}/${P}${ans === `${S}/${P}` ? "" : ` = ${ans}`}.`,
+      { q: `यदि α और β समीकरण ${eq} के मूल हैं, तो 1/α + 1/β का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। 1/α + 1/β = (α + β)/αβ = ${S}/${P}${ans === `${S}/${P}` ? "" : ` = ${ans}`}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Heights and distances with one angle of 30° or 60°.
+    const len = 3 * pick([4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 20, 25, 30], r);
+    const ang = pick([30, 60], r);
+    const third = `${len / 3}√3 m`;
+    const full = `${len}√3 m`;
+    if (r() < 0.5) {
+      const steep = ang === 60;
+      return lengths(
+        id, "hard",
+        `From a point on the ground ${len} m away from the foot of a tower, the angle of elevation of the top of the tower is ${ang}°. What is the height of the tower?`,
+        steep ? full : third, len,
+        steep
+          ? `tan 60° = height ÷ ${len}, so height = ${len} × √3 = ${full}.`
+          : `tan 30° = height ÷ ${len}, so height = ${len} ÷ √3 = ${len}√3/3 = ${third}.`,
+        {
+          q: `भूमि पर स्थित एक बिंदु से, जो एक मीनार के पाद से ${len} मीटर दूर है, मीनार के शिखर का उन्नयन कोण ${ang}° है। मीनार की ऊँचाई कितनी है?`,
+          e: steep
+            ? `tan 60° = ऊँचाई ÷ ${len}, अतः ऊँचाई = ${len} × √3 = ${len}√3 मीटर।`
+            : `tan 30° = ऊँचाई ÷ ${len}, अतः ऊँचाई = ${len} ÷ √3 = ${len}√3/3 = ${len / 3}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    const steep = ang === 60;
+    return lengths(
+      id, "hard",
+      `The angle of elevation of the top of a ${len} m high tower from a point on the ground is ${ang}°. How far is the point from the foot of the tower?`,
+      steep ? third : full, len,
+      steep
+        ? `tan 60° = ${len} ÷ distance, so distance = ${len} ÷ √3 = ${len}√3/3 = ${third}.`
+        : `tan 30° = ${len} ÷ distance, so distance = ${len} × √3 = ${full}.`,
+      {
+        q: `भूमि पर स्थित एक बिंदु से ${len} मीटर ऊँची मीनार के शिखर का उन्नयन कोण ${ang}° है। वह बिंदु मीनार के पाद से कितनी दूर है?`,
+        e: steep
+          ? `tan 60° = ${len} ÷ दूरी, अतः दूरी = ${len} ÷ √3 = ${len}√3/3 = ${len / 3}√3 मीटर।`
+          : `tan 30° = ${len} ÷ दूरी, अतः दूरी = ${len} × √3 = ${len}√3 मीटर।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Area of a triangle from its vertices; centroid.
+    if (r() < 0.6) {
+      const v = until(() => {
+        const c = Array.from({ length: 6 }, () => rint(0, 9, r));
+        const twice = Math.abs(c[0] * (c[3] - c[5]) + c[2] * (c[5] - c[1]) + c[4] * (c[1] - c[3]));
+        return twice >= 8 && twice % 2 === 0 ? c : null;
+      });
+      const [x1, y1, x2, y2, x3, y3] = v;
+      const inner = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
+      const ans = Math.abs(inner) / 2;
+      const b = (n: number) => (n < 0 ? `(−${-n})` : `${n}`);
+      const work = `½ |${x1} × ${b(y2 - y3)} + ${x2} × ${b(y3 - y1)} + ${x3} × ${b(y1 - y2)}| = ½ × ${Math.abs(inner)} = ${ans}`;
+      return numeric(
+        id, AG, "hard",
+        `What is the area of the triangle whose vertices are ${pt(x1, y1)}, ${pt(x2, y2)} and ${pt(x3, y3)}?`,
+        ans,
+        `Area = ½ |x₁(y₂ − y₃) + x₂(y₃ − y₁) + x₃(y₁ − y₂)| = ${work} sq units.`,
+        {
+          q: `उस त्रिभुज का क्षेत्रफल कितना है जिसके शीर्ष ${pt(x1, y1)}, ${pt(x2, y2)} और ${pt(x3, y3)} हैं?`,
+          e: `क्षेत्रफल = ½ |x₁(y₂ − y₃) + x₂(y₃ − y₁) + x₃(y₁ − y₂)| = ${work} वर्ग इकाई।`,
+        },
+        r, "", " sq units",
+      );
+    }
+    const v = until(() => {
+      const c = Array.from({ length: 6 }, () => rint(0, 12, r));
+      const twice = Math.abs(c[0] * (c[3] - c[5]) + c[2] * (c[5] - c[1]) + c[4] * (c[1] - c[3]));
+      const [sx, sy] = [c[0] + c[2] + c[4], c[1] + c[3] + c[5]];
+      return twice > 0 && sx % 3 === 0 && sy % 3 === 0 && sx !== sy ? c : null;
+    });
+    const [x1, y1, x2, y2, x3, y3] = v;
+    const [gx, gy] = [(x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3];
+    const wrong = [pt(gy, gx), pt(gx + 1, gy), pt(gx, gy + 1), pt(x1 + x2 + x3, y1 + y2 + y3), pt(gx + 1, gy + 1), pt(gx + 2, gy)];
+    return choice(
+      id, AG, "hard",
+      `What is the centroid of the triangle whose vertices are ${pt(x1, y1)}, ${pt(x2, y2)} and ${pt(x3, y3)}?`,
+      pt(gx, gy),
+      shuffle(wrong, r),
+      `Centroid = ((x₁ + x₂ + x₃)/3, (y₁ + y₂ + y₃)/3) = (${x1 + x2 + x3}/3, ${y1 + y2 + y3}/3) = ${pt(gx, gy)}.`,
+      {
+        q: `उस त्रिभुज का केंद्रक क्या है जिसके शीर्ष ${pt(x1, y1)}, ${pt(x2, y2)} और ${pt(x3, y3)} हैं?`,
+        e: `केंद्रक = ((x₁ + x₂ + x₃)/3, (y₁ + y₂ + y₃)/3) = (${x1 + x2 + x3}/3, ${y1 + y2 + y3}/3) = ${pt(gx, gy)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Angles at the centres of a triangle.
+    const A = 2 * rint(20, 42, r);
+    const kind = pick(["incentre", "circumcentre", "orthocentre"] as const, r);
+    const { letter, ans, en, hiName, hiE } = {
+      incentre: { letter: "I", ans: 90 + A / 2, en: `∠BIC = 90° + ∠A/2 = 90° + ${A / 2}° = ${90 + A / 2}°`, hiName: "अंतःकेंद्र", hiE: `∠BIC = 90° + ∠A/2 = 90° + ${A / 2}° = ${90 + A / 2}°` },
+      circumcentre: { letter: "O", ans: 2 * A, en: `The angle at the centre is twice the angle at the circumference: ∠BOC = 2∠A = 2 × ${A}° = ${2 * A}°`, hiName: "परिकेंद्र", hiE: `केंद्र पर बना कोण परिधि पर बने कोण का दुगुना होता है: ∠BOC = 2∠A = 2 × ${A}° = ${2 * A}°` },
+      orthocentre: { letter: "H", ans: 180 - A, en: `∠BHC = 180° − ∠A = 180° − ${A}° = ${180 - A}°`, hiName: "लंबकेंद्र", hiE: `∠BHC = 180° − ∠A = 180° − ${A}° = ${180 - A}°` },
+    }[kind];
+    return numeric(
+      id, AG, "hard",
+      `In an acute-angled triangle ABC, ∠A = ${A}°. If ${letter} is the ${kind} of the triangle, what is the measure of ∠B${letter}C?`,
+      ans,
+      `${en}.`,
+      { q: `एक न्यूनकोण त्रिभुज ABC में ∠A = ${A}° है। यदि ${letter} त्रिभुज का ${hiName} है, तो ∠B${letter}C का माप कितना है?`, e: `${hiE}।` },
+      r, "", "°",
+    );
+  }, (id, r) => {
+    // tan θ from a Pythagorean triple → sin θ + cos θ.
+    const [p, q, h] = pick(TRIPLES.slice(0, 5), r);
+    const [a, b] = r() < 0.5 ? [p, q] : [q, p];
+    const ans = frac(a + b, h);
+    const wrong = [frac(a, h), frac(b, h), frac(h, a + b), frac(Math.abs(a - b), h), frac(a + b, a), frac(a + b, b), frac(a * b, h)];
+    return choice(
+      id, AG, "hard",
+      `If tan θ = ${a}/${b} and θ is an acute angle, what is the value of sin θ + cos θ?`,
+      ans,
+      shuffle(wrong, r),
+      `Take the perpendicular as ${a} and the base as ${b}; hypotenuse = √(${a}² + ${b}²) = ${h}. So sin θ = ${a}/${h} and cos θ = ${b}/${h}, and sin θ + cos θ = ${ans}.`,
+      {
+        q: `यदि tan θ = ${a}/${b} है और θ एक न्यून कोण है, तो sin θ + cos θ का मान क्या है?`,
+        e: `लंब ${a} और आधार ${b} लेने पर कर्ण = √(${a}² + ${b}²) = ${h}। अतः sin θ = ${a}/${h} और cos θ = ${b}/${h}, तथा sin θ + cos θ = ${ans}।`,
+      },
+      r,
+    );
+  }),
+
+  "very-hard": either((id, r) => {
+    // Heights and distances with two angles.
+    const kind = pick(["points", "shadow", "boats", "building"] as const, r);
+    if (kind === "points" || kind === "shadow") {
+      const d = 2 * rint(5, 60, r);
+      const ans = `${d / 2}√3 m`;
+      const points = kind === "points";
+      const what = points ? "tower" : "pole";
+      const whatHi = points ? "मीनार" : "खंभे";
+      return lengths(
+        id, "very-hard",
+        points
+          ? `The angles of elevation of the top of a tower from two points on the ground, on the same side of the tower and in line with its foot, are 30° and 60°. If the two points are ${d} m apart, what is the height of the tower?`
+          : `The shadow of a vertical pole becomes ${d} m longer when the sun’s angle of elevation falls from 60° to 30°. What is the height of the pole?`,
+        ans, d,
+        `Let the height be h. The two distances from the foot of the ${what} are h/tan 30° = h√3 and h/tan 60° = h/√3. Their difference is h√3 − h/√3 = 2h/√3 = ${d}, so h = ${d}√3/2 = ${ans}.`,
+        {
+          q: points
+            ? `भूमि पर स्थित दो बिंदुओं से, जो एक मीनार के एक ही ओर तथा उसके पाद की सीध में हैं, मीनार के शिखर के उन्नयन कोण 30° और 60° हैं। यदि दोनों बिंदुओं के बीच की दूरी ${d} मीटर है, तो मीनार की ऊँचाई कितनी है?`
+            : `जब सूर्य का उन्नयन कोण 60° से घटकर 30° हो जाता है, तो एक ऊर्ध्वाधर खंभे की छाया ${d} मीटर लंबी हो जाती है। खंभे की ऊँचाई कितनी है?`,
+          e: `माना ऊँचाई h है। ${whatHi} के पाद से दोनों दूरियाँ h/tan 30° = h√3 और h/tan 60° = h/√3 हैं। इनका अंतर h√3 − h/√3 = 2h/√3 = ${d}, अतः h = ${d}√3/2 = ${d / 2}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    if (kind === "boats") {
+      const h = 3 * rint(4, 40, r);
+      const ans = `${(2 * h) / 3}√3 m`;
+      return lengths(
+        id, "very-hard",
+        `From the top of a ${h} m high cliff, the angles of depression of two boats on the same side of the cliff and in line with its foot are 30° and 60°. What is the distance between the two boats?`,
+        ans, h,
+        `The boats are ${h}/tan 30° = ${h}√3 m and ${h}/tan 60° = ${h}/√3 = ${h / 3}√3 m from the foot of the cliff. Distance between them = ${h}√3 − ${h / 3}√3 = ${ans}.`,
+        {
+          q: `${h} मीटर ऊँची एक चट्टान के शिखर से, चट्टान के एक ही ओर तथा उसके पाद की सीध में स्थित दो नावों के अवनमन कोण 30° और 60° हैं। दोनों नावों के बीच की दूरी कितनी है?`,
+          e: `चट्टान के पाद से नावों की दूरियाँ ${h}/tan 30° = ${h}√3 मीटर और ${h}/tan 60° = ${h}/√3 = ${h / 3}√3 मीटर हैं। उनके बीच की दूरी = ${h}√3 − ${h / 3}√3 = ${(2 * h) / 3}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    const h = rint(8, 80, r);
+    const ans = `${h}(√3 + 1) m`;
+    return lengths(
+      id, "very-hard",
+      `From the top of a ${h} m high building, the angle of depression of the foot of a tower is 45° and the angle of elevation of the top of the tower is 60°. What is the height of the tower?`,
+      ans, h,
+      `The angle of depression of the foot is 45°, so the tower is ${h} m away from the building. The top of the tower is ${h} × tan 60° = ${h}√3 m above the top of the building. Height of the tower = ${h} + ${h}√3 = ${ans}.`,
+      {
+        q: `${h} मीटर ऊँचे एक भवन के शिखर से एक मीनार के पाद का अवनमन कोण 45° और मीनार के शिखर का उन्नयन कोण 60° है। मीनार की ऊँचाई कितनी है?`,
+        e: `पाद का अवनमन कोण 45° है, अतः मीनार भवन से ${h} मीटर दूर है। मीनार का शिखर भवन के शिखर से ${h} × tan 60° = ${h}√3 मीटर ऊपर है। मीनार की ऊँचाई = ${h} + ${h}√3 = ${h}(√3 + 1) मीटर।`,
+      },
+      r, [`${h}(√3 − 1) m`],
+    );
+  }, (id, r) => {
+    // Higher powers from x ± 1/x.
+    if (r() < 0.5) {
+      const k = rint(3, 7, r);
+      const sq = k * k - 2;
+      const ans = sq * sq - 2;
+      return numeric(
+        id, AG, "very-hard",
+        `If x + 1/x = ${k}, what is the value of x⁴ + 1/x⁴?`,
+        ans,
+        `x² + 1/x² = ${k}² − 2 = ${sq}. Squaring again, x⁴ + 1/x⁴ = ${sq}² − 2 = ${fmt(sq * sq)} − 2 = ${fmt(ans)}.`,
+        { q: `यदि x + 1/x = ${k} है, तो x⁴ + 1/x⁴ का मान क्या है?`, e: `x² + 1/x² = ${k}² − 2 = ${sq}। पुनः वर्ग करने पर x⁴ + 1/x⁴ = ${sq}² − 2 = ${fmt(sq * sq)} − 2 = ${fmt(ans)}।` },
+        r,
+      );
+    }
+    const k = rint(2, 9, r);
+    const ans = k ** 3 + 3 * k;
+    return numeric(
+      id, AG, "very-hard",
+      `If x − 1/x = ${k}, what is the value of x³ − 1/x³?`,
+      ans,
+      `x³ − 1/x³ = (x − 1/x)³ + 3(x − 1/x) = ${k}³ + 3 × ${k} = ${k ** 3} + ${3 * k} = ${ans}.`,
+      { q: `यदि x − 1/x = ${k} है, तो x³ − 1/x³ का मान क्या है?`, e: `x³ − 1/x³ = (x − 1/x)³ + 3(x − 1/x) = ${k}³ + 3 × ${k} = ${k ** 3} + ${3 * k} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Three-variable identities.
+    const [a, b, c] = until(() => {
+      const v = [rint(1, 9, r), rint(1, 9, r), rint(1, 9, r)];
+      return new Set(v).size > 1 ? v : null;
+    });
+    const s = a + b + c;
+    const q = a * b + b * c + c * a;
+    const t = a * a + b * b + c * c;
+    const kind = pick(["squares", "products", "cubes"] as const, r);
+    if (kind === "squares") {
+      return numeric(
+        id, AG, "very-hard",
+        `If a + b + c = ${s} and ab + bc + ca = ${q}, what is the value of a² + b² + c²?`,
+        t,
+        `a² + b² + c² = (a + b + c)² − 2(ab + bc + ca) = ${s}² − 2 × ${q} = ${s * s} − ${2 * q} = ${t}.`,
+        { q: `यदि a + b + c = ${s} और ab + bc + ca = ${q} है, तो a² + b² + c² का मान क्या है?`, e: `a² + b² + c² = (a + b + c)² − 2(ab + bc + ca) = ${s}² − 2 × ${q} = ${s * s} − ${2 * q} = ${t}।` },
+        r,
+      );
+    }
+    if (kind === "products") {
+      return numeric(
+        id, AG, "very-hard",
+        `If a + b + c = ${s} and a² + b² + c² = ${t}, what is the value of ab + bc + ca?`,
+        q,
+        `(a + b + c)² = a² + b² + c² + 2(ab + bc + ca), so ${s * s} = ${t} + 2(ab + bc + ca) and ab + bc + ca = (${s * s} − ${t}) ÷ 2 = ${q}.`,
+        { q: `यदि a + b + c = ${s} और a² + b² + c² = ${t} है, तो ab + bc + ca का मान क्या है?`, e: `(a + b + c)² = a² + b² + c² + 2(ab + bc + ca), अतः ${s * s} = ${t} + 2(ab + bc + ca) और ab + bc + ca = (${s * s} − ${t}) ÷ 2 = ${q}।` },
+        r,
+      );
+    }
+    const ans = s * (t - q);
+    return numeric(
+      id, AG, "very-hard",
+      `If a + b + c = ${s} and a² + b² + c² = ${t}, what is the value of a³ + b³ + c³ − 3abc?`,
+      ans,
+      `ab + bc + ca = (${s}² − ${t}) ÷ 2 = ${q}. a³ + b³ + c³ − 3abc = (a + b + c)(a² + b² + c² − ab − bc − ca) = ${s} × (${t} − ${q}) = ${fmt(ans)}.`,
+      {
+        q: `यदि a + b + c = ${s} और a² + b² + c² = ${t} है, तो a³ + b³ + c³ − 3abc का मान क्या है?`,
+        e: `ab + bc + ca = (${s}² − ${t}) ÷ 2 = ${q}। a³ + b³ + c³ − 3abc = (a + b + c)(a² + b² + c² − ab − bc − ca) = ${s} × (${t} − ${q}) = ${fmt(ans)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Quadratic equations: cubes of the roots, an unknown constant, equal roots.
+    const kind = pick(["cubes", "constant", "equal"] as const, r);
+    if (kind === "equal") {
+      const m = rint(2, 15, r);
+      return numeric(
+        id, AG, "very-hard",
+        `For what positive value of k does the equation x² − kx + ${m * m} = 0 have equal roots?`,
+        2 * m,
+        `Equal roots need the discriminant to be zero: k² − 4 × ${m * m} = 0, so k² = ${4 * m * m} and k = ${2 * m}.`,
+        { q: `k के किस धनात्मक मान के लिए समीकरण x² − kx + ${m * m} = 0 के मूल बराबर होंगे?`, e: `बराबर मूलों के लिए विविक्तकर शून्य होना चाहिए: k² − 4 × ${m * m} = 0, अतः k² = ${4 * m * m} और k = ${2 * m}।` },
+        r,
+      );
+    }
+    const p = rint(2, 9, r);
+    const q = until(() => {
+      const v = rint(1, 9, r);
+      return v !== p ? v : null;
+    });
+    const [S, P] = [p + q, p * q];
+    if (kind === "constant") {
+      return numeric(
+        id, AG, "very-hard",
+        `If one root of the equation x² − ${S}x + k = 0 is ${p}, what is the value of k?`,
+        P,
+        `The sum of the roots is ${S}, so the other root = ${S} − ${p} = ${q}. k = product of the roots = ${p} × ${q} = ${P}.`,
+        { q: `यदि समीकरण x² − ${S}x + k = 0 का एक मूल ${p} है, तो k का मान क्या है?`, e: `मूलों का योग ${S} है, अतः दूसरा मूल = ${S} − ${p} = ${q}। k = मूलों का गुणनफल = ${p} × ${q} = ${P}।` },
+        r,
+      );
+    }
+    const ans = S ** 3 - 3 * P * S;
+    return numeric(
+      id, AG, "very-hard",
+      `If α and β are the roots of the equation x² − ${S}x + ${P} = 0, what is the value of α³ + β³?`,
+      ans,
+      `α + β = ${S} and αβ = ${P}. α³ + β³ = (α + β)³ − 3αβ(α + β) = ${fmt(S ** 3)} − 3 × ${P} × ${S} = ${fmt(ans)}.`,
+      { q: `यदि α और β समीकरण x² − ${S}x + ${P} = 0 के मूल हैं, तो α³ + β³ का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। α³ + β³ = (α + β)³ − 3αβ(α + β) = ${fmt(S ** 3)} − 3 × ${P} × ${S} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Two circles: direct common tangent and common chord.
+    if (r() < 0.5) {
+      const [R, s] = pick([[9, 4], [16, 9], [25, 4], [25, 9], [16, 4], [25, 16], [36, 25], [9, 1], [18, 8], [8, 2], [27, 3], [12, 3], [32, 2], [50, 2], [20, 5], [45, 5], [36, 16], [49, 4], [49, 9], [36, 4]], r);
+      const ans = 2 * Math.round(Math.sqrt(R * s));
+      return numeric(
+        id, AG, "very-hard",
+        `Two circles of radii ${R} cm and ${s} cm touch each other externally. What is the length of their direct common tangent?`,
+        ans,
+        `Distance between the centres = ${R} + ${s} = ${R + s} cm. Direct common tangent = √[d² − (R − r)²] = √(${R + s}² − ${R - s}²) = 2√(${R} × ${s}) = ${ans} cm.`,
+        {
+          q: `${R} सेमी और ${s} सेमी त्रिज्या वाले दो वृत्त एक-दूसरे को बाह्यतः स्पर्श करते हैं। उनकी सीधी उभयनिष्ठ स्पर्श रेखा की लंबाई कितनी है?`,
+          e: `केंद्रों के बीच की दूरी = ${R} + ${s} = ${R + s} सेमी। सीधी उभयनिष्ठ स्पर्श रेखा = √[d² − (R − r)²] = √(${R + s}² − ${R - s}²) = 2√(${R} × ${s}) = ${ans} सेमी।`,
+        },
+        r, "", " cm",
+      );
+    }
+    // The radii and the line of centres make a triangle; the common chord is twice its height.
+    const [r1, r2, d, half] = pick([[13, 15, 14, 12], [10, 17, 21, 8], [17, 25, 28, 15], [13, 20, 21, 12], [15, 20, 25, 12], [25, 26, 17, 24], [13, 37, 40, 12], [15, 13, 4, 12], [20, 15, 7, 12], [17, 10, 9, 8], [25, 17, 12, 15], [26, 30, 28, 24], [20, 34, 42, 16], [30, 40, 50, 24]], r);
+    const x = (d * d + r1 * r1 - r2 * r2) / (2 * d);
+    return numeric(
+      id, AG, "very-hard",
+      `Two circles of radii ${r1} cm and ${r2} cm intersect at two points, and the distance between their centres is ${d} cm. What is the length of their common chord?`,
+      2 * half,
+      `The common chord is perpendicular to the line of centres. If it is x cm from the first centre, ${r1}² − x² = ${r2}² − (${d} − x)², which gives x = ${fmt(x)}. Half the chord = √(${r1}² − ${fmt(x)}²) = ${half} cm, so the chord = ${2 * half} cm.`,
+      {
+        q: `${r1} सेमी और ${r2} सेमी त्रिज्या वाले दो वृत्त एक-दूसरे को दो बिंदुओं पर काटते हैं और उनके केंद्रों के बीच की दूरी ${d} सेमी है। उनकी उभयनिष्ठ जीवा की लंबाई कितनी है?`,
+        e: `उभयनिष्ठ जीवा केंद्रों को मिलाने वाली रेखा पर लंब होती है। यदि वह पहले केंद्र से x सेमी दूर है, तो ${r1}² − x² = ${r2}² − (${d} − x)², जिससे x = ${fmt(x)}। आधी जीवा = √(${r1}² − ${fmt(x)}²) = ${half} सेमी, अतः जीवा = ${2 * half} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // A line cutting the axes: area of the triangle with the origin.
+    const [a, b, k] = until(() => {
+      const v = [rint(2, 9, r), rint(2, 9, r), rint(1, 4, r)];
+      return v[0] !== v[1] && (v[0] * v[1] * v[2] * v[2]) % 2 === 0 ? v : null;
+    });
+    const c = a * b * k;
+    const [px, py] = [c / a, c / b];
+    const ans = (px * py) / 2;
+    return numeric(
+      id, AG, "very-hard",
+      `The line ${a}x + ${b}y = ${c} meets the x-axis at A and the y-axis at B. If O is the origin, what is the area of triangle OAB?`,
+      ans,
+      `Put y = 0: x = ${c} ÷ ${a} = ${px}, so OA = ${px}. Put x = 0: y = ${c} ÷ ${b} = ${py}, so OB = ${py}. Area = ½ × ${px} × ${py} = ${fmt(ans)} sq units.`,
+      {
+        q: `रेखा ${a}x + ${b}y = ${c}, x-अक्ष को A पर और y-अक्ष को B पर मिलती है। यदि O मूल बिंदु है, तो त्रिभुज OAB का क्षेत्रफल कितना है?`,
+        e: `y = 0 रखने पर x = ${c} ÷ ${a} = ${px}, अतः OA = ${px}। x = 0 रखने पर y = ${c} ÷ ${b} = ${py}, अतः OB = ${py}। क्षेत्रफल = ½ × ${px} × ${py} = ${fmt(ans)} वर्ग इकाई।`,
+      },
+      r, "", " sq units",
+    );
+  }, (id, r) => {
+    // A ratio of sin and cos, found by dividing through by cos θ.
+    const [p, q, m, n] = until(() => {
+      const v = [rint(1, 6, r), rint(1, 6, r), rint(2, 7, r), rint(2, 7, r)];
+      return gcd(v[0], v[1]) === 1 && v[0] !== v[1] && v[2] * v[0] - v[3] * v[1] > 0 && v[2] * v[1] !== v[3] * v[0] ? v : null;
+    });
+    const [top, bottom] = [m * p + n * q, m * p - n * q];
+    const ans = frac(top, bottom);
+    const wrong = [frac(bottom, top), frac(m * q + n * p, Math.abs(m * q - n * p)), frac(top + 1, bottom), frac(top, bottom + 1), frac(top, m * p), frac(m + n, m + n - 1), frac(top + bottom, bottom + 1), frac(top, bottom + 2)];
+    const expr = `(${m} sin θ + ${n} cos θ)/(${m} sin θ − ${n} cos θ)`;
+    return choice(
+      id, AG, "very-hard",
+      `If tan θ = ${p}/${q}, what is the value of ${expr}?`,
+      ans,
+      shuffle(wrong, r),
+      `Divide the numerator and the denominator by cos θ: (${m} tan θ + ${n})/(${m} tan θ − ${n}) = (${m} × ${p}/${q} + ${n})/(${m} × ${p}/${q} − ${n}) = (${m * p} + ${n * q})/(${m * p} − ${n * q}) = ${top}/${bottom}${ans === `${top}/${bottom}` ? "" : ` = ${ans}`}.`,
+      {
+        q: `यदि tan θ = ${p}/${q} है, तो ${expr} का मान क्या है?`,
+        e: `अंश और हर को cos θ से भाग देने पर: (${m} tan θ + ${n})/(${m} tan θ − ${n}) = (${m} × ${p}/${q} + ${n})/(${m} × ${p}/${q} − ${n}) = (${m * p} + ${n * q})/(${m * p} − ${n * q}) = ${top}/${bottom}${ans === `${top}/${bottom}` ? "" : ` = ${ans}`}।`,
+      },
+      r,
+    );
+  }),
+};
+
+// ---------------------------------------------------------------------------
+// Data interpretation: every question carries its own small data set as text
+// ---------------------------------------------------------------------------
+
+const DI = "quant-data-interpretation";
+/** True when x has at most one decimal place, so the answer prints cleanly. */
+const tidy = (x: number) => Math.abs(x * 10 - Math.round(x * 10)) < 1e-9;
+const round1 = (x: number) => Math.round(x * 10) / 10;
+const lowerFirst = (s: string) => s[0].toLowerCase() + s.slice(1);
+
+const DI_SERIES = [
+  { en: "Sales (in ₹ lakh) of a company", hi: "एक कंपनी की बिक्री (₹ लाख में)" },
+  { en: "Production (in thousand tonnes) of a steel plant", hi: "एक इस्पात संयंत्र का उत्पादन (हज़ार टन में)" },
+  { en: "Number of students enrolled in a college", hi: "एक महाविद्यालय में नामांकित विद्यार्थियों की संख्या" },
+  { en: "Exports (in ₹ crore) of a firm", hi: "एक फर्म का निर्यात (₹ करोड़ में)" },
+  { en: "Number of cars sold by a dealer", hi: "एक डीलर द्वारा बेची गई कारों की संख्या" },
+  { en: "Number of visitors (in thousands) to a museum", hi: "एक संग्रहालय में आए आगंतुकों की संख्या (हज़ार में)" },
+];
+interface Series {
+  years: number[];
+  vals: number[];
+  /** "Sales (in ₹ lakh) of a company — 2019: 120, 2020: 150." and the same in Hindi. */
+  en: string;
+  hi: string;
+}
+/** A yearly series of `n` distinct figures, all multiples of `step`. Each year moves by a round percentage, so changes work out cleanly. */
+function series(r: Rand, n: number, step = 1): Series {
+  const ctx = pick(DI_SERIES, r);
+  const y0 = rint(2012, 2020, r);
+  const years = Array.from({ length: n }, (_, i) => y0 + i);
+  const vals = until(() => {
+    const v = [step === 1 ? 40 * rint(2, 10, r) : 50 * rint(2, 8, r)];
+    while (v.length < n) {
+      const last = v[v.length - 1];
+      const nexts = [-25, -20, -10, 5, 10, 15, 20, 25, 30, 40, 50].map((p) => (last * (100 + p)) / 100).filter((x) => x % step === 0 && x >= 40 && x <= 900 && !v.includes(x));
+      if (!nexts.length) return null;
+      v.push(pick(nexts, r));
+    }
+    return v;
+  });
+  const list = years.map((y, i) => `${y}: ${vals[i]}`).join(", ");
+  return { years, vals, en: `${ctx.en} — ${list}.`, hi: `${ctx.hi} — ${list}।` };
+}
+/** Two different positions in a list of `n`, in order. */
+const twoOf = (n: number, r: Rand): [number, number] => {
+  const i = rint(0, n - 2, r);
+  return [i, rint(i + 1, n - 1, r)];
+};
+
+/**
+ * A numeric MCQ whose wrong options sit close to the answer and print as cleanly as it does (39.5% beside
+ * 37.5%, never 39.38%). `traps` are the answers that common mistakes lead to; they are offered first.
+ */
+function close(id: string, d: Difficulty, question: string, ans: number, explanation: string, hi: Hi, r: Rand, traps: number[] = [], unit = "", suffix = ""): MCQ {
+  const scale = ans >= 300 ? 10 : ans >= 100 ? 5 : ans >= 40 ? 2 : 1;
+  const offsets = d === "very-hard" ? [-4, -3, -2, -1, 1, 2, 3, 4] : [-8, -6, -5, -4, -2, 2, 4, 5, 6, 8];
+  const show = (v: number) => `${unit}${fmt(v)}${suffix}`;
+  const wrong = [...shuffle(traps.map(round1), r).slice(0, 2), ...shuffle(offsets, r).map((o) => round1(ans + o * scale))].filter((v) => v > 0 && Number.isFinite(v));
+  return choice(id, DI, d, question, show(ans), wrong.map(show), explanation, hi, r);
+}
+/** Wrong options for a ratio a : b, built from its lowest terms so they look as simple as the answer. */
+const ratioTraps = (a: number, b: number) => {
+  const g = gcd(a, b);
+  const [p, q] = [a / g, b / g];
+  return [ratio(q, p), ratio(p + 1, q), ratio(p, q + 1), ratio(p + q, q), ratio(p, p + q), ratio(p + 1, q + 2), ratio(p + 2, q + 1), ratio(p + 2, q + 3)];
+};
+
+interface PieCtx {
+  /** Opening words with the total: "The monthly expenditure of a family is ₹40,000". */
+  lead: (t: string) => string;
+  leadHi: (t: string) => string;
+  /** Opening words without a total: "In a pie chart of a family’s monthly expenditure". */
+  chart: string;
+  chartHi: string;
+  cats: [string, string][];
+  totals: number[];
+  unit: string;
+  suffix: string;
+  one: (c: string) => string;
+  oneHi: (c: string) => string;
+  more: (a: string, b: string) => string;
+  moreHi: (a: string, b: string) => string;
+  given: (c: string, amount: string) => string;
+  givenHi: (c: string, amount: string) => string;
+}
+const PIES: PieCtx[] = [
+  {
+    lead: (t) => `The monthly expenditure of a family is ₹${t}`,
+    leadHi: (t) => `एक परिवार का मासिक व्यय ₹${t} है`,
+    chart: "In a pie chart of a family’s monthly expenditure",
+    chartHi: "एक परिवार के मासिक व्यय के पाई चार्ट में",
+    cats: [["Food", "भोजन"], ["Rent", "किराया"], ["Education", "शिक्षा"], ["Transport", "परिवहन"], ["Clothing", "कपड़े"]],
+    totals: [20000, 24000, 30000, 36000, 40000, 48000, 50000, 60000, 72000, 80000],
+    unit: "₹",
+    suffix: "",
+    one: (c) => `How much is spent on ${c}?`,
+    oneHi: (c) => `${c} पर कितना व्यय होता है?`,
+    more: (a, b) => `How much more is spent on ${a} than on ${b}?`,
+    moreHi: (a, b) => `${a} पर ${b} की तुलना में कितना अधिक व्यय होता है?`,
+    given: (c, amount) => `If ₹${amount} is spent on ${c}`,
+    givenHi: (c, amount) => `यदि ${c} पर ₹${amount} व्यय होते हैं`,
+  },
+  {
+    lead: (t) => `The ${t} students of a school each play exactly one sport`,
+    leadHi: (t) => `एक विद्यालय के ${t} विद्यार्थियों में से प्रत्येक केवल एक खेल खेलता है`,
+    chart: "In a pie chart of the sports played by the students of a school",
+    chartHi: "एक विद्यालय के विद्यार्थियों द्वारा खेले जाने वाले खेलों के पाई चार्ट में",
+    cats: [["Cricket", "क्रिकेट"], ["Football", "फुटबॉल"], ["Hockey", "हॉकी"], ["Tennis", "टेनिस"], ["Kabaddi", "कबड्डी"]],
+    totals: [600, 800, 1200, 1600, 1800, 2000, 2400, 3000, 3600],
+    unit: "",
+    suffix: "",
+    one: (c) => `How many students play ${c}?`,
+    oneHi: (c) => `${c} खेलने वाले विद्यार्थी कितने हैं?`,
+    more: (a, b) => `How many more students play ${a} than ${b}?`,
+    moreHi: (a, b) => `${a} खेलने वाले विद्यार्थी ${b} खेलने वाले विद्यार्थियों से कितने अधिक हैं?`,
+    given: (c, amount) => `If ${amount} students play ${c}`,
+    givenHi: (c, amount) => `यदि ${amount} विद्यार्थी ${c} खेलते हैं`,
+  },
+  {
+    lead: (t) => `A company spent ₹${t} lakh in a year`,
+    leadHi: (t) => `एक कंपनी ने एक वर्ष में ₹${t} लाख व्यय किए`,
+    chart: "In a pie chart of a company’s yearly spending",
+    chartHi: "एक कंपनी के वार्षिक व्यय के पाई चार्ट में",
+    cats: [["Salaries", "वेतन"], ["Raw material", "कच्चा माल"], ["Marketing", "विपणन"], ["Transport", "परिवहन"], ["Research", "अनुसंधान"]],
+    totals: [120, 160, 180, 240, 300, 360, 400, 480, 600, 720],
+    unit: "₹",
+    suffix: " lakh",
+    one: (c) => `How much was spent on ${c}?`,
+    oneHi: (c) => `${c} पर कितना व्यय हुआ?`,
+    more: (a, b) => `How much more was spent on ${a} than on ${b}?`,
+    moreHi: (a, b) => `${a} पर ${b} की तुलना में कितना अधिक व्यय हुआ?`,
+    given: (c, amount) => `If ₹${amount} lakh was spent on ${c}`,
+    givenHi: (c, amount) => `यदि ${c} पर ₹${amount} लाख व्यय हुए`,
+  },
+];
+/** `n` different shares, each a multiple of 5 from 5 to 45, adding up to 100. */
+const shares = (n: number, r: Rand) =>
+  until(() => {
+    const p = Array.from({ length: n - 1 }, () => 5 * rint(1, 9, r));
+    const all = [...p, 100 - sum(p)];
+    return all[n - 1] >= 5 && all[n - 1] <= 45 && new Set(all).size === n ? all : null;
+  });
+interface Pie {
+  ctx: PieCtx;
+  total: number;
+  pct: number[];
+  /** "Food: 30%, Rent: 25%" (or the central angles with `degrees`), in English and Hindi. */
+  list: string;
+  listHi: string;
+}
+function pie(r: Rand, degrees: boolean): Pie {
+  const ctx = pick(PIES, r);
+  const pct = shares(ctx.cats.length, r);
+  const show = (p: number) => (degrees ? `${(p * 18) / 5}°` : `${p}%`);
+  return {
+    ctx,
+    total: pick(ctx.totals, r),
+    pct,
+    list: ctx.cats.map(([c], i) => `${c}: ${show(pct[i])}`).join(", "),
+    listHi: ctx.cats.map(([, c], i) => `${c}: ${show(pct[i])}`).join(", "),
+  };
+}
+const pieAnswer = (id: string, d: Difficulty, p: Pie, q: string, ans: number, e: string, hi: Hi, r: Rand) => numeric(id, DI, d, q, ans, e, hi, r, p.ctx.unit, p.ctx.suffix);
+/** "₹12,000" or "₹36 lakh" or "300", for explanations. */
+const money = (p: Pie, v: number) => `${p.ctx.unit}${fmt(v)}${p.ctx.suffix}`;
+const moneyHi = (p: Pie, v: number) => `${p.ctx.unit}${fmt(v)}${p.ctx.suffix ? " लाख" : ""}`;
+
+GENERATORS[DI] = {
+  easy: either((id, r) => {
+    // Average or total of a series.
+    const s = series(r, rint(4, 5, r), 10);
+    const total = sum(s.vals);
+    const n = s.vals.length;
+    const adds = s.vals.join(" + ");
+    if (r() < 0.7 && total % n === 0) {
+      const ans = total / n;
+      return numeric(
+        id, DI, "easy",
+        `${s.en} What is the average of the yearly figures?`,
+        ans,
+        `Average = (${adds}) ÷ ${n} = ${fmt(total)} ÷ ${n} = ${fmt(ans)}.`,
+        { q: `${s.hi} वार्षिक आँकड़ों का औसत क्या है?`, e: `औसत = (${adds}) ÷ ${n} = ${fmt(total)} ÷ ${n} = ${fmt(ans)}।` },
+        r,
+      );
+    }
+    return numeric(
+      id, DI, "easy",
+      `${s.en} What is the total of the yearly figures?`,
+      total,
+      `Total = ${adds} = ${fmt(total)}.`,
+      { q: `${s.hi} वार्षिक आँकड़ों का कुल योग क्या है?`, e: `कुल योग = ${adds} = ${fmt(total)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Difference or sum of two years.
+    const s = series(r, rint(4, 5, r), 10);
+    const [i, j] = twoOf(s.vals.length, r);
+    const [hiI, loI] = s.vals[i] > s.vals[j] ? [i, j] : [j, i];
+    if (r() < 0.5) {
+      const ans = s.vals[hiI] - s.vals[loI];
+      return numeric(
+        id, DI, "easy",
+        `${s.en} By how much does the figure for ${s.years[hiI]} exceed the figure for ${s.years[loI]}?`,
+        ans,
+        `${s.years[hiI]} figure − ${s.years[loI]} figure = ${s.vals[hiI]} − ${s.vals[loI]} = ${ans}.`,
+        { q: `${s.hi} ${s.years[hiI]} का आँकड़ा ${s.years[loI]} के आँकड़े से कितना अधिक है?`, e: `${s.years[hiI]} का आँकड़ा − ${s.years[loI]} का आँकड़ा = ${s.vals[hiI]} − ${s.vals[loI]} = ${ans}।` },
+        r,
+      );
+    }
+    const ans = s.vals[i] + s.vals[j];
+    return numeric(
+      id, DI, "easy",
+      `${s.en} What is the total of the figures for ${s.years[i]} and ${s.years[j]}?`,
+      ans,
+      `${s.vals[i]} + ${s.vals[j]} = ${fmt(ans)}.`,
+      { q: `${s.hi} ${s.years[i]} और ${s.years[j]} के आँकड़ों का योग कितना है?`, e: `${s.vals[i]} + ${s.vals[j]} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Ratio of two years.
+    const s = series(r, rint(4, 5, r), 10);
+    const [a, b] = r() < 0.5 ? twoOf(s.vals.length, r) : (twoOf(s.vals.length, r).reverse() as [number, number]);
+    const [va, vb] = [s.vals[a], s.vals[b]];
+    const ans = ratio(va, vb);
+    return choice(
+      id, DI, "easy",
+      `${s.en} What is the ratio of the figure for ${s.years[a]} to the figure for ${s.years[b]}?`,
+      ans,
+      ratioTraps(va, vb),
+      `${s.years[a]} : ${s.years[b]} = ${va} : ${vb} = ${ans} (divide both by ${gcd(va, vb)}).`,
+      { q: `${s.hi} ${s.years[a]} के आँकड़े का ${s.years[b]} के आँकड़े से अनुपात क्या है?`, e: `${s.years[a]} : ${s.years[b]} = ${va} : ${vb} = ${ans} (दोनों को ${gcd(va, vb)} से भाग दें)।` },
+      r,
+    );
+  }, (id, r) => {
+    // One slice of a pie chart given in percentages.
+    const p = pie(r, false);
+    const i = rint(0, p.pct.length - 1, r);
+    const [c, cHi] = p.ctx.cats[i];
+    const t = fmt(p.total);
+    const ans = (p.total * p.pct[i]) / 100;
+    return pieAnswer(
+      id, "easy", p,
+      `${p.ctx.lead(t)}, split as — ${p.list}. ${p.ctx.one(c)}`,
+      ans,
+      `${c} = ${p.pct[i]}% of ${t} = ${p.pct[i]} × ${t} ÷ 100 = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसका बँटवारा इस प्रकार है — ${p.listHi}। ${p.ctx.oneHi(cHi)}`, e: `${cHi} = ${t} का ${p.pct[i]}% = ${p.pct[i]} × ${t} ÷ 100 = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }),
+
+  moderate: either((id, r) => {
+    // Percentage change between two years.
+    const { s, i, j, change } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const [i, j] = twoOf(s.vals.length, r);
+      const change = ((s.vals[j] - s.vals[i]) * 100) / s.vals[i];
+      return tidy(change) ? { s, i, j, change } : null;
+    });
+    const up = change > 0;
+    const ans = round1(Math.abs(change));
+    const diff = Math.abs(s.vals[j] - s.vals[i]);
+    return close(
+      id, "moderate",
+      `${s.en} What is the percentage ${up ? "increase" : "decrease"} in the figure from ${s.years[i]} to ${s.years[j]}?`,
+      ans,
+      `Change = ${up ? `${s.vals[j]} − ${s.vals[i]}` : `${s.vals[i]} − ${s.vals[j]}`} = ${diff}. Percentage ${up ? "increase" : "decrease"} = ${diff} ÷ ${s.vals[i]} × 100 = ${fmt(ans)}% (always divide by the earlier value).`,
+      {
+        q: `${s.hi} ${s.years[i]} से ${s.years[j]} तक आँकड़े में कितने प्रतिशत की ${up ? "वृद्धि" : "कमी"} हुई?`,
+        e: `परिवर्तन = ${up ? `${s.vals[j]} − ${s.vals[i]}` : `${s.vals[i]} − ${s.vals[j]}`} = ${diff}। प्रतिशत ${up ? "वृद्धि" : "कमी"} = ${diff} ÷ ${s.vals[i]} × 100 = ${fmt(ans)}% (सदैव पहले वाले मान से भाग दें)।`,
+      },
+      r, [(diff * 100) / s.vals[j]], "", "%",
+    );
+  }, (id, r) => {
+    // One slice of a pie chart given in central angles.
+    const p = pie(r, true);
+    const i = rint(0, p.pct.length - 1, r);
+    const [c, cHi] = p.ctx.cats[i];
+    const t = fmt(p.total);
+    const deg = (p.pct[i] * 18) / 5;
+    const ans = (p.total * p.pct[i]) / 100;
+    return pieAnswer(
+      id, "moderate", p,
+      `${p.ctx.lead(t)}, shown in a pie chart with central angles — ${p.list}. ${p.ctx.one(c)}`,
+      ans,
+      `${c} = ${deg}/360 × ${t} = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसे एक पाई चार्ट में इन केंद्रीय कोणों से दिखाया गया है — ${p.listHi}। ${p.ctx.oneHi(cHi)}`, e: `${cHi} = ${deg}/360 × ${t} = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // One year as a percentage of another.
+    const { s, a, b, ans } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const [a, b] = r() < 0.5 ? twoOf(s.vals.length, r) : twoOf(s.vals.length, r).reverse();
+      const ans = (s.vals[a] * 100) / s.vals[b];
+      return tidy(ans) ? { s, a, b, ans: round1(ans) } : null;
+    });
+    return close(
+      id, "moderate",
+      `${s.en} The figure for ${s.years[a]} is what percent of the figure for ${s.years[b]}?`,
+      ans,
+      `Required % = ${s.vals[a]} ÷ ${s.vals[b]} × 100 = ${fmt(ans)}%.`,
+      { q: `${s.hi} ${s.years[a]} का आँकड़ा, ${s.years[b]} के आँकड़े का कितना प्रतिशत है?`, e: `अभीष्ट प्रतिशत = ${s.vals[a]} ÷ ${s.vals[b]} × 100 = ${fmt(ans)}%।` },
+      r, [(s.vals[b] * 100) / s.vals[a], Math.abs(ans - 100)], "", "%",
+    );
+  }, (id, r) => {
+    // Difference between two slices of a pie chart given in percentages.
+    const p = pie(r, false);
+    const [x, y] = twoOf(p.pct.length, r);
+    const [i, j] = p.pct[x] > p.pct[y] ? [x, y] : [y, x];
+    const [[a, aHi], [b, bHi]] = [p.ctx.cats[i], p.ctx.cats[j]];
+    const t = fmt(p.total);
+    const gap = p.pct[i] - p.pct[j];
+    const ans = (p.total * gap) / 100;
+    return pieAnswer(
+      id, "moderate", p,
+      `${p.ctx.lead(t)}, split as — ${p.list}. ${p.ctx.more(a, b)}`,
+      ans,
+      `Difference in shares = ${p.pct[i]}% − ${p.pct[j]}% = ${gap}%. ${gap}% of ${t} = ${money(p, ans)}.`,
+      { q: `${p.ctx.leadHi(t)}, जिसका बँटवारा इस प्रकार है — ${p.listHi}। ${p.ctx.moreHi(aHi, bHi)}`, e: `हिस्सों का अंतर = ${p.pct[i]}% − ${p.pct[j]}% = ${gap}%। ${t} का ${gap}% = ${moneyHi(p, ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // A two-row table: boys and girls in two schools.
+    const { v, pctGirls } = until(() => {
+      const v = Array.from({ length: 4 }, () => 20 * rint(5, 30, r));
+      const pctGirls = [(v[1] * 100) / (v[0] + v[1]), (v[3] * 100) / (v[2] + v[3])];
+      return new Set(v).size === 4 && pctGirls.every(tidy) && sum([v[0], v[2]]) !== sum([v[1], v[3]]) ? { v, pctGirls } : null;
+    });
+    const [ba, ga, bb, gb] = v;
+    const data = `Students in two schools — School A: ${ba} boys and ${ga} girls; School B: ${bb} boys and ${gb} girls.`;
+    const dataHi = `दो विद्यालयों के विद्यार्थी — विद्यालय A: ${ba} लड़के और ${ga} लड़कियाँ; विद्यालय B: ${bb} लड़के और ${gb} लड़कियाँ।`;
+    if (r() < 0.5) {
+      const k = rint(0, 1, r);
+      const school = "AB"[k];
+      const [boys, girls] = k ? [bb, gb] : [ba, ga];
+      const ans = round1(pctGirls[k]);
+      return close(
+        id, "moderate",
+        `${data} What percent of the students of School ${school} are girls?`,
+        ans,
+        `School ${school} has ${boys} + ${girls} = ${boys + girls} students. Girls = ${girls} ÷ ${boys + girls} × 100 = ${fmt(ans)}%.`,
+        { q: `${dataHi} विद्यालय ${school} के विद्यार्थियों में से कितने प्रतिशत लड़कियाँ हैं?`, e: `विद्यालय ${school} में ${boys} + ${girls} = ${boys + girls} विद्यार्थी हैं। लड़कियाँ = ${girls} ÷ ${boys + girls} × 100 = ${fmt(ans)}%।` },
+        r, [100 - ans, pctGirls[1 - k]], "", "%",
+      );
+    }
+    const [B, G] = [ba + bb, ga + gb];
+    const ans = ratio(B, G);
+    const wrong = [ratio(G, B), ...shuffle([ratio(ba, ga), ratio(bb, gb), ratio(ba + ga, bb + gb)], r).slice(0, 2), ...ratioTraps(B, G)];
+    return choice(
+      id, DI, "moderate",
+      `${data} What is the ratio of the total number of boys to the total number of girls in the two schools together?`,
+      ans,
+      wrong,
+      `Boys = ${ba} + ${bb} = ${B}; girls = ${ga} + ${gb} = ${G}. Ratio = ${B} : ${G} = ${ans}.`,
+      { q: `${dataHi} दोनों विद्यालयों को मिलाकर लड़कों की कुल संख्या का लड़कियों की कुल संख्या से अनुपात क्या है?`, e: `लड़के = ${ba} + ${bb} = ${B}; लड़कियाँ = ${ga} + ${gb} = ${G}। अनुपात = ${B} : ${G} = ${ans}।` },
+      r,
+    );
+  }),
+
+  hard: either((id, r) => {
+    // The year with the highest growth over the previous year.
+    const { s, growth, best } = until(() => {
+      const s = series(r, 5);
+      const growth = s.vals.slice(1).map((v, i) => ((v - s.vals[i]) * 100) / s.vals[i]);
+      const order = [...growth].sort((a, b) => b - a);
+      // One clear winner, so rounding never decides the answer.
+      return order[0] - order[1] >= 3 && order[0] > 0 ? { s, growth, best: growth.indexOf(order[0]) } : null;
+    });
+    const years = s.years.slice(1).map(String);
+    const show = (x: number) => `${x < 0 ? "−" : ""}${fmt(Math.abs(round1(x)))}%`;
+    const work = growth.map((gr, i) => `${years[i]}: (${s.vals[i + 1]} − ${s.vals[i]}) ÷ ${s.vals[i]} × 100 = ${show(gr)}`).join("; ");
+    return choice(
+      id, DI, "hard",
+      `${s.en} In which year was the percentage increase in the figure over the previous year the highest?`,
+      years[best],
+      years,
+      `${work}. The highest is in ${years[best]}.`,
+      { q: `${s.hi} किस वर्ष में आँकड़े में पिछले वर्ष की तुलना में प्रतिशत वृद्धि सबसे अधिक थी?`, e: `${work}। सबसे अधिक वृद्धि ${years[best]} में हुई।` },
+      r,
+    );
+  }, (id, r) => {
+    // Weighted average of two groups.
+    const wages = r() < 0.4;
+    const { n1, n2, a1, a2, ans } = until(() => {
+      const [n1, n2] = [5 * rint(3, 12, r), 5 * rint(3, 12, r)];
+      const [a1, a2] = wages ? [10 * rint(30, 80, r), 10 * rint(30, 80, r)] : [rint(40, 90, r), rint(40, 90, r)];
+      const ans = (n1 * a1 + n2 * a2) / (n1 + n2);
+      return n1 !== n2 && a1 !== a2 && tidy(ans) ? { n1, n2, a1, a2, ans: round1(ans) } : null;
+    });
+    const work = `(${n1} × ${a1} + ${n2} × ${a2}) ÷ (${n1} + ${n2}) = ${fmt(n1 * a1 + n2 * a2)} ÷ ${n1 + n2} = ${fmt(ans)}`;
+    if (wages) {
+      return close(
+        id, "hard",
+        `Daily wages in a factory — Group A: ${n1} workers, average ₹${a1}; Group B: ${n2} workers, average ₹${a2}. What is the average daily wage of all the workers together?`,
+        ans,
+        `Use totals, not the mean of the two averages: ${work}. Average = ₹${fmt(ans)}.`,
+        {
+          q: `एक कारखाने में दैनिक मज़दूरी — समूह A: ${n1} श्रमिक, औसत ₹${a1}; समूह B: ${n2} श्रमिक, औसत ₹${a2}। सभी श्रमिकों की मिलाकर औसत दैनिक मज़दूरी कितनी है?`,
+          e: `दोनों औसतों का औसत नहीं, कुल योग लें: ${work}। औसत = ₹${fmt(ans)}।`,
+        },
+        r, [(a1 + a2) / 2, (n2 * a1 + n1 * a2) / (n1 + n2)], "₹",
+      );
+    }
+    return close(
+      id, "hard",
+      `Marks of two sections of a class — Section A: ${n1} students, average ${a1}; Section B: ${n2} students, average ${a2}. What is the average marks of the whole class?`,
+      ans,
+      `Use totals, not the mean of the two averages: ${work}.`,
+      {
+        q: `एक कक्षा के दो वर्गों के अंक — वर्ग A: ${n1} विद्यार्थी, औसत ${a1}; वर्ग B: ${n2} विद्यार्थी, औसत ${a2}। पूरी कक्षा के औसत अंक कितने हैं?`,
+        e: `दोनों औसतों का औसत नहीं, कुल योग लें: ${work}।`,
+      },
+      r, [(a1 + a2) / 2, (n2 * a1 + n1 * a2) / (n1 + n2)],
+    );
+  }, (id, r) => {
+    // Pie chart in degrees: one slice's amount is given, another is asked.
+    const p = pie(r, true);
+    const [i, j] = r() < 0.5 ? twoOf(p.pct.length, r) : (twoOf(p.pct.length, r).reverse() as [number, number]);
+    const [[a, aHi], [b, bHi]] = [p.ctx.cats[i], p.ctx.cats[j]];
+    const [known, ans] = [(p.total * p.pct[i]) / 100, (p.total * p.pct[j]) / 100];
+    const [da, db] = [(p.pct[i] * 18) / 5, (p.pct[j] * 18) / 5];
+    return pieAnswer(
+      id, "hard", p,
+      `${p.ctx.chart}, the central angles are — ${p.list}. ${p.ctx.given(a, fmt(known))}, ${lowerFirst(p.ctx.one(b))}`,
+      ans,
+      `Amounts are in the ratio of the angles: ${b} = ${fmt(known)} × ${db}/${da} = ${money(p, ans)}. (The whole chart is ${fmt(known)} × 360/${da} = ${money(p, p.total)}.)`,
+      {
+        q: `${p.ctx.chartHi} केंद्रीय कोण इस प्रकार हैं — ${p.listHi}। ${p.ctx.givenHi(aHi, fmt(known))}, तो ${p.ctx.oneHi(bHi)}`,
+        e: `राशियाँ कोणों के अनुपात में होती हैं: ${bHi} = ${fmt(known)} × ${db}/${da} = ${moneyHi(p, ans)}। (पूरा चार्ट ${fmt(known)} × 360/${da} = ${moneyHi(p, p.total)} का है।)`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // One year's share of the total.
+    const { s, i, total, ans } = until(() => {
+      const s = series(r, rint(4, 5, r));
+      const i = rint(0, s.vals.length - 1, r);
+      const total = sum(s.vals);
+      const ans = (s.vals[i] * 100) / total;
+      return tidy(ans) ? { s, i, total, ans: round1(ans) } : null;
+    });
+    return close(
+      id, "hard",
+      `${s.en} The figure for ${s.years[i]} is what percent of the total for all the given years?`,
+      ans,
+      `Total = ${s.vals.join(" + ")} = ${fmt(total)}. Share of ${s.years[i]} = ${s.vals[i]} ÷ ${fmt(total)} × 100 = ${fmt(ans)}%.`,
+      {
+        q: `${s.hi} ${s.years[i]} का आँकड़ा, दिए गए सभी वर्षों के कुल योग का कितना प्रतिशत है?`,
+        e: `कुल योग = ${s.vals.join(" + ")} = ${fmt(total)}। ${s.years[i]} का हिस्सा = ${s.vals[i]} ÷ ${fmt(total)} × 100 = ${fmt(ans)}%।`,
+      },
+      r, [(s.vals[i] * 100) / (total - s.vals[i]), 100 / s.vals.length], "", "%",
+    );
+  }, (id, r) => {
+    // Two factories over three years: ratio of the totals.
+    const y0 = rint(2014, 2021, r);
+    const { a, b } = until(() => {
+      const [a, b] = [0, 1].map(() => Array.from({ length: 3 }, () => 5 * rint(4, 30, r)));
+      return sum(a) !== sum(b) && gcd(sum(a), sum(b)) >= 10 ? { a, b } : null;
+    });
+    const row = (v: number[]) => v.map((x, i) => `${y0 + i}: ${x}`).join(", ");
+    const [A, B] = [sum(a), sum(b)];
+    const first = r() < 0.5;
+    const ans = first ? ratio(A, B) : ratio(B, A);
+    const wrong = [...ratioTraps(first ? A : B, first ? B : A).slice(0, 1), pick([ratio(a[0], b[0]), ratio(a[2], b[2]), ratio(b[1], a[1])], r), ...ratioTraps(first ? A : B, first ? B : A).slice(1)];
+    const [x, y] = first ? ["A", "B"] : ["B", "A"];
+    return choice(
+      id, DI, "hard",
+      `Production (in thousand units) of two factories — Factory A: ${row(a)}; Factory B: ${row(b)}. What is the ratio of the total production of Factory ${x} to that of Factory ${y} over the three years?`,
+      ans,
+      wrong,
+      `Factory A = ${a.join(" + ")} = ${A}; Factory B = ${b.join(" + ")} = ${B}. Ratio ${x} : ${y} = ${first ? A : B} : ${first ? B : A} = ${ans}.`,
+      {
+        q: `दो कारखानों का उत्पादन (हज़ार इकाइयों में) — कारखाना A: ${row(a)}; कारखाना B: ${row(b)}। तीनों वर्षों में कारखाना ${x} के कुल उत्पादन का कारखाना ${y} के कुल उत्पादन से अनुपात क्या है?`,
+        e: `कारखाना A = ${a.join(" + ")} = ${A}; कारखाना B = ${b.join(" + ")} = ${B}। अनुपात ${x} : ${y} = ${first ? A : B} : ${first ? B : A} = ${ans}।`,
+      },
+      r,
+    );
+  }),
+
+  "very-hard": either((id, r) => {
+    // Income and expenditure over four years.
+    const y0 = rint(2014, 2020, r);
+    const years = [0, 1, 2, 3].map((i) => y0 + i);
+    const rows = (inc: number[], exp: number[]) => years.map((y, i) => `${y}: income ${inc[i]}, expenditure ${exp[i]}`).join("; ");
+    const rowsHi = (inc: number[], exp: number[]) => years.map((y, i) => `${y}: आय ${inc[i]}, व्यय ${exp[i]}`).join("; ");
+    // Expenditure drifts from year to year; income stays above it.
+    const books = () => {
+      const exp = [10 * rint(10, 36, r)];
+      while (exp.length < 4) exp.push(Math.max(80, exp[exp.length - 1] + 10 * rint(-2, 5, r)));
+      return { exp, inc: exp.map((e) => e + 10 * rint(2, 12, r)) };
+    };
+    if (r() < 0.5) {
+      const { inc, exp, i, j, ans } = until(() => {
+        const { inc, exp } = books();
+        const [i, j] = twoOf(4, r);
+        const [p1, p2] = [inc[i] - exp[i], inc[j] - exp[j]];
+        const ans = ((p2 - p1) * 100) / p1;
+        return p2 > p1 && ans <= 150 && tidy(ans) ? { inc, exp, i, j, ans: round1(ans) } : null;
+      });
+      const [p1, p2] = [inc[i] - exp[i], inc[j] - exp[j]];
+      return close(
+        id, "very-hard",
+        `Income and expenditure (in ₹ lakh) of a company — ${rows(inc, exp)}. Profit = income − expenditure. What is the percentage increase in profit from ${years[i]} to ${years[j]}?`,
+        ans,
+        `Profit in ${years[i]} = ${inc[i]} − ${exp[i]} = ${p1}; profit in ${years[j]} = ${inc[j]} − ${exp[j]} = ${p2}. Increase = (${p2} − ${p1}) ÷ ${p1} × 100 = ${fmt(ans)}%.`,
+        {
+          q: `एक कंपनी की आय और व्यय (₹ लाख में) — ${rowsHi(inc, exp)}। लाभ = आय − व्यय। ${years[i]} से ${years[j]} तक लाभ में कितने प्रतिशत की वृद्धि हुई?`,
+          e: `${years[i]} में लाभ = ${inc[i]} − ${exp[i]} = ${p1}; ${years[j]} में लाभ = ${inc[j]} − ${exp[j]} = ${p2}। वृद्धि = (${p2} − ${p1}) ÷ ${p1} × 100 = ${fmt(ans)}%।`,
+        },
+        r, [((p2 - p1) * 100) / p2, ((inc[j] - inc[i]) * 100) / inc[i]], "", "%",
+      );
+    }
+    const { inc, exp, pc, best } = until(() => {
+      const { inc, exp } = books();
+      const pc = inc.map((v, i) => ((v - exp[i]) * 100) / exp[i]);
+      const order = [...pc].sort((a, b) => b - a);
+      return order[0] - order[1] >= 2 ? { inc, exp, pc, best: pc.indexOf(order[0]) } : null;
+    });
+    const work = years.map((y, i) => `${y}: ${inc[i] - exp[i]} ÷ ${exp[i]} × 100 = ${fmt(round1(pc[i]))}%`).join("; ");
+    return choice(
+      id, DI, "very-hard",
+      `Income and expenditure (in ₹ lakh) of a company — ${rows(inc, exp)}. Profit percent = (income − expenditure) ÷ expenditure × 100. In which year was the profit percent the highest?`,
+      String(years[best]),
+      years.map(String),
+      `${work}. The highest profit percent is in ${years[best]}.`,
+      {
+        q: `एक कंपनी की आय और व्यय (₹ लाख में) — ${rowsHi(inc, exp)}। लाभ प्रतिशत = (आय − व्यय) ÷ व्यय × 100। किस वर्ष में लाभ प्रतिशत सबसे अधिक था?`,
+        e: `${work}। सबसे अधिक लाभ प्रतिशत ${years[best]} में था।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Candidates appeared and the percentage who passed: rebuild the counts first.
+    const y0 = rint(2015, 2021, r);
+    const years = [0, 1, 2].map((i) => y0 + i);
+    const rows = (ap: number[], pc: number[]) => years.map((y, i) => `${y}: ${ap[i]} appeared, ${pc[i]}% passed`).join("; ");
+    const rowsHi = (ap: number[], pc: number[]) => years.map((y, i) => `${y}: ${ap[i]} सम्मिलित, ${pc[i]}% उत्तीर्ण`).join("; ");
+    const lead = "Candidates who appeared in an examination and the percentage of them who passed";
+    const leadHi = "एक परीक्षा में सम्मिलित अभ्यर्थी और उनमें से उत्तीर्ण होने वालों का प्रतिशत";
+    if (r() < 0.5) {
+      const { ap, pc, i, j, change } = until(() => {
+        const ap = years.map(() => 50 * rint(4, 19, r));
+        const pc = years.map(() => 2 * rint(15, 42, r));
+        const [i, j] = twoOf(3, r);
+        const [a, b] = [(ap[i] * pc[i]) / 100, (ap[j] * pc[j]) / 100];
+        const change = ((b - a) * 100) / a;
+        return change !== 0 && Math.abs(change) <= 100 && tidy(change) && ap[i] !== ap[j] && pc[i] !== pc[j] ? { ap, pc, i, j, change } : null;
+      });
+      const [a, b] = [(ap[i] * pc[i]) / 100, (ap[j] * pc[j]) / 100];
+      const up = change > 0;
+      const ans = round1(Math.abs(change));
+      return close(
+        id, "very-hard",
+        `${lead} — ${rows(ap, pc)}. What is the percentage ${up ? "increase" : "decrease"} in the number of candidates who passed from ${years[i]} to ${years[j]}?`,
+        ans,
+        `Passed in ${years[i]} = ${pc[i]}% of ${ap[i]} = ${a}; passed in ${years[j]} = ${pc[j]}% of ${ap[j]} = ${b}. Percentage ${up ? "increase" : "decrease"} = ${Math.abs(b - a)} ÷ ${a} × 100 = ${fmt(ans)}%. (Comparing the two pass percentages directly would be wrong, because the number who appeared also changed.)`,
+        {
+          q: `${leadHi} — ${rowsHi(ap, pc)}। ${years[i]} से ${years[j]} तक उत्तीर्ण अभ्यर्थियों की संख्या में कितने प्रतिशत की ${up ? "वृद्धि" : "कमी"} हुई?`,
+          e: `${years[i]} में उत्तीर्ण = ${ap[i]} का ${pc[i]}% = ${a}; ${years[j]} में उत्तीर्ण = ${ap[j]} का ${pc[j]}% = ${b}। प्रतिशत ${up ? "वृद्धि" : "कमी"} = ${Math.abs(b - a)} ÷ ${a} × 100 = ${fmt(ans)}%। (दोनों उत्तीर्ण प्रतिशतों की सीधी तुलना गलत होगी, क्योंकि सम्मिलित अभ्यर्थियों की संख्या भी बदली है।)`,
+        },
+        r, [Math.abs(pc[j] - pc[i]), (Math.abs(b - a) * 100) / b], "", "%",
+      );
+    }
+    const { ap, pc, ans } = until(() => {
+      const ap = years.map(() => 50 * rint(4, 19, r));
+      const pc = years.map(() => 2 * rint(15, 42, r));
+      const ans = sum(ap.map((a, i) => a * pc[i])) / sum(ap);
+      return new Set(ap).size === 3 && new Set(pc).size === 3 && tidy(ans) ? { ap, pc, ans: round1(ans) } : null;
+    });
+    const passed = ap.map((a, i) => (a * pc[i]) / 100);
+    return close(
+      id, "very-hard",
+      `${lead} — ${rows(ap, pc)}. What is the overall pass percentage for the three years taken together?`,
+      ans,
+      `Passed = ${passed.join(" + ")} = ${fmt(sum(passed))}; appeared = ${ap.join(" + ")} = ${fmt(sum(ap))}. Overall pass % = ${fmt(sum(passed))} ÷ ${fmt(sum(ap))} × 100 = ${fmt(ans)}%. (Do not average the three percentages.)`,
+      {
+        q: `${leadHi} — ${rowsHi(ap, pc)}। तीनों वर्षों को मिलाकर कुल उत्तीर्ण प्रतिशत कितना है?`,
+        e: `उत्तीर्ण = ${passed.join(" + ")} = ${fmt(sum(passed))}; सम्मिलित = ${ap.join(" + ")} = ${fmt(sum(ap))}। कुल उत्तीर्ण प्रतिशत = ${fmt(sum(passed))} ÷ ${fmt(sum(ap))} × 100 = ${fmt(ans)}%। (तीनों प्रतिशतों का औसत न लें।)`,
+      },
+      r, [sum(pc) / 3], "", "%",
+    );
+  }, (id, r) => {
+    // Two linked charts: department shares, and the percentage of girls in each.
+    const depts: [string, string][] = [["Arts", "कला"], ["Science", "विज्ञान"], ["Commerce", "वाणिज्य"], ["Engineering", "इंजीनियरिंग"]];
+    const total = pick([1000, 1200, 1600, 1800, 2000, 2400, 3000, 4000], r);
+    const kind = pick(["two", "boys", "overall"] as const, r);
+    const { share, girlsPct, count, girls } = until(() => {
+      const share = shares(4, r);
+      const girlsPct = depts.map(() => 10 * rint(2, 7, r));
+      const count = share.map((s) => (total * s) / 100);
+      const girls = count.map((c, i) => (c * girlsPct[i]) / 100);
+      return new Set(girlsPct).size >= 3 && (kind !== "overall" || tidy((sum(girls) * 100) / total)) ? { share, girlsPct, count, girls } : null;
+    });
+    const t = fmt(total);
+    const en = `A college has ${t} students in four departments — ${depts.map(([d], i) => `${d}: ${share[i]}%`).join(", ")}. The percentage of girls in each department is — ${depts.map(([d], i) => `${d}: ${girlsPct[i]}%`).join(", ")}.`;
+    const hi = `एक महाविद्यालय के चार विभागों में ${t} विद्यार्थी हैं — ${depts.map(([, d], i) => `${d}: ${share[i]}%`).join(", ")}। प्रत्येक विभाग में लड़कियों का प्रतिशत इस प्रकार है — ${depts.map(([, d], i) => `${d}: ${girlsPct[i]}%`).join(", ")}।`;
+    if (kind === "two") {
+      const [i, j] = twoOf(4, r);
+      const ans = girls[i] + girls[j];
+      return numeric(
+        id, DI, "very-hard",
+        `${en} How many girls are there in ${depts[i][0]} and ${depts[j][0]} together?`,
+        ans,
+        `${depts[i][0]}: ${share[i]}% of ${t} = ${fmt(count[i])} students, of whom ${girlsPct[i]}% = ${girls[i]} are girls. ${depts[j][0]}: ${share[j]}% of ${t} = ${fmt(count[j])} students, of whom ${girlsPct[j]}% = ${girls[j]} are girls. Total = ${girls[i]} + ${girls[j]} = ${fmt(ans)}.`,
+        {
+          q: `${hi} ${depts[i][1]} और ${depts[j][1]} विभागों में मिलाकर कितनी लड़कियाँ हैं?`,
+          e: `${depts[i][1]}: ${t} का ${share[i]}% = ${fmt(count[i])} विद्यार्थी, जिनमें से ${girlsPct[i]}% = ${girls[i]} लड़कियाँ हैं। ${depts[j][1]}: ${t} का ${share[j]}% = ${fmt(count[j])} विद्यार्थी, जिनमें से ${girlsPct[j]}% = ${girls[j]} लड़कियाँ हैं। कुल = ${girls[i]} + ${girls[j]} = ${fmt(ans)}।`,
+        },
+        r,
+      );
+    }
+    if (kind === "boys") {
+      const i = rint(0, 3, r);
+      const ans = count[i] - girls[i];
+      return numeric(
+        id, DI, "very-hard",
+        `${en} How many boys are there in ${depts[i][0]}?`,
+        ans,
+        `${depts[i][0]} has ${share[i]}% of ${t} = ${fmt(count[i])} students. Boys = (100 − ${girlsPct[i]})% = ${100 - girlsPct[i]}% of ${fmt(count[i])} = ${fmt(ans)}.`,
+        {
+          q: `${hi} ${depts[i][1]} विभाग में कितने लड़के हैं?`,
+          e: `${depts[i][1]} विभाग में ${t} का ${share[i]}% = ${fmt(count[i])} विद्यार्थी हैं। लड़के = (100 − ${girlsPct[i]})% = ${fmt(count[i])} का ${100 - girlsPct[i]}% = ${fmt(ans)}।`,
+        },
+        r,
+      );
+    }
+    const allGirls = sum(girls);
+    const ans = round1((allGirls * 100) / total);
+    return close(
+      id, "very-hard",
+      `${en} What percent of all the students of the college are girls?`,
+      ans,
+      `Girls = ${girls.join(" + ")} = ${fmt(allGirls)}. Required % = ${fmt(allGirls)} ÷ ${t} × 100 = ${fmt(ans)}%. (This is a weighted average of the four percentages, not their simple mean.)`,
+      {
+        q: `${hi} महाविद्यालय के सभी विद्यार्थियों में से कितने प्रतिशत लड़कियाँ हैं?`,
+        e: `लड़कियाँ = ${girls.join(" + ")} = ${fmt(allGirls)}। अभीष्ट प्रतिशत = ${fmt(allGirls)} ÷ ${t} × 100 = ${fmt(ans)}%। (यह चारों प्रतिशतों का भारित औसत है, साधारण औसत नहीं।)`,
+      },
+      r, [sum(girlsPct) / 4], "", "%",
+    );
+  }, (id, r) => {
+    // Two products over two years: growth of the combined sales, and a product's share.
+    const y = rint(2015, 2022, r);
+    const growth = r() < 0.5;
+    const { a1, b1, a2, b2, ans } = until(() => {
+      const [a1, b1] = [10 * rint(8, 50, r), 10 * rint(8, 50, r)];
+      const [a2, b2] = [a1 + 10 * rint(-3, 15, r), b1 + 10 * rint(-3, 15, r)];
+      const ans = growth ? ((a2 + b2 - a1 - b1) * 100) / (a1 + b1) : (a2 * 100) / (a2 + b2);
+      return new Set([a1, b1, a2, b2]).size === 4 && a2 > 0 && b2 > 0 && ans > 0 && tidy(ans) ? { a1, b1, a2, b2, ans: round1(ans) } : null;
+    });
+    const en = `Sales (in ₹ lakh) of two products of a company — ${y}: Product A ${a1}, Product B ${b1}; ${y + 1}: Product A ${a2}, Product B ${b2}.`;
+    const hi = `एक कंपनी के दो उत्पादों की बिक्री (₹ लाख में) — ${y}: उत्पाद A ${a1}, उत्पाद B ${b1}; ${y + 1}: उत्पाद A ${a2}, उत्पाद B ${b2}।`;
+    if (growth) {
+      return close(
+        id, "very-hard",
+        `${en} What is the percentage growth in the combined sales of the two products from ${y} to ${y + 1}?`,
+        ans,
+        `Combined sales: ${y} = ${a1} + ${b1} = ${a1 + b1}; ${y + 1} = ${a2} + ${b2} = ${a2 + b2}. Growth = (${a2 + b2} − ${a1 + b1}) ÷ ${a1 + b1} × 100 = ${fmt(ans)}%. (Work from the totals; do not average the two products’ growth rates.)`,
+        {
+          q: `${hi} ${y} से ${y + 1} तक दोनों उत्पादों की संयुक्त बिक्री में कितने प्रतिशत की वृद्धि हुई?`,
+          e: `संयुक्त बिक्री: ${y} = ${a1} + ${b1} = ${a1 + b1}; ${y + 1} = ${a2} + ${b2} = ${a2 + b2}। वृद्धि = (${a2 + b2} − ${a1 + b1}) ÷ ${a1 + b1} × 100 = ${fmt(ans)}%। (कुल योग से हल करें; दोनों उत्पादों की वृद्धि दरों का औसत न लें।)`,
+        },
+        r, [(((a2 - a1) * 100) / a1 + ((b2 - b1) * 100) / b1) / 2, ((a2 + b2 - a1 - b1) * 100) / (a2 + b2)], "", "%",
+      );
+    }
+    return close(
+      id, "very-hard",
+      `${en} What was the share of Product A in the combined sales of the two products in ${y + 1}?`,
+      ans,
+      `Combined sales in ${y + 1} = ${a2} + ${b2} = ${a2 + b2}. Share of Product A = ${a2} ÷ ${a2 + b2} × 100 = ${fmt(ans)}%.`,
+      {
+        q: `${hi} ${y + 1} में दोनों उत्पादों की संयुक्त बिक्री में उत्पाद A का हिस्सा कितना था?`,
+        e: `${y + 1} में संयुक्त बिक्री = ${a2} + ${b2} = ${a2 + b2}। उत्पाद A का हिस्सा = ${a2} ÷ ${a2 + b2} × 100 = ${fmt(ans)}%।`,
+      },
+      r, [(a2 * 100) / b2, (a1 * 100) / (a1 + b1)], "", "%",
+    );
+  }, (id, r) => {
+    // A missing figure, from the average.
+    const { s, i, avg } = until(() => {
+      const s = series(r, 5);
+      return sum(s.vals) % 5 === 0 ? { s, i: rint(0, 4, r), avg: sum(s.vals) / 5 } : null;
+    });
+    const hide = (text: string) => text.replace(`${s.years[i]}: ${s.vals[i]}`, `${s.years[i]}: ?`);
+    const others = s.vals.filter((_, k) => k !== i);
+    return numeric(
+      id, DI, "very-hard",
+      `${hide(s.en)} If the average of the five yearly figures is ${avg}, what is the missing figure for ${s.years[i]}?`,
+      s.vals[i],
+      `Total of the five figures = 5 × ${avg} = ${fmt(5 * avg)}. The four known figures add up to ${others.join(" + ")} = ${fmt(sum(others))}. Missing figure = ${fmt(5 * avg)} − ${fmt(sum(others))} = ${s.vals[i]}.`,
+      {
+        q: `${hide(s.hi)} यदि पाँचों वार्षिक आँकड़ों का औसत ${avg} है, तो ${s.years[i]} का लुप्त आँकड़ा क्या है?`,
+        e: `पाँचों आँकड़ों का कुल योग = 5 × ${avg} = ${fmt(5 * avg)}। चार ज्ञात आँकड़ों का योग ${others.join(" + ")} = ${fmt(sum(others))}। लुप्त आँकड़ा = ${fmt(5 * avg)} − ${fmt(sum(others))} = ${s.vals[i]}।`,
+      },
+      r,
+    );
+  }),
+};
+
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const ordinal = (n: number) => `${n}${["th", "st", "nd", "rd"][n % 10 > 3 || Math.floor(n / 10) === 1 ? 0 : n % 10]}`;
 
-export const hasGenerator = (topicId: string) => topicId in GENERATORS;
+export const hasGenerator = (topicId: string) => Object.prototype.hasOwnProperty.call(GENERATORS, topicId);
 
 let seq = 0;
 
@@ -1657,6 +3223,33 @@ export function generateQuestions(topicId: string, count: number, r: Rand = Math
     if (!seen.has(q.question)) {
       seen.add(q.question);
       out.push(q);
+    }
+  }
+  return out;
+}
+
+/**
+ * A set made only of generated questions, for unlimited practice. `level` is one tier, or "mixed"
+ * for the usual ramp from easy to very hard (see tierQuota). With several topics, the topics take
+ * turns in a shuffled order so each gets a fair share of the set.
+ */
+export function generatedSet(topicIds: string[], count: number, level: Difficulty | "mixed" = "mixed", r: Rand = Math.random): MCQ[] {
+  const ids = topicIds.filter(hasGenerator);
+  if (!ids.length || count < 1) return [];
+  const quota = level === "mixed" ? tierQuota(count) : null;
+  const tiers = DIFFICULTIES.flatMap((d) => Array<Difficulty>(quota ? quota[d] : d === level ? count : 0).fill(d));
+  const seen = new Set<string>();
+  const out: MCQ[] = [];
+  let turn: string[] = [];
+  for (const tier of tiers) {
+    for (let tries = 0; tries < 20; tries++) {
+      if (!turn.length) turn = shuffle(ids, r);
+      const q = generateQuestions(turn.pop()!, 1, r, tier)[0];
+      if (q && !seen.has(q.question)) {
+        seen.add(q.question);
+        out.push(q);
+        break;
+      }
     }
   }
   return out;

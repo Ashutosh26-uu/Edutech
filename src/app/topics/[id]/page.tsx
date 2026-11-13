@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle2, ListChecks, Sigma } from "lucide-react";
+import { BookOpen, CheckCircle2, Infinity as InfinityIcon, ListChecks, Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,6 +14,7 @@ import { TOPICS, TOPIC_BY_ID } from "@/data/topics";
 import type { BankQuestion } from "@/lib/bank";
 import { hasFormulaSheet } from "@/lib/formulas";
 import type { Difficulty } from "@/lib/types";
+import { canUnlimited, UNLIMITED_HINT, unlimitedHref } from "@/lib/unlimited";
 
 export function generateStaticParams() {
   return TOPICS.map((t) => ({ id: t.id }));
@@ -108,7 +109,13 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                 <ListChecks className="h-4 w-4" /> Practise {count} questions
               </Link>
             )}
+            {canUnlimited(id) && (
+              <Link href={unlimitedHref(id)} className="btn-ghost">
+                <InfinityIcon className="h-4 w-4" /> Unlimited practice
+              </Link>
+            )}
           </div>
+          {canUnlimited(id) && <p className="mt-2 text-xs text-slate-500">Unlimited practice: {UNLIMITED_HINT}</p>}
         </PageHeader>
       </div>
 
@@ -220,6 +227,14 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             <Link href={`/practice?topics=${id}`} className="btn-primary mt-3 w-full">
               Start practice
             </Link>
+            {canUnlimited(id) && (
+              <>
+                <Link href={unlimitedHref(id)} className="btn-ghost mt-2 w-full">
+                  <InfinityIcon className="h-4 w-4" /> Unlimited practice
+                </Link>
+                <p className="mt-1 text-center text-xs text-slate-500">{UNLIMITED_HINT}</p>
+              </>
+            )}
             <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost mt-2 w-full">
               Read on Learn
             </Link>
