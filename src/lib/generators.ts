@@ -39,6 +39,9 @@ const UNIT_HI: Record<string, string> = {
   cm: "सेमी",
   "cm²": "वर्ग सेमी",
   "cm³": "घन सेमी",
+  units: "इकाई",
+  "sq units": "वर्ग इकाई",
+  lakh: "लाख",
 };
 /** Hindi for a unit used inside question text: "cm" → "सेमी". */
 const unitHi = (u: string) => UNIT_HI[u];
@@ -1635,6 +1638,788 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }),
   },
+};
+
+// ---------------------------------------------------------------------------
+// Algebra, geometry and trigonometry (the SSC "advance maths" block)
+// ---------------------------------------------------------------------------
+
+const AG = "quant-algebra-geometry";
+/** A whole number from lo to hi, both included. */
+const rint = (lo: number, hi: number, r: Rand) => lo + Math.floor(r() * (hi - lo + 1));
+/** Keeps drawing until the numbers come out clean (`make` returns null for a draw it rejects). */
+function until<T>(make: () => T | null): T {
+  for (let i = 0; i < 2000; i++) {
+    const v = make();
+    if (v !== null) return v;
+  }
+  throw new Error("generator: no clean numbers found");
+}
+/** p/q in lowest terms ("7/5"), or a whole number when q divides p. */
+const frac = (p: number, q: number) => {
+  const g = gcd(Math.abs(p), Math.abs(q));
+  return q / g === 1 ? `${p / g}` : `${p / g}/${q / g}`;
+};
+const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+const pt = (x: number, y: number) => `(${x}, ${y})`;
+/** Pythagorean triples; the first five are primitive. */
+const TRIPLES: [number, number, number][] = [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29], [6, 8, 10], [9, 12, 15], [12, 16, 20], [10, 24, 26], [15, 20, 25]];
+/** Triangles with whole-number sides and a whole-number area (Heron). */
+const HERON: [number, number, number][] = [[13, 14, 15], [5, 5, 6], [5, 5, 8], [10, 13, 13], [13, 13, 24], [9, 10, 17], [7, 15, 20], [11, 13, 20], [12, 17, 25], [13, 20, 21], [10, 17, 21], [17, 25, 26], [17, 25, 28], [4, 13, 15], [3, 25, 26], [15, 26, 37], [6, 25, 29], [15, 28, 41], [15, 34, 35], [8, 29, 35], [11, 25, 30], [25, 29, 36]];
+/** Standard-angle values as [name, numerator, denominator]. */
+const TRIG: [string, number, number][] = [
+  ["sin 30°", 1, 2], ["cos 60°", 1, 2], ["tan 45°", 1, 1], ["cot 45°", 1, 1], ["sec 60°", 2, 1], ["cosec 30°", 2, 1],
+  ["sin² 45°", 1, 2], ["cos² 45°", 1, 2], ["sin² 60°", 3, 4], ["cos² 30°", 3, 4], ["tan² 60°", 3, 1], ["tan² 30°", 1, 3],
+  ["sin² 30°", 1, 4], ["cos² 60°", 1, 4], ["cot² 30°", 3, 1], ["sec² 45°", 2, 1],
+];
+/** A heights-and-distances MCQ: the options are lengths in metres, some in surd form ("20√3 m"). */
+function lengths(id: string, difficulty: Difficulty, question: string, answer: string, base: number, explanation: string, hi: Hi, r: Rand, extra: string[] = []): MCQ {
+  const cands = [
+    ...extra,
+    `${base} m`, `${base}√3 m`, `${2 * base} m`, `${2 * base}√3 m`, `${3 * base} m`,
+    ...(base % 3 === 0 ? [`${base / 3}√3 m`, `${(2 * base) / 3}√3 m`] : []),
+    ...(base % 2 === 0 ? [`${base / 2}√3 m`, `${base / 2} m`] : []),
+  ];
+  const options = Object.fromEntries([answer, ...cands].map((o) => [o, o.replace(/ m$/, " मीटर")]));
+  return choice(id, AG, difficulty, question, answer, shuffle(cands, r), explanation, { ...hi, options }, r);
+}
+
+GENERATORS[AG] = {
+  easy: either((id, r) => {
+    // A one-step linear equation.
+    const [a, x, b] = [rint(2, 9, r), rint(2, 15, r), rint(1, 25, r)];
+    const minus = r() < 0.4 && a * x > b;
+    const c = minus ? a * x - b : a * x + b;
+    const [s, back] = minus ? ["−", "+"] : ["+", "−"];
+    return numeric(
+      id, AG, "easy",
+      `If ${a}x ${s} ${b} = ${c}, what is the value of x?`,
+      x,
+      `${a}x = ${c} ${back} ${b} = ${a * x}, so x = ${a * x} ÷ ${a} = ${x}.`,
+      { q: `यदि ${a}x ${s} ${b} = ${c} है, तो x का मान क्या है?`, e: `${a}x = ${c} ${back} ${b} = ${a * x}, अतः x = ${a * x} ÷ ${a} = ${x}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Polygons: angle sum and number of diagonals.
+    const n = rint(5, 20, r);
+    if (r() < 0.5) {
+      const ans = (n - 2) * 180;
+      return numeric(
+        id, AG, "easy",
+        `What is the sum of the interior angles of a polygon with ${n} sides?`,
+        ans,
+        `Sum of interior angles = (n − 2) × 180° = (${n} − 2) × 180° = ${fmt(ans)}°.`,
+        { q: `${n} भुजाओं वाले बहुभुज के अंतः कोणों का योग कितना होता है?`, e: `अंतः कोणों का योग = (n − 2) × 180° = (${n} − 2) × 180° = ${fmt(ans)}°।` },
+        r, "", "°",
+      );
+    }
+    const ans = (n * (n - 3)) / 2;
+    return numeric(
+      id, AG, "easy",
+      `How many diagonals does a polygon with ${n} sides have?`,
+      ans,
+      `Number of diagonals = n(n − 3)/2 = ${n} × ${n - 3} ÷ 2 = ${ans}.`,
+      { q: `${n} भुजाओं वाले बहुभुज में कितने विकर्ण होते हैं?`, e: `विकर्णों की संख्या = n(n − 3)/2 = ${n} × ${n - 3} ÷ 2 = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // The angles of a triangle add up to 180°.
+    const [a, b] = until(() => {
+      const [p, q] = [5 * rint(4, 17, r), 5 * rint(4, 17, r)];
+      return p + q <= 160 && p !== q ? [p, q] : null;
+    });
+    const ans = 180 - a - b;
+    return numeric(
+      id, AG, "easy",
+      `Two angles of a triangle measure ${a}° and ${b}°. What is the measure of the third angle?`,
+      ans,
+      `The angles of a triangle add up to 180°, so the third angle = 180° − ${a}° − ${b}° = ${ans}°.`,
+      { q: `एक त्रिभुज के दो कोण ${a}° और ${b}° हैं। तीसरे कोण का माप कितना है?`, e: `त्रिभुज के तीनों कोणों का योग 180° होता है, अतः तीसरा कोण = 180° − ${a}° − ${b}° = ${ans}°।` },
+      r, "", "°",
+    );
+  }, (id, r) => {
+    // Distance formula on a Pythagorean triple.
+    const [p, q, d] = pick(TRIPLES, r);
+    const [dx, dy] = r() < 0.5 ? [p, q] : [q, p];
+    const [x1, y1] = [rint(0, 9, r), rint(0, 9, r)];
+    const [x2, y2] = [x1 + dx, y1 + dy];
+    return numeric(
+      id, AG, "easy",
+      `What is the distance between the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+      d,
+      `Distance = √[(${x2} − ${x1})² + (${y2} − ${y1})²] = √(${dx}² + ${dy}²) = √${dx * dx + dy * dy} = ${d} units.`,
+      { q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} के बीच की दूरी कितनी है?`, e: `दूरी = √[(${x2} − ${x1})² + (${y2} − ${y1})²] = √(${dx}² + ${dy}²) = √${dx * dx + dy * dy} = ${d} इकाई।` },
+      r, "", " units",
+    );
+  }, (id, r) => {
+    // Values of trigonometric ratios at the standard angles.
+    const parts = shuffle(TRIG, r).slice(0, rint(2, 3, r)).map(([name, n, d]) => ({ name, n, d, c: d * rint(1, 3, r) }));
+    const expr = parts.map((p) => `${p.c === 1 ? "" : `${p.c} `}${p.name}`).join(" + ");
+    const total = sum(parts.map((p) => (p.c * p.n) / p.d));
+    const values = parts.map((p) => `${p.name} = ${frac(p.n, p.d)}`).join(", ");
+    const work = parts.map((p) => (p.c === 1 ? frac(p.n, p.d) : `${p.c} × ${frac(p.n, p.d)}`)).join(" + ");
+    return numeric(
+      id, AG, "easy",
+      `What is the value of ${expr}?`,
+      total,
+      `${values}. So the value = ${work} = ${total}.`,
+      { q: `${expr} का मान क्या है?`, e: `${values}। अतः मान = ${work} = ${total}।` },
+      r,
+    );
+  }),
+
+  moderate: either((id, r) => {
+    // Two equations in two unknowns, in word form.
+    const [p, n] = [rint(4, 15, r), 5 * rint(4, 12, r)];
+    const [a, b, c, d] = until(() => {
+      const k = [rint(2, 6, r), rint(2, 6, r), rint(2, 6, r), rint(2, 6, r)];
+      return k[0] * k[3] !== k[1] * k[2] ? k : null;
+    });
+    const [X, Y] = [a * p + b * n, c * p + d * n];
+    const pen = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `The cost of ${a} pens and ${b} notebooks is ₹${fmt(X)}, and the cost of ${c} pens and ${d} notebooks is ₹${fmt(Y)}. What is the cost of one ${pen ? "pen" : "notebook"}?`,
+      pen ? p : n,
+      `Let a pen cost ₹p and a notebook ₹n. Then ${a}p + ${b}n = ${fmt(X)} and ${c}p + ${d}n = ${fmt(Y)}. Multiply the first by ${c} and the second by ${a} and subtract: ${Math.abs(b * c - a * d)}n = ${fmt(Math.abs(c * X - a * Y))}, so n = ${n}. Then ${a}p = ${fmt(X)} − ${b} × ${n} = ${a * p}, so p = ${p}. One ${pen ? "pen" : "notebook"} costs ₹${pen ? p : n}.`,
+      {
+        q: `${a} पेन और ${b} कॉपियों का मूल्य ₹${fmt(X)} है, तथा ${c} पेन और ${d} कॉपियों का मूल्य ₹${fmt(Y)} है। एक ${pen ? "पेन" : "कॉपी"} का मूल्य कितना है?`,
+        e: `माना एक पेन का मूल्य ₹p और एक कॉपी का मूल्य ₹n है। तब ${a}p + ${b}n = ${fmt(X)} और ${c}p + ${d}n = ${fmt(Y)}। पहले समीकरण को ${c} से और दूसरे को ${a} से गुणा करके घटाने पर: ${Math.abs(b * c - a * d)}n = ${fmt(Math.abs(c * X - a * Y))}, अतः n = ${n}। फिर ${a}p = ${fmt(X)} − ${b} × ${n} = ${a * p}, अतः p = ${p}। एक ${pen ? "पेन" : "कॉपी"} का मूल्य ₹${pen ? p : n} है।`,
+      },
+      r, "₹",
+    );
+  }, (id, r) => {
+    // Sum and difference of two numbers.
+    const [small, gap] = [rint(8, 60, r), rint(3, 40, r)];
+    const big = small + gap;
+    const larger = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `The sum of two numbers is ${small + big} and their difference is ${gap}. What is the ${larger ? "larger" : "smaller"} number?`,
+      larger ? big : small,
+      `Let the numbers be x and y with x + y = ${small + big} and x − y = ${gap}. Adding, 2x = ${small + big + gap}, so x = ${big}; then y = ${small + big} − ${big} = ${small}. The ${larger ? "larger" : "smaller"} number is ${larger ? big : small}.`,
+      {
+        q: `दो संख्याओं का योग ${small + big} और उनका अंतर ${gap} है। ${larger ? "बड़ी" : "छोटी"} संख्या कौन-सी है?`,
+        e: `माना संख्याएँ x और y हैं, जहाँ x + y = ${small + big} और x − y = ${gap}। जोड़ने पर 2x = ${small + big + gap}, अतः x = ${big}; तब y = ${small + big} − ${big} = ${small}। ${larger ? "बड़ी" : "छोटी"} संख्या ${larger ? big : small} है।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // a² + b² from a + b and ab.
+    const a = rint(2, 12, r);
+    const b = until(() => {
+      const v = rint(1, 12, r);
+      return v !== a ? v : null;
+    });
+    const [s, p] = [a + b, a * b];
+    const ans = s * s - 2 * p;
+    return numeric(
+      id, AG, "moderate",
+      `If a + b = ${s} and ab = ${p}, what is the value of a² + b²?`,
+      ans,
+      `a² + b² = (a + b)² − 2ab = ${s}² − 2 × ${p} = ${s * s} − ${2 * p} = ${ans}.`,
+      { q: `यदि a + b = ${s} और ab = ${p} है, तो a² + b² का मान क्या है?`, e: `a² + b² = (a + b)² − 2ab = ${s}² − 2 × ${p} = ${s * s} − ${2 * p} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // x ± 1/x → x² + 1/x².
+    const k = rint(3, 15, r);
+    const plus = r() < 0.6;
+    const ans = plus ? k * k - 2 : k * k + 2;
+    const s = plus ? "+" : "−";
+    return numeric(
+      id, AG, "moderate",
+      `If x ${s} 1/x = ${k}, what is the value of x² + 1/x²?`,
+      ans,
+      `Squaring, x² + 1/x² ${s} 2 = ${k}² = ${k * k}, so x² + 1/x² = ${k * k} ${plus ? "−" : "+"} 2 = ${ans}.`,
+      { q: `यदि x ${s} 1/x = ${k} है, तो x² + 1/x² का मान क्या है?`, e: `वर्ग करने पर x² + 1/x² ${s} 2 = ${k}² = ${k * k}, अतः x² + 1/x² = ${k * k} ${plus ? "−" : "+"} 2 = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Regular polygon: sides from one angle.
+    const n = pick([5, 6, 8, 9, 10, 12, 15, 18, 20, 24, 30, 36], r);
+    const ext = 360 / n;
+    const exterior = r() < 0.5;
+    return numeric(
+      id, AG, "moderate",
+      `Each ${exterior ? "exterior" : "interior"} angle of a regular polygon measures ${exterior ? ext : 180 - ext}°. How many sides does the polygon have?`,
+      n,
+      exterior
+        ? `The exterior angles of any polygon add up to 360°, so the number of sides = 360° ÷ ${ext}° = ${n}.`
+        : `Each exterior angle = 180° − ${180 - ext}° = ${ext}°. The exterior angles add up to 360°, so the number of sides = 360° ÷ ${ext}° = ${n}.`,
+      {
+        q: `एक सम बहुभुज का प्रत्येक ${exterior ? "बाह्य" : "अंतः"} कोण ${exterior ? ext : 180 - ext}° है। बहुभुज की कितनी भुजाएँ हैं?`,
+        e: exterior
+          ? `किसी भी बहुभुज के बाह्य कोणों का योग 360° होता है, अतः भुजाओं की संख्या = 360° ÷ ${ext}° = ${n}।`
+          : `प्रत्येक बाह्य कोण = 180° − ${180 - ext}° = ${ext}°। बाह्य कोणों का योग 360° होता है, अतः भुजाओं की संख्या = 360° ÷ ${ext}° = ${n}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Coordinate geometry: slope and midpoint.
+    const [x1, y1] = [rint(0, 9, r), rint(0, 9, r)];
+    if (r() < 0.5) {
+      const [dx, dy] = until(() => {
+        const v = [rint(1, 6, r), rint(1, 9, r)];
+        return v[0] !== v[1] ? v : null;
+      });
+      const [x2, y2] = [x1 + dx, y1 + dy];
+      const ans = frac(dy, dx);
+      const wrong = [frac(dx, dy), frac(dy + dx, dx), frac(dy, dx + 1), frac(dy + 1, dx), frac(2 * dy, dx), frac(dy, 2 * dx), frac(dx + dy, dy)];
+      return choice(
+        id, AG, "moderate",
+        `What is the slope of the line passing through the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+        ans,
+        shuffle(wrong, r),
+        `Slope = (y₂ − y₁)/(x₂ − x₁) = (${y2} − ${y1})/(${x2} − ${x1}) = ${dy}/${dx}${ans === `${dy}/${dx}` ? "" : ` = ${ans}`}.`,
+        {
+          q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} से होकर जाने वाली रेखा की ढाल (प्रवणता) क्या है?`,
+          e: `ढाल = (y₂ − y₁)/(x₂ − x₁) = (${y2} − ${y1})/(${x2} − ${x1}) = ${dy}/${dx}${ans === `${dy}/${dx}` ? "" : ` = ${ans}`}।`,
+        },
+        r,
+      );
+    }
+    const [i, j] = until(() => {
+      const v = [rint(1, 5, r), rint(1, 5, r)];
+      return v[0] !== v[1] ? v : null;
+    });
+    const [x2, y2] = [x1 + 2 * i, y1 + 2 * j];
+    const [mx, my] = [x1 + i, y1 + j];
+    const wrong = [pt(my, mx), pt(i, j), pt(x1 + x2, y1 + y2), pt(mx + 1, my), pt(mx, my + 1), pt(mx + 1, my + 1)];
+    return choice(
+      id, AG, "moderate",
+      `What is the midpoint of the line segment joining the points ${pt(x1, y1)} and ${pt(x2, y2)}?`,
+      pt(mx, my),
+      shuffle(wrong, r),
+      `Midpoint = ((x₁ + x₂)/2, (y₁ + y₂)/2) = ((${x1} + ${x2})/2, (${y1} + ${y2})/2) = ${pt(mx, my)}.`,
+      {
+        q: `बिंदुओं ${pt(x1, y1)} और ${pt(x2, y2)} को मिलाने वाले रेखाखंड का मध्य बिंदु क्या है?`,
+        e: `मध्य बिंदु = ((x₁ + x₂)/2, (y₁ + y₂)/2) = ((${x1} + ${x2})/2, (${y1} + ${y2})/2) = ${pt(mx, my)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Chord of a circle: the perpendicular from the centre bisects it.
+    const [p, q, c] = pick(TRIPLES, r);
+    const [half, dist] = r() < 0.5 ? [p, q] : [q, p];
+    if (r() < 0.5) {
+      return numeric(
+        id, AG, "moderate",
+        `A chord of length ${2 * half} cm is drawn in a circle of radius ${c} cm. What is the distance of the chord from the centre?`,
+        dist,
+        `The perpendicular from the centre bisects the chord, so half the chord = ${half} cm. Distance = √(${c}² − ${half}²) = √${dist * dist} = ${dist} cm.`,
+        {
+          q: `${c} सेमी त्रिज्या वाले वृत्त में ${2 * half} सेमी लंबी एक जीवा खींची गई है। केंद्र से जीवा की दूरी कितनी है?`,
+          e: `केंद्र से डाला गया लंब जीवा को समद्विभाजित करता है, अतः आधी जीवा = ${half} सेमी। दूरी = √(${c}² − ${half}²) = √${dist * dist} = ${dist} सेमी।`,
+        },
+        r, "", " cm",
+      );
+    }
+    return numeric(
+      id, AG, "moderate",
+      `A chord of a circle of radius ${c} cm is at a distance of ${dist} cm from the centre. What is the length of the chord?`,
+      2 * half,
+      `Half the chord = √(${c}² − ${dist}²) = √${half * half} = ${half} cm, so the chord = 2 × ${half} = ${2 * half} cm.`,
+      {
+        q: `${c} सेमी त्रिज्या वाले वृत्त की एक जीवा केंद्र से ${dist} सेमी की दूरी पर है। जीवा की लंबाई कितनी है?`,
+        e: `आधी जीवा = √(${c}² − ${dist}²) = √${half * half} = ${half} सेमी, अतः जीवा = 2 × ${half} = ${2 * half} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // Tangent from an external point.
+    const [p, q, c] = pick(TRIPLES, r);
+    const [rad, t] = r() < 0.5 ? [p, q] : [q, p];
+    return numeric(
+      id, AG, "moderate",
+      `A point P is ${c} cm away from the centre of a circle of radius ${rad} cm. What is the length of the tangent drawn from P to the circle?`,
+      t,
+      `The tangent is perpendicular to the radius at the point of contact, so tangent = √(${c}² − ${rad}²) = √${t * t} = ${t} cm.`,
+      {
+        q: `एक बिंदु P, ${rad} सेमी त्रिज्या वाले वृत्त के केंद्र से ${c} सेमी दूर है। P से वृत्त पर खींची गई स्पर्श रेखा की लंबाई कितनी है?`,
+        e: `स्पर्श बिंदु पर स्पर्श रेखा त्रिज्या पर लंब होती है, अतः स्पर्श रेखा = √(${c}² − ${rad}²) = √${t * t} = ${t} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // A ladder against a wall: cos 60° = sin 30° = 1/2.
+    const d = rint(2, 15, r);
+    if (r() < 0.5) {
+      return numeric(
+        id, AG, "moderate",
+        `A ladder leaning against a wall makes an angle of 60° with the ground. If the foot of the ladder is ${d} m away from the wall, what is the length of the ladder?`,
+        2 * d,
+        `cos 60° = distance from the wall ÷ length of the ladder, so 1/2 = ${d} ÷ length and the length = ${2 * d} m.`,
+        {
+          q: `दीवार के सहारे टिकी एक सीढ़ी भूमि के साथ 60° का कोण बनाती है। यदि सीढ़ी का पाद दीवार से ${d} मीटर दूर है, तो सीढ़ी की लंबाई कितनी है?`,
+          e: `cos 60° = दीवार से दूरी ÷ सीढ़ी की लंबाई, अतः 1/2 = ${d} ÷ लंबाई और लंबाई = ${2 * d} मीटर।`,
+        },
+        r, "", " m",
+      );
+    }
+    return numeric(
+      id, AG, "moderate",
+      `A ${2 * d} m long ladder leaning against a wall makes an angle of 30° with the ground. How high up the wall does the ladder reach?`,
+      d,
+      `sin 30° = height ÷ length of the ladder, so height = ${2 * d} × 1/2 = ${d} m.`,
+      {
+        q: `दीवार के सहारे टिकी ${2 * d} मीटर लंबी एक सीढ़ी भूमि के साथ 30° का कोण बनाती है। सीढ़ी दीवार पर कितनी ऊँचाई तक पहुँचती है?`,
+        e: `sin 30° = ऊँचाई ÷ सीढ़ी की लंबाई, अतः ऊँचाई = ${2 * d} × 1/2 = ${d} मीटर।`,
+      },
+      r, "", " m",
+    );
+  }),
+
+  hard: either((id, r) => {
+    // Heron's formula, on triangles whose area is a whole number.
+    const k = pick([1, 1, 2, 3], r);
+    const [a, b, c] = pick(HERON, r).map((x) => x * k);
+    const s = (a + b + c) / 2;
+    const prod = s * (s - a) * (s - b) * (s - c);
+    const ans = Math.round(Math.sqrt(prod));
+    return numeric(
+      id, AG, "hard",
+      `The sides of a triangle are ${a} cm, ${b} cm and ${c} cm. What is its area?`,
+      ans,
+      `s = (${a} + ${b} + ${c})/2 = ${s}. Area = √[s(s − a)(s − b)(s − c)] = √(${s} × ${s - a} × ${s - b} × ${s - c}) = √${prod} = ${fmt(ans)} cm².`,
+      {
+        q: `एक त्रिभुज की भुजाएँ ${a} सेमी, ${b} सेमी और ${c} सेमी हैं। उसका क्षेत्रफल कितना है?`,
+        e: `s = (${a} + ${b} + ${c})/2 = ${s}। क्षेत्रफल = √[s(s − a)(s − b)(s − c)] = √(${s} × ${s - a} × ${s - b} × ${s - c}) = √${prod} = ${fmt(ans)} वर्ग सेमी।`,
+      },
+      r, "", " cm²",
+    );
+  }, (id, r) => {
+    // Similar triangles: areas are in the ratio of the squares of the sides.
+    const [p, q] = pick([[2, 3], [3, 4], [2, 5], [3, 5], [4, 5], [1, 2], [1, 3], [5, 6], [4, 7], [3, 2], [5, 3], [4, 3], [5, 2], [2, 1], [3, 1], [7, 4]], r);
+    const k = rint(2, 9, r);
+    const [given, ans] = [p * p * k, q * q * k];
+    return numeric(
+      id, AG, "hard",
+      `Triangles ABC and PQR are similar and AB : PQ = ${p} : ${q}. If the area of triangle ABC is ${given} cm², what is the area of triangle PQR?`,
+      ans,
+      `Areas of similar triangles are in the ratio of the squares of corresponding sides: ${given} : area of PQR = ${p}² : ${q}² = ${p * p} : ${q * q}. So area of PQR = ${given} × ${q * q} ÷ ${p * p} = ${ans} cm².`,
+      {
+        q: `त्रिभुज ABC और PQR समरूप हैं तथा AB : PQ = ${p} : ${q} है। यदि त्रिभुज ABC का क्षेत्रफल ${given} वर्ग सेमी है, तो त्रिभुज PQR का क्षेत्रफल कितना है?`,
+        e: `समरूप त्रिभुजों के क्षेत्रफलों का अनुपात संगत भुजाओं के वर्गों के अनुपात के बराबर होता है: ${given} : PQR का क्षेत्रफल = ${p}² : ${q}² = ${p * p} : ${q * q}। अतः PQR का क्षेत्रफल = ${given} × ${q * q} ÷ ${p * p} = ${ans} वर्ग सेमी।`,
+      },
+      r, "", " cm²",
+    );
+  }, (id, r) => {
+    // x + 1/x → x³ + 1/x³.
+    const k = rint(3, 9, r);
+    const ans = k ** 3 - 3 * k;
+    return numeric(
+      id, AG, "hard",
+      `If x + 1/x = ${k}, what is the value of x³ + 1/x³?`,
+      ans,
+      `x³ + 1/x³ = (x + 1/x)³ − 3(x + 1/x) = ${k}³ − 3 × ${k} = ${k ** 3} − ${3 * k} = ${ans}.`,
+      { q: `यदि x + 1/x = ${k} है, तो x³ + 1/x³ का मान क्या है?`, e: `x³ + 1/x³ = (x + 1/x)³ − 3(x + 1/x) = ${k}³ − 3 × ${k} = ${k ** 3} − ${3 * k} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // a³ + b³ from a + b and ab.
+    const a = rint(2, 9, r);
+    const b = until(() => {
+      const v = rint(1, 9, r);
+      return v !== a ? v : null;
+    });
+    const [s, p] = [a + b, a * b];
+    const ans = s ** 3 - 3 * p * s;
+    return numeric(
+      id, AG, "hard",
+      `If a + b = ${s} and ab = ${p}, what is the value of a³ + b³?`,
+      ans,
+      `a³ + b³ = (a + b)³ − 3ab(a + b) = ${s}³ − 3 × ${p} × ${s} = ${fmt(s ** 3)} − ${fmt(3 * p * s)} = ${fmt(ans)}.`,
+      { q: `यदि a + b = ${s} और ab = ${p} है, तो a³ + b³ का मान क्या है?`, e: `a³ + b³ = (a + b)³ − 3ab(a + b) = ${s}³ − 3 × ${p} × ${s} = ${fmt(s ** 3)} − ${fmt(3 * p * s)} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Sum and product of the roots of a quadratic.
+    const p = rint(1, 9, r);
+    const q = until(() => {
+      const v = rint(2, 9, r);
+      return v !== p ? v : null;
+    });
+    const [S, P] = [p + q, p * q];
+    const eq = `x² − ${S}x + ${P} = 0`;
+    if (r() < 0.5) {
+      const ans = S * S - 2 * P;
+      return numeric(
+        id, AG, "hard",
+        `If α and β are the roots of the equation ${eq}, what is the value of α² + β²?`,
+        ans,
+        `α + β = ${S} and αβ = ${P}. α² + β² = (α + β)² − 2αβ = ${S * S} − ${2 * P} = ${ans}.`,
+        { q: `यदि α और β समीकरण ${eq} के मूल हैं, तो α² + β² का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। α² + β² = (α + β)² − 2αβ = ${S * S} − ${2 * P} = ${ans}।` },
+        r,
+      );
+    }
+    const ans = frac(S, P);
+    const wrong = [frac(P, S), frac(S, P + 1), frac(S + 1, P), `${S}`, frac(S * S - 2 * P, P), frac(1, P), frac(S, 2 * P), frac(2 * S, P)];
+    return choice(
+      id, AG, "hard",
+      `If α and β are the roots of the equation ${eq}, what is the value of 1/α + 1/β?`,
+      ans,
+      shuffle(wrong, r),
+      `α + β = ${S} and αβ = ${P}. 1/α + 1/β = (α + β)/αβ = ${S}/${P}${ans === `${S}/${P}` ? "" : ` = ${ans}`}.`,
+      { q: `यदि α और β समीकरण ${eq} के मूल हैं, तो 1/α + 1/β का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। 1/α + 1/β = (α + β)/αβ = ${S}/${P}${ans === `${S}/${P}` ? "" : ` = ${ans}`}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Heights and distances with one angle of 30° or 60°.
+    const len = 3 * pick([4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 20, 25, 30], r);
+    const ang = pick([30, 60], r);
+    const third = `${len / 3}√3 m`;
+    const full = `${len}√3 m`;
+    if (r() < 0.5) {
+      const steep = ang === 60;
+      return lengths(
+        id, "hard",
+        `From a point on the ground ${len} m away from the foot of a tower, the angle of elevation of the top of the tower is ${ang}°. What is the height of the tower?`,
+        steep ? full : third, len,
+        steep
+          ? `tan 60° = height ÷ ${len}, so height = ${len} × √3 = ${full}.`
+          : `tan 30° = height ÷ ${len}, so height = ${len} ÷ √3 = ${len}√3/3 = ${third}.`,
+        {
+          q: `भूमि पर स्थित एक बिंदु से, जो एक मीनार के पाद से ${len} मीटर दूर है, मीनार के शिखर का उन्नयन कोण ${ang}° है। मीनार की ऊँचाई कितनी है?`,
+          e: steep
+            ? `tan 60° = ऊँचाई ÷ ${len}, अतः ऊँचाई = ${len} × √3 = ${len}√3 मीटर।`
+            : `tan 30° = ऊँचाई ÷ ${len}, अतः ऊँचाई = ${len} ÷ √3 = ${len}√3/3 = ${len / 3}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    const steep = ang === 60;
+    return lengths(
+      id, "hard",
+      `The angle of elevation of the top of a ${len} m high tower from a point on the ground is ${ang}°. How far is the point from the foot of the tower?`,
+      steep ? third : full, len,
+      steep
+        ? `tan 60° = ${len} ÷ distance, so distance = ${len} ÷ √3 = ${len}√3/3 = ${third}.`
+        : `tan 30° = ${len} ÷ distance, so distance = ${len} × √3 = ${full}.`,
+      {
+        q: `भूमि पर स्थित एक बिंदु से ${len} मीटर ऊँची मीनार के शिखर का उन्नयन कोण ${ang}° है। वह बिंदु मीनार के पाद से कितनी दूर है?`,
+        e: steep
+          ? `tan 60° = ${len} ÷ दूरी, अतः दूरी = ${len} ÷ √3 = ${len}√3/3 = ${len / 3}√3 मीटर।`
+          : `tan 30° = ${len} ÷ दूरी, अतः दूरी = ${len} × √3 = ${len}√3 मीटर।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Area of a triangle from its vertices; centroid.
+    if (r() < 0.6) {
+      const v = until(() => {
+        const c = Array.from({ length: 6 }, () => rint(0, 9, r));
+        const twice = Math.abs(c[0] * (c[3] - c[5]) + c[2] * (c[5] - c[1]) + c[4] * (c[1] - c[3]));
+        return twice >= 8 && twice % 2 === 0 ? c : null;
+      });
+      const [x1, y1, x2, y2, x3, y3] = v;
+      const inner = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
+      const ans = Math.abs(inner) / 2;
+      const b = (n: number) => (n < 0 ? `(−${-n})` : `${n}`);
+      const work = `½ |${x1} × ${b(y2 - y3)} + ${x2} × ${b(y3 - y1)} + ${x3} × ${b(y1 - y2)}| = ½ × ${Math.abs(inner)} = ${ans}`;
+      return numeric(
+        id, AG, "hard",
+        `What is the area of the triangle whose vertices are ${pt(x1, y1)}, ${pt(x2, y2)} and ${pt(x3, y3)}?`,
+        ans,
+        `Area = ½ |x₁(y₂ − y₃) + x₂(y₃ − y₁) + x₃(y₁ − y₂)| = ${work} sq units.`,
+        {
+          q: `उस त्रिभुज का क्षेत्रफल कितना है जिसके शीर्ष ${pt(x1, y1)}, ${pt(x2, y2)} और ${pt(x3, y3)} हैं?`,
+          e: `क्षेत्रफल = ½ |x₁(y₂ − y₃) + x₂(y₃ − y₁) + x₃(y₁ − y₂)| = ${work} वर्ग इकाई।`,
+        },
+        r, "", " sq units",
+      );
+    }
+    const v = until(() => {
+      const c = Array.from({ length: 6 }, () => rint(0, 12, r));
+      const twice = Math.abs(c[0] * (c[3] - c[5]) + c[2] * (c[5] - c[1]) + c[4] * (c[1] - c[3]));
+      const [sx, sy] = [c[0] + c[2] + c[4], c[1] + c[3] + c[5]];
+      return twice > 0 && sx % 3 === 0 && sy % 3 === 0 && sx !== sy ? c : null;
+    });
+    const [x1, y1, x2, y2, x3, y3] = v;
+    const [gx, gy] = [(x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3];
+    const wrong = [pt(gy, gx), pt(gx + 1, gy), pt(gx, gy + 1), pt(x1 + x2 + x3, y1 + y2 + y3), pt(gx + 1, gy + 1), pt(gx + 2, gy)];
+    return choice(
+      id, AG, "hard",
+      `What is the centroid of the triangle whose vertices are ${pt(x1, y1)}, ${pt(x2, y2)} and ${pt(x3, y3)}?`,
+      pt(gx, gy),
+      shuffle(wrong, r),
+      `Centroid = ((x₁ + x₂ + x₃)/3, (y₁ + y₂ + y₃)/3) = (${x1 + x2 + x3}/3, ${y1 + y2 + y3}/3) = ${pt(gx, gy)}.`,
+      {
+        q: `उस त्रिभुज का केंद्रक क्या है जिसके शीर्ष ${pt(x1, y1)}, ${pt(x2, y2)} और ${pt(x3, y3)} हैं?`,
+        e: `केंद्रक = ((x₁ + x₂ + x₃)/3, (y₁ + y₂ + y₃)/3) = (${x1 + x2 + x3}/3, ${y1 + y2 + y3}/3) = ${pt(gx, gy)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Angles at the centres of a triangle.
+    const A = 2 * rint(20, 42, r);
+    const kind = pick(["incentre", "circumcentre", "orthocentre"] as const, r);
+    const { letter, ans, en, hiName, hiE } = {
+      incentre: { letter: "I", ans: 90 + A / 2, en: `∠BIC = 90° + ∠A/2 = 90° + ${A / 2}° = ${90 + A / 2}°`, hiName: "अंतःकेंद्र", hiE: `∠BIC = 90° + ∠A/2 = 90° + ${A / 2}° = ${90 + A / 2}°` },
+      circumcentre: { letter: "O", ans: 2 * A, en: `The angle at the centre is twice the angle at the circumference: ∠BOC = 2∠A = 2 × ${A}° = ${2 * A}°`, hiName: "परिकेंद्र", hiE: `केंद्र पर बना कोण परिधि पर बने कोण का दुगुना होता है: ∠BOC = 2∠A = 2 × ${A}° = ${2 * A}°` },
+      orthocentre: { letter: "H", ans: 180 - A, en: `∠BHC = 180° − ∠A = 180° − ${A}° = ${180 - A}°`, hiName: "लंबकेंद्र", hiE: `∠BHC = 180° − ∠A = 180° − ${A}° = ${180 - A}°` },
+    }[kind];
+    return numeric(
+      id, AG, "hard",
+      `In an acute-angled triangle ABC, ∠A = ${A}°. If ${letter} is the ${kind} of the triangle, what is the measure of ∠B${letter}C?`,
+      ans,
+      `${en}.`,
+      { q: `एक न्यूनकोण त्रिभुज ABC में ∠A = ${A}° है। यदि ${letter} त्रिभुज का ${hiName} है, तो ∠B${letter}C का माप कितना है?`, e: `${hiE}।` },
+      r, "", "°",
+    );
+  }, (id, r) => {
+    // tan θ from a Pythagorean triple → sin θ + cos θ.
+    const [p, q, h] = pick(TRIPLES.slice(0, 5), r);
+    const [a, b] = r() < 0.5 ? [p, q] : [q, p];
+    const ans = frac(a + b, h);
+    const wrong = [frac(a, h), frac(b, h), frac(h, a + b), frac(Math.abs(a - b), h), frac(a + b, a), frac(a + b, b), frac(a * b, h)];
+    return choice(
+      id, AG, "hard",
+      `If tan θ = ${a}/${b} and θ is an acute angle, what is the value of sin θ + cos θ?`,
+      ans,
+      shuffle(wrong, r),
+      `Take the perpendicular as ${a} and the base as ${b}; hypotenuse = √(${a}² + ${b}²) = ${h}. So sin θ = ${a}/${h} and cos θ = ${b}/${h}, and sin θ + cos θ = ${ans}.`,
+      {
+        q: `यदि tan θ = ${a}/${b} है और θ एक न्यून कोण है, तो sin θ + cos θ का मान क्या है?`,
+        e: `लंब ${a} और आधार ${b} लेने पर कर्ण = √(${a}² + ${b}²) = ${h}। अतः sin θ = ${a}/${h} और cos θ = ${b}/${h}, तथा sin θ + cos θ = ${ans}।`,
+      },
+      r,
+    );
+  }),
+
+  "very-hard": either((id, r) => {
+    // Heights and distances with two angles.
+    const kind = pick(["points", "shadow", "boats", "building"] as const, r);
+    if (kind === "points" || kind === "shadow") {
+      const d = 2 * rint(5, 60, r);
+      const ans = `${d / 2}√3 m`;
+      const points = kind === "points";
+      const what = points ? "tower" : "pole";
+      const whatHi = points ? "मीनार" : "खंभे";
+      return lengths(
+        id, "very-hard",
+        points
+          ? `The angles of elevation of the top of a tower from two points on the ground, on the same side of the tower and in line with its foot, are 30° and 60°. If the two points are ${d} m apart, what is the height of the tower?`
+          : `The shadow of a vertical pole becomes ${d} m longer when the sun’s angle of elevation falls from 60° to 30°. What is the height of the pole?`,
+        ans, d,
+        `Let the height be h. The two distances from the foot of the ${what} are h/tan 30° = h√3 and h/tan 60° = h/√3. Their difference is h√3 − h/√3 = 2h/√3 = ${d}, so h = ${d}√3/2 = ${ans}.`,
+        {
+          q: points
+            ? `भूमि पर स्थित दो बिंदुओं से, जो एक मीनार के एक ही ओर तथा उसके पाद की सीध में हैं, मीनार के शिखर के उन्नयन कोण 30° और 60° हैं। यदि दोनों बिंदुओं के बीच की दूरी ${d} मीटर है, तो मीनार की ऊँचाई कितनी है?`
+            : `जब सूर्य का उन्नयन कोण 60° से घटकर 30° हो जाता है, तो एक ऊर्ध्वाधर खंभे की छाया ${d} मीटर लंबी हो जाती है। खंभे की ऊँचाई कितनी है?`,
+          e: `माना ऊँचाई h है। ${whatHi} के पाद से दोनों दूरियाँ h/tan 30° = h√3 और h/tan 60° = h/√3 हैं। इनका अंतर h√3 − h/√3 = 2h/√3 = ${d}, अतः h = ${d}√3/2 = ${d / 2}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    if (kind === "boats") {
+      const h = 3 * rint(4, 40, r);
+      const ans = `${(2 * h) / 3}√3 m`;
+      return lengths(
+        id, "very-hard",
+        `From the top of a ${h} m high cliff, the angles of depression of two boats on the same side of the cliff and in line with its foot are 30° and 60°. What is the distance between the two boats?`,
+        ans, h,
+        `The boats are ${h}/tan 30° = ${h}√3 m and ${h}/tan 60° = ${h}/√3 = ${h / 3}√3 m from the foot of the cliff. Distance between them = ${h}√3 − ${h / 3}√3 = ${ans}.`,
+        {
+          q: `${h} मीटर ऊँची एक चट्टान के शिखर से, चट्टान के एक ही ओर तथा उसके पाद की सीध में स्थित दो नावों के अवनमन कोण 30° और 60° हैं। दोनों नावों के बीच की दूरी कितनी है?`,
+          e: `चट्टान के पाद से नावों की दूरियाँ ${h}/tan 30° = ${h}√3 मीटर और ${h}/tan 60° = ${h}/√3 = ${h / 3}√3 मीटर हैं। उनके बीच की दूरी = ${h}√3 − ${h / 3}√3 = ${(2 * h) / 3}√3 मीटर।`,
+        },
+        r,
+      );
+    }
+    const h = rint(8, 80, r);
+    const ans = `${h}(√3 + 1) m`;
+    return lengths(
+      id, "very-hard",
+      `From the top of a ${h} m high building, the angle of depression of the foot of a tower is 45° and the angle of elevation of the top of the tower is 60°. What is the height of the tower?`,
+      ans, h,
+      `The angle of depression of the foot is 45°, so the tower is ${h} m away from the building. The top of the tower is ${h} × tan 60° = ${h}√3 m above the top of the building. Height of the tower = ${h} + ${h}√3 = ${ans}.`,
+      {
+        q: `${h} मीटर ऊँचे एक भवन के शिखर से एक मीनार के पाद का अवनमन कोण 45° और मीनार के शिखर का उन्नयन कोण 60° है। मीनार की ऊँचाई कितनी है?`,
+        e: `पाद का अवनमन कोण 45° है, अतः मीनार भवन से ${h} मीटर दूर है। मीनार का शिखर भवन के शिखर से ${h} × tan 60° = ${h}√3 मीटर ऊपर है। मीनार की ऊँचाई = ${h} + ${h}√3 = ${h}(√3 + 1) मीटर।`,
+      },
+      r, [`${h}(√3 − 1) m`],
+    );
+  }, (id, r) => {
+    // Higher powers from x ± 1/x.
+    if (r() < 0.5) {
+      const k = rint(3, 7, r);
+      const sq = k * k - 2;
+      const ans = sq * sq - 2;
+      return numeric(
+        id, AG, "very-hard",
+        `If x + 1/x = ${k}, what is the value of x⁴ + 1/x⁴?`,
+        ans,
+        `x² + 1/x² = ${k}² − 2 = ${sq}. Squaring again, x⁴ + 1/x⁴ = ${sq}² − 2 = ${fmt(sq * sq)} − 2 = ${fmt(ans)}.`,
+        { q: `यदि x + 1/x = ${k} है, तो x⁴ + 1/x⁴ का मान क्या है?`, e: `x² + 1/x² = ${k}² − 2 = ${sq}। पुनः वर्ग करने पर x⁴ + 1/x⁴ = ${sq}² − 2 = ${fmt(sq * sq)} − 2 = ${fmt(ans)}।` },
+        r,
+      );
+    }
+    const k = rint(2, 9, r);
+    const ans = k ** 3 + 3 * k;
+    return numeric(
+      id, AG, "very-hard",
+      `If x − 1/x = ${k}, what is the value of x³ − 1/x³?`,
+      ans,
+      `x³ − 1/x³ = (x − 1/x)³ + 3(x − 1/x) = ${k}³ + 3 × ${k} = ${k ** 3} + ${3 * k} = ${ans}.`,
+      { q: `यदि x − 1/x = ${k} है, तो x³ − 1/x³ का मान क्या है?`, e: `x³ − 1/x³ = (x − 1/x)³ + 3(x − 1/x) = ${k}³ + 3 × ${k} = ${k ** 3} + ${3 * k} = ${ans}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Three-variable identities.
+    const [a, b, c] = until(() => {
+      const v = [rint(1, 9, r), rint(1, 9, r), rint(1, 9, r)];
+      return new Set(v).size > 1 ? v : null;
+    });
+    const s = a + b + c;
+    const q = a * b + b * c + c * a;
+    const t = a * a + b * b + c * c;
+    const kind = pick(["squares", "products", "cubes"] as const, r);
+    if (kind === "squares") {
+      return numeric(
+        id, AG, "very-hard",
+        `If a + b + c = ${s} and ab + bc + ca = ${q}, what is the value of a² + b² + c²?`,
+        t,
+        `a² + b² + c² = (a + b + c)² − 2(ab + bc + ca) = ${s}² − 2 × ${q} = ${s * s} − ${2 * q} = ${t}.`,
+        { q: `यदि a + b + c = ${s} और ab + bc + ca = ${q} है, तो a² + b² + c² का मान क्या है?`, e: `a² + b² + c² = (a + b + c)² − 2(ab + bc + ca) = ${s}² − 2 × ${q} = ${s * s} − ${2 * q} = ${t}।` },
+        r,
+      );
+    }
+    if (kind === "products") {
+      return numeric(
+        id, AG, "very-hard",
+        `If a + b + c = ${s} and a² + b² + c² = ${t}, what is the value of ab + bc + ca?`,
+        q,
+        `(a + b + c)² = a² + b² + c² + 2(ab + bc + ca), so ${s * s} = ${t} + 2(ab + bc + ca) and ab + bc + ca = (${s * s} − ${t}) ÷ 2 = ${q}.`,
+        { q: `यदि a + b + c = ${s} और a² + b² + c² = ${t} है, तो ab + bc + ca का मान क्या है?`, e: `(a + b + c)² = a² + b² + c² + 2(ab + bc + ca), अतः ${s * s} = ${t} + 2(ab + bc + ca) और ab + bc + ca = (${s * s} − ${t}) ÷ 2 = ${q}।` },
+        r,
+      );
+    }
+    const ans = s * (t - q);
+    return numeric(
+      id, AG, "very-hard",
+      `If a + b + c = ${s} and a² + b² + c² = ${t}, what is the value of a³ + b³ + c³ − 3abc?`,
+      ans,
+      `ab + bc + ca = (${s}² − ${t}) ÷ 2 = ${q}. a³ + b³ + c³ − 3abc = (a + b + c)(a² + b² + c² − ab − bc − ca) = ${s} × (${t} − ${q}) = ${fmt(ans)}.`,
+      {
+        q: `यदि a + b + c = ${s} और a² + b² + c² = ${t} है, तो a³ + b³ + c³ − 3abc का मान क्या है?`,
+        e: `ab + bc + ca = (${s}² − ${t}) ÷ 2 = ${q}। a³ + b³ + c³ − 3abc = (a + b + c)(a² + b² + c² − ab − bc − ca) = ${s} × (${t} − ${q}) = ${fmt(ans)}।`,
+      },
+      r,
+    );
+  }, (id, r) => {
+    // Quadratic equations: cubes of the roots, an unknown constant, equal roots.
+    const kind = pick(["cubes", "constant", "equal"] as const, r);
+    if (kind === "equal") {
+      const m = rint(2, 15, r);
+      return numeric(
+        id, AG, "very-hard",
+        `For what positive value of k does the equation x² − kx + ${m * m} = 0 have equal roots?`,
+        2 * m,
+        `Equal roots need the discriminant to be zero: k² − 4 × ${m * m} = 0, so k² = ${4 * m * m} and k = ${2 * m}.`,
+        { q: `k के किस धनात्मक मान के लिए समीकरण x² − kx + ${m * m} = 0 के मूल बराबर होंगे?`, e: `बराबर मूलों के लिए विविक्तकर शून्य होना चाहिए: k² − 4 × ${m * m} = 0, अतः k² = ${4 * m * m} और k = ${2 * m}।` },
+        r,
+      );
+    }
+    const p = rint(2, 9, r);
+    const q = until(() => {
+      const v = rint(1, 9, r);
+      return v !== p ? v : null;
+    });
+    const [S, P] = [p + q, p * q];
+    if (kind === "constant") {
+      return numeric(
+        id, AG, "very-hard",
+        `If one root of the equation x² − ${S}x + k = 0 is ${p}, what is the value of k?`,
+        P,
+        `The sum of the roots is ${S}, so the other root = ${S} − ${p} = ${q}. k = product of the roots = ${p} × ${q} = ${P}.`,
+        { q: `यदि समीकरण x² − ${S}x + k = 0 का एक मूल ${p} है, तो k का मान क्या है?`, e: `मूलों का योग ${S} है, अतः दूसरा मूल = ${S} − ${p} = ${q}। k = मूलों का गुणनफल = ${p} × ${q} = ${P}।` },
+        r,
+      );
+    }
+    const ans = S ** 3 - 3 * P * S;
+    return numeric(
+      id, AG, "very-hard",
+      `If α and β are the roots of the equation x² − ${S}x + ${P} = 0, what is the value of α³ + β³?`,
+      ans,
+      `α + β = ${S} and αβ = ${P}. α³ + β³ = (α + β)³ − 3αβ(α + β) = ${fmt(S ** 3)} − 3 × ${P} × ${S} = ${fmt(ans)}.`,
+      { q: `यदि α और β समीकरण x² − ${S}x + ${P} = 0 के मूल हैं, तो α³ + β³ का मान क्या है?`, e: `α + β = ${S} और αβ = ${P}। α³ + β³ = (α + β)³ − 3αβ(α + β) = ${fmt(S ** 3)} − 3 × ${P} × ${S} = ${fmt(ans)}।` },
+      r,
+    );
+  }, (id, r) => {
+    // Two circles: direct common tangent and common chord.
+    if (r() < 0.5) {
+      const [R, s] = pick([[9, 4], [16, 9], [25, 4], [25, 9], [16, 4], [25, 16], [36, 25], [9, 1], [18, 8], [8, 2], [27, 3], [12, 3], [32, 2], [50, 2], [20, 5], [45, 5], [36, 16], [49, 4], [49, 9], [36, 4]], r);
+      const ans = 2 * Math.round(Math.sqrt(R * s));
+      return numeric(
+        id, AG, "very-hard",
+        `Two circles of radii ${R} cm and ${s} cm touch each other externally. What is the length of their direct common tangent?`,
+        ans,
+        `Distance between the centres = ${R} + ${s} = ${R + s} cm. Direct common tangent = √[d² − (R − r)²] = √(${R + s}² − ${R - s}²) = 2√(${R} × ${s}) = ${ans} cm.`,
+        {
+          q: `${R} सेमी और ${s} सेमी त्रिज्या वाले दो वृत्त एक-दूसरे को बाह्यतः स्पर्श करते हैं। उनकी सीधी उभयनिष्ठ स्पर्श रेखा की लंबाई कितनी है?`,
+          e: `केंद्रों के बीच की दूरी = ${R} + ${s} = ${R + s} सेमी। सीधी उभयनिष्ठ स्पर्श रेखा = √[d² − (R − r)²] = √(${R + s}² − ${R - s}²) = 2√(${R} × ${s}) = ${ans} सेमी।`,
+        },
+        r, "", " cm",
+      );
+    }
+    // The radii and the line of centres make a triangle; the common chord is twice its height.
+    const [r1, r2, d, half] = pick([[13, 15, 14, 12], [10, 17, 21, 8], [17, 25, 28, 15], [13, 20, 21, 12], [15, 20, 25, 12], [25, 26, 17, 24], [13, 37, 40, 12], [15, 13, 4, 12], [20, 15, 7, 12], [17, 10, 9, 8], [25, 17, 12, 15], [26, 30, 28, 24], [20, 34, 42, 16], [30, 40, 50, 24]], r);
+    const x = (d * d + r1 * r1 - r2 * r2) / (2 * d);
+    return numeric(
+      id, AG, "very-hard",
+      `Two circles of radii ${r1} cm and ${r2} cm intersect at two points, and the distance between their centres is ${d} cm. What is the length of their common chord?`,
+      2 * half,
+      `The common chord is perpendicular to the line of centres. If it is x cm from the first centre, ${r1}² − x² = ${r2}² − (${d} − x)², which gives x = ${fmt(x)}. Half the chord = √(${r1}² − ${fmt(x)}²) = ${half} cm, so the chord = ${2 * half} cm.`,
+      {
+        q: `${r1} सेमी और ${r2} सेमी त्रिज्या वाले दो वृत्त एक-दूसरे को दो बिंदुओं पर काटते हैं और उनके केंद्रों के बीच की दूरी ${d} सेमी है। उनकी उभयनिष्ठ जीवा की लंबाई कितनी है?`,
+        e: `उभयनिष्ठ जीवा केंद्रों को मिलाने वाली रेखा पर लंब होती है। यदि वह पहले केंद्र से x सेमी दूर है, तो ${r1}² − x² = ${r2}² − (${d} − x)², जिससे x = ${fmt(x)}। आधी जीवा = √(${r1}² − ${fmt(x)}²) = ${half} सेमी, अतः जीवा = ${2 * half} सेमी।`,
+      },
+      r, "", " cm",
+    );
+  }, (id, r) => {
+    // A line cutting the axes: area of the triangle with the origin.
+    const [a, b, k] = until(() => {
+      const v = [rint(2, 9, r), rint(2, 9, r), rint(1, 4, r)];
+      return v[0] !== v[1] && (v[0] * v[1] * v[2] * v[2]) % 2 === 0 ? v : null;
+    });
+    const c = a * b * k;
+    const [px, py] = [c / a, c / b];
+    const ans = (px * py) / 2;
+    return numeric(
+      id, AG, "very-hard",
+      `The line ${a}x + ${b}y = ${c} meets the x-axis at A and the y-axis at B. If O is the origin, what is the area of triangle OAB?`,
+      ans,
+      `Put y = 0: x = ${c} ÷ ${a} = ${px}, so OA = ${px}. Put x = 0: y = ${c} ÷ ${b} = ${py}, so OB = ${py}. Area = ½ × ${px} × ${py} = ${fmt(ans)} sq units.`,
+      {
+        q: `रेखा ${a}x + ${b}y = ${c}, x-अक्ष को A पर और y-अक्ष को B पर मिलती है। यदि O मूल बिंदु है, तो त्रिभुज OAB का क्षेत्रफल कितना है?`,
+        e: `y = 0 रखने पर x = ${c} ÷ ${a} = ${px}, अतः OA = ${px}। x = 0 रखने पर y = ${c} ÷ ${b} = ${py}, अतः OB = ${py}। क्षेत्रफल = ½ × ${px} × ${py} = ${fmt(ans)} वर्ग इकाई।`,
+      },
+      r, "", " sq units",
+    );
+  }, (id, r) => {
+    // A ratio of sin and cos, found by dividing through by cos θ.
+    const [p, q, m, n] = until(() => {
+      const v = [rint(1, 6, r), rint(1, 6, r), rint(2, 7, r), rint(2, 7, r)];
+      return gcd(v[0], v[1]) === 1 && v[0] !== v[1] && v[2] * v[0] - v[3] * v[1] > 0 && v[2] * v[1] !== v[3] * v[0] ? v : null;
+    });
+    const [top, bottom] = [m * p + n * q, m * p - n * q];
+    const ans = frac(top, bottom);
+    const wrong = [frac(bottom, top), frac(m * q + n * p, Math.abs(m * q - n * p)), frac(top + 1, bottom), frac(top, bottom + 1), frac(top, m * p), frac(m + n, m + n - 1), frac(top + bottom, bottom + 1), frac(top, bottom + 2)];
+    const expr = `(${m} sin θ + ${n} cos θ)/(${m} sin θ − ${n} cos θ)`;
+    return choice(
+      id, AG, "very-hard",
+      `If tan θ = ${p}/${q}, what is the value of ${expr}?`,
+      ans,
+      shuffle(wrong, r),
+      `Divide the numerator and the denominator by cos θ: (${m} tan θ + ${n})/(${m} tan θ − ${n}) = (${m} × ${p}/${q} + ${n})/(${m} × ${p}/${q} − ${n}) = (${m * p} + ${n * q})/(${m * p} − ${n * q}) = ${top}/${bottom}${ans === `${top}/${bottom}` ? "" : ` = ${ans}`}.`,
+      {
+        q: `यदि tan θ = ${p}/${q} है, तो ${expr} का मान क्या है?`,
+        e: `अंश और हर को cos θ से भाग देने पर: (${m} tan θ + ${n})/(${m} tan θ − ${n}) = (${m} × ${p}/${q} + ${n})/(${m} × ${p}/${q} − ${n}) = (${m * p} + ${n * q})/(${m * p} − ${n * q}) = ${top}/${bottom}${ans === `${top}/${bottom}` ? "" : ` = ${ans}`}।`,
+      },
+      r,
+    );
+  }),
 };
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);

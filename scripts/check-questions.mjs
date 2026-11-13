@@ -108,6 +108,20 @@ const num = (s) => Number(String(s).replace(/[^\d.]/g, ""));
 const n = (s) => Number(String(s).replace(/,/g, ""));
 const g = (a, b) => (b ? g(b, a % b) : a);
 const ratioStr = (a, b) => `${a / g(a, b)} : ${b / g(a, b)}`;
+/** p/q in lowest terms, or a whole number. */
+const fr = (p, q) => (q / g(p, q) === 1 ? `${p / g(p, q)}` : `${p / g(p, q)}/${q / g(p, q)}`);
+/** A length in metres the way the options print it: "24 m", "8√3 m" or "12(√3 + 1) m". */
+const surd = (v) => {
+  const whole = (x) => Math.abs(x - Math.round(x)) < 1e-6;
+  if (whole(v)) return `${Math.round(v)} m`;
+  if (whole(v / Math.sqrt(3))) return `${Math.round(v / Math.sqrt(3))}√3 m`;
+  if (whole(v / (Math.sqrt(3) + 1))) return `${Math.round(v / (Math.sqrt(3) + 1))}(√3 + 1) m`;
+  return "";
+};
+/** "2019: 120, 2020: 150" → { 2019: 120, 2020: 150 } (a year shown as "?" is left out). */
+const yrs = (s) => Object.fromEntries([...s.matchAll(/(\d{4}): (\d+)/g)].map((m) => [m[1], +m[2]]));
+/** "Food: 30%, Rent: 90°" → { Food: 30, Rent: 90 }. */
+const cats = (s) => Object.fromEntries([...s.matchAll(/([A-Z][A-Za-z ]*): (\d+)[%°]/g)].map((m) => [m[1], +m[2]]));
 const CHECKS = [
   [/first increased by (\d+)%, then decreased by (\d+)%, and then increased by (\d+)%\. If the final number is ([\d,]+)/, (m) => (n(m[4]) * 1e6) / ((100 + +m[1]) * (100 - +m[2]) * (100 + +m[3]))],
   [/sold it at a gain of (\d+)%\. Had he bought it at (\d+)% less and sold it for ₹([\d,]+) less, he would have gained (\d+)%/, (m) => (n(m[3]) * 1e4) / ((100 + +m[1]) * 100 - (100 - +m[2]) * (100 + +m[4]))],
@@ -260,9 +274,132 @@ const CHECKS = [
     const [l, b, h, w, rate] = [+m[1], +m[2], +m[3], +m[4], +m[5]];
     return (2 * l * h + 2 * b * h + l * b - 2 * 1.5 - w * 1.5 * 1) * rate;
   }],
+  // Algebra, geometry and trigonometry
+  [/^If (\d+)x ([+−]) (\d+) = (\d+), what is the value of x\?/, (m) => (m[2] === "+" ? +m[4] - +m[3] : +m[4] + +m[3]) / +m[1]],
+  [/sum of the interior angles of a polygon with (\d+) sides/, (m) => (+m[1] - 2) * 180],
+  [/How many diagonals does a polygon with (\d+) sides have/, (m) => {
+    // Count the pairs of corners that are not next to each other.
+    let c = 0;
+    for (let i = 0; i < +m[1]; i++) for (let j = i + 1; j < +m[1]; j++) if (j - i !== 1 && j - i !== +m[1] - 1) c++;
+    return c;
+  }],
+  [/Two angles of a triangle measure (\d+)° and (\d+)°/, (m) => 180 - +m[1] - +m[2]],
+  [/distance between the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => Math.hypot(+m[3] - +m[1], +m[4] - +m[2])],
+  [/^What is the value of ((?:(?: \+ )?(?:\d+ )?(?:cosec|sin|cos|tan|cot|sec)²? \d+°)+)\?$/, (m) => {
+    const rad = (x) => (x * Math.PI) / 180;
+    const fn = { sin: Math.sin, cos: Math.cos, tan: Math.tan, cot: (x) => 1 / Math.tan(x), sec: (x) => 1 / Math.cos(x), cosec: (x) => 1 / Math.sin(x) };
+    return [...m[1].matchAll(/(\d+ )?(cosec|sin|cos|tan|cot|sec)(²)? (\d+)°/g)].reduce((s, t) => s + (t[1] ? +t[1] : 1) * fn[t[2]](rad(+t[4])) ** (t[3] ? 2 : 1), 0);
+  }],
+  [/cost of (\d+) pens and (\d+) notebooks is ₹([\d,]+), and the cost of (\d+) pens and (\d+) notebooks is ₹([\d,]+)\. What is the cost of one (pen|notebook)/, (m) => {
+    // Cramer's rule on ap + bn = X, cp + dn = Y.
+    const [a, b, X, c, d, Y] = [+m[1], +m[2], n(m[3]), +m[4], +m[5], n(m[6])];
+    const det = a * d - b * c;
+    return m[7] === "pen" ? (X * d - b * Y) / det : (a * Y - X * c) / det;
+  }],
+  [/sum of two numbers is (\d+) and their difference is (\d+)\. What is the (larger|smaller) number/, (m) => (+m[1] + (m[3] === "larger" ? 1 : -1) * +m[2]) / 2],
+  [/^If a \+ b = (\d+) and ab = (\d+), what is the value of a(²|³) \+ b[²³]\?/, (m) => {
+    // Find a and b themselves, then raise them to the power.
+    const root = Math.sqrt((+m[1]) ** 2 - 4 * +m[2]);
+    const [a, b, p] = [(+m[1] + root) / 2, (+m[1] - root) / 2, m[3] === "²" ? 2 : 3];
+    return a ** p + b ** p;
+  }],
+  [/^If x ([+−]) 1\/x = (\d+), what is the value of x(²|³|⁴) ([+−]) 1\/x[²³⁴]\?/, (m) => {
+    // Solve for x, then evaluate directly.
+    const k = +m[2];
+    const x = (k + Math.sqrt(k * k + (m[1] === "+" ? -4 : 4))) / 2;
+    const p = "²³⁴".indexOf(m[3]) + 2;
+    return x ** p + (m[4] === "+" ? 1 : -1) * x ** -p;
+  }],
+  [/Each (exterior|interior) angle of a regular polygon measures (\d+)°/, (m) => 360 / (m[1] === "exterior" ? +m[2] : 180 - +m[2])],
+  [/slope of the line passing through the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => fr(+m[4] - +m[2], +m[3] - +m[1])],
+  [/midpoint of the line segment joining the points \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => `(${(+m[1] + +m[3]) / 2}, ${(+m[2] + +m[4]) / 2})`],
+  [/chord of length (\d+) cm is drawn in a circle of radius (\d+) cm\. What is the distance of the chord from the centre/, (m) => Math.sqrt((+m[2]) ** 2 - (+m[1] / 2) ** 2)],
+  [/chord of a circle of radius (\d+) cm is at a distance of (\d+) cm from the centre\. What is the length of the chord/, (m) => 2 * Math.sqrt((+m[1]) ** 2 - (+m[2]) ** 2)],
+  [/point P is (\d+) cm away from the centre of a circle of radius (\d+) cm\. What is the length of the tangent/, (m) => Math.sqrt((+m[1]) ** 2 - (+m[2]) ** 2)],
+  [/ladder leaning against a wall makes an angle of 60° with the ground\. If the foot of the ladder is (\d+) m away from the wall/, (m) => +m[1] / Math.cos(Math.PI / 3)],
+  [/A (\d+) m long ladder leaning against a wall makes an angle of 30° with the ground\. How high/, (m) => +m[1] * Math.sin(Math.PI / 6)],
+  [/sides of a triangle are (\d+) cm, (\d+) cm and (\d+) cm\. What is its area/, (m) => {
+    const [a, b, c] = [+m[1], +m[2], +m[3]];
+    const s = (a + b + c) / 2;
+    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  }],
+  [/AB : PQ = (\d+) : (\d+)\. If the area of triangle ABC is (\d+) cm², what is the area of triangle PQR/, (m) => +m[3] * (+m[2] / +m[1]) ** 2],
+  [/roots of the equation x² − (\d+)x \+ (\d+) = 0, what is the value of (α² \+ β²|α³ \+ β³|1\/α \+ 1\/β)\?/, (m) => {
+    // The roots are whole numbers: find them by trial, then evaluate.
+    const [S, P] = [+m[1], +m[2]];
+    const a = Array.from({ length: S }, (_, i) => i + 1).find((x) => x * (S - x) === P);
+    if (!a) return NaN;
+    const b = S - a;
+    return m[3] === "α² + β²" ? a * a + b * b : m[3] === "α³ + β³" ? a ** 3 + b ** 3 : fr(a + b, a * b);
+  }],
+  [/From a point on the ground (\d+) m away from the foot of a tower, the angle of elevation of the top of the tower is (\d+)°\. What is the height/, (m) => surd(+m[1] * Math.tan((+m[2] * Math.PI) / 180))],
+  [/top of a (\d+) m high tower from a point on the ground is (\d+)°\. How far is the point/, (m) => surd(+m[1] / Math.tan((+m[2] * Math.PI) / 180))],
+  [/area of the triangle whose vertices are \((\d+), (\d+)\), \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => {
+    // Half the cross product of two sides.
+    const [x1, y1, x2, y2, x3, y3] = m.slice(1, 7).map(Number);
+    return Math.abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2;
+  }],
+  [/centroid of the triangle whose vertices are \((\d+), (\d+)\), \((\d+), (\d+)\) and \((\d+), (\d+)\)/, (m) => `(${(+m[1] + +m[3] + +m[5]) / 3}, ${(+m[2] + +m[4] + +m[6]) / 3})`],
+  [/∠A = (\d+)°\. If [IOH] is the (incentre|circumcentre|orthocentre) of the triangle/, (m) => {
+    // Build a real triangle with that angle A on the unit circle and measure the angle at the centre in question.
+    const A = (+m[1] * Math.PI) / 180;
+    const B = (Math.PI - A) / 2 + 0.1;
+    const C = Math.PI - A - B;
+    const at = (t) => [Math.cos(t), Math.sin(t)];
+    const [pb, pc, pa] = [at(0), at(2 * A), at(2 * A + 2 * B)];
+    const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    const [a, b, c] = [d(pb, pc), d(pa, pc), d(pa, pb)];
+    const X = {
+      circumcentre: [0, 0],
+      orthocentre: [pa[0] + pb[0] + pc[0], pa[1] + pb[1] + pc[1]],
+      incentre: [(a * pa[0] + b * pb[0] + c * pc[0]) / (a + b + c), (a * pa[1] + b * pb[1] + c * pc[1]) / (a + b + c)],
+    }[m[2]];
+    if (Math.abs(Math.sin(C)) < 1e-9) return NaN;
+    const [u, v] = [[pb[0] - X[0], pb[1] - X[1]], [pc[0] - X[0], pc[1] - X[1]]];
+    return (Math.acos((u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v))) * 180) / Math.PI;
+  }],
+  [/tan θ = (\d+)\/(\d+) and θ is an acute angle, what is the value of sin θ \+ cos θ/, (m) => {
+    const h = Math.hypot(+m[1], +m[2]);
+    return Number.isInteger(h) ? fr(+m[1] + +m[2], h) : NaN;
+  }],
+  [/are 30° and 60°\. If the two points are (\d+) m apart, what is the height of the tower/, (m) => surd(+m[1] / (1 / Math.tan(Math.PI / 6) - 1 / Math.tan(Math.PI / 3)))],
+  [/becomes (\d+) m longer when the sun’s angle of elevation falls from 60° to 30°\. What is the height of the pole/, (m) => surd(+m[1] / (1 / Math.tan(Math.PI / 6) - 1 / Math.tan(Math.PI / 3)))],
+  [/top of a (\d+) m high cliff, the angles of depression of two boats on the same side of the cliff and in line with its foot are 30° and 60°/, (m) => surd(+m[1] / Math.tan(Math.PI / 6) - +m[1] / Math.tan(Math.PI / 3))],
+  [/top of a (\d+) m high building, the angle of depression of the foot of a tower is 45° and the angle of elevation of the top of the tower is 60°/, (m) => {
+    const away = +m[1] / Math.tan(Math.PI / 4);
+    return surd(+m[1] + away * Math.tan(Math.PI / 3));
+  }],
+  [/^If a \+ b \+ c = (\d+) and (ab \+ bc \+ ca|a² \+ b² \+ c²) = (\d+), what is the value of (a² \+ b² \+ c²|ab \+ bc \+ ca|a³ \+ b³ \+ c³ − 3abc)\?/, (m) => {
+    // Find whole numbers a, b, c that fit, then evaluate what is asked.
+    const val = { "ab + bc + ca": (a, b, c) => a * b + b * c + c * a, "a² + b² + c²": (a, b, c) => a * a + b * b + c * c, "a³ + b³ + c³ − 3abc": (a, b, c) => a ** 3 + b ** 3 + c ** 3 - 3 * a * b * c };
+    for (let a = 1; a <= 9; a++) for (let b = a; b <= 9; b++) {
+      const c = +m[1] - a - b;
+      if (c >= b && c <= 9 && val[m[2]](a, b, c) === +m[3]) return val[m[4]](a, b, c);
+    }
+    return NaN;
+  }],
+  [/positive value of k does the equation x² − kx \+ (\d+) = 0 have equal roots/, (m) => {
+    for (let k = 1; k <= 200; k++) if (k * k === 4 * +m[1]) return k;
+    return NaN;
+  }],
+  [/one root of the equation x² − (\d+)x \+ k = 0 is (\d+), what is the value of k/, (m) => +m[1] * +m[2] - (+m[2]) ** 2],
+  [/Two circles of radii (\d+) cm and (\d+) cm touch each other externally\. What is the length of their direct common tangent/, (m) => Math.sqrt((+m[1] + +m[2]) ** 2 - (+m[1] - +m[2]) ** 2)],
+  [/Two circles of radii (\d+) cm and (\d+) cm intersect at two points, and the distance between their centres is (\d+) cm/, (m) => {
+    // The two radii and the line of centres form a triangle; the chord is twice its height on that line.
+    const [a, b, c] = [+m[1], +m[2], +m[3]];
+    const s = (a + b + c) / 2;
+    return (4 * Math.sqrt(s * (s - a) * (s - b) * (s - c))) / c;
+  }],
+  [/The line (\d+)x \+ (\d+)y = (\d+) meets the x-axis at A and the y-axis at B/, (m) => (+m[3] / +m[1]) * (+m[3] / +m[2]) * 0.5],
+  [/^If tan θ = (\d+)\/(\d+), what is the value of \((\d+) sin θ \+ (\d+) cos θ\)\/\((\d+) sin θ − (\d+) cos θ\)\?/, (m) => {
+    // Use a triangle with perpendicular p and base q: sin θ = p/h and cos θ = q/h, and h cancels.
+    const [p, q] = [+m[1], +m[2]];
+    return fr(+m[3] * p + +m[4] * q, +m[5] * p - +m[6] * q);
+  }],
 ];
 let derived = 0;
-const NEW_TOPICS = ["quant-number-system", "quant-mensuration"];
+const NEW_TOPICS = ["quant-number-system", "quant-mensuration", "quant-algebra-geometry"];
+const BIG_TOPICS = ["quant-algebra-geometry"];
 for (const id of NEW_TOPICS) if (!hasGenerator(id)) fail(`generator ${id}: missing`);
 // The new topics are checked directly, whether or not topics.ts lists them yet.
 const genTopics = [...new Set([...TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id), ...NEW_TOPICS])];
@@ -272,7 +409,8 @@ const numbers = (s) => (s.match(/\d[\d,.]*/g) ?? []).map((x) => x.replace(/[.,]+
 let hindi = 0;
 for (const id of genTopics) {
   for (const d of DIFFICULTIES) {
-    const qs = generateQuestions(id, 120, Math.random, d);
+    // The two big topics have many templates per tier, so they get a larger sample: every answer check must be exercised.
+    const qs = generateQuestions(id, BIG_TOPICS.includes(id) ? 400 : 120, Math.random, d);
     if (qs.length < 5) fail(`generator ${id}/${d}: too few distinct questions`, `${qs.length}`);
     for (const q of qs) {
       if (q.difficulty !== d || q.options.length !== 4 || new Set(q.options).size !== 4 || !(q.answer >= 0 && q.answer < 4)) fail(`generator ${id}/${d}: malformed`, q.question);
