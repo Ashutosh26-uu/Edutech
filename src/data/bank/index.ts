@@ -155,7 +155,7 @@ export const BANK_LOADERS: Record<string, () => Promise<{ default: BankQuestion[
 export const BANK_SIZES: Record<string, number> = {
   "apt-advanced-quant": 138,
   "apt-logical-placement": 140,
-  "apt-pnc-probability": 110,
+  "apt-pnc-probability": 140,
   "apt-pseudocode": 125,
   "apt-verbal-placement": 109,
   "bank-awareness": 184,
