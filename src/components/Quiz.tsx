@@ -54,6 +54,10 @@ interface Props {
   onFinish?: (results: AnswerResult[]) => void;
   onTimestamp?: (secs: number) => void;
   onRestart?: () => void;
+  /** Words on the restart button, when the default ("Practise new questions") does not fit. */
+  restartLabel?: string;
+  /** Make restarting the main next step on the result screen, ahead of weak-topic practice (unlimited practice). */
+  restartFirst?: boolean;
   /** Server-scored tests: the attempt id, for the rank and percentile on the result screen. */
   attemptId?: string;
   /**
@@ -131,7 +135,7 @@ export function SourceChip({ source, pyq }: { source?: string; pyq?: boolean }) 
   return <span className="chip bg-violet-50 text-violet-700" title="Asked repeatedly in previous-year papers">Exam favourite · {source}</span>;
 }
 
-export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, submit, attemptId, share, examMode = false, candidate, initial, onProgress }: Props) {
+export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimitSec, sections, sectional = false, previous, onFinish, onTimestamp, onRestart, restartLabel, restartFirst = false, submit, attemptId, share, examMode = false, candidate, initial, onProgress }: Props) {
   // A resumed set only counts when it was saved for this many questions.
   const start = initial && initial.chosen.length === questions.length ? initial : null;
   const [idx, setIdx] = useState(start?.idx ?? 0);
@@ -275,7 +279,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
-  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} restartLabel={mode === "mock" ? "Take another test" : "Practise new questions"} attemptId={attemptId} share={share} />;
+  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} restartLabel={restartLabel ?? (mode === "mock" ? "Take another test" : "Practise new questions")} restartFirst={restartFirst} attemptId={attemptId} share={share} />;
 
   const q = questions[idx];
   const text = inLang(q, lang);
@@ -532,12 +536,14 @@ interface ResultsProps {
   onRestart?: () => void;
   /** Words on the restart button: "Practise new questions" or "Take another test". */
   restartLabel?: string;
+  /** Restarting is the main next step, ahead of weak-topic practice. */
+  restartFirst?: boolean;
   attemptId?: string;
   share?: ShareInfo;
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", attemptId, share }: ResultsProps) {
+export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
   // Answer review filter: long mocks are easier to review one kind of answer at a time.
@@ -641,7 +647,9 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   const weakHref = `/practice?topics=${weakIds.join(",")}${share?.examId ? `&exam=${encodeURIComponent(share.examId)}` : ""}`;
   const weakLabel = weakIds.length === 1 ? `Practise ${TOPIC_BY_ID.get(weakIds[0])?.name ?? "this topic"} again` : `Practise your ${weakIds.length} weakest topics`;
   const next: { label: string; href?: string; onClick?: () => void; why: string } | null =
-    weakIds.length > 0
+    restartFirst && onRestart
+      ? { label: restartLabel, onClick: onRestart, why: "Fresh questions with new numbers, at the same level." }
+      : weakIds.length > 0
       ? { label: weakLabel, href: weakHref, why: "A short set on the topics where you scored under 50%." }
       : onRestart
         ? { label: restartLabel, onClick: onRestart, why: overall >= 70 ? "You’re doing well. Keep the streak going with a new set." : "A new set of questions to keep improving." }
@@ -896,12 +904,17 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
         })}
       </div>
       <div className="flex flex-wrap gap-2">
+        {restartFirst && onRestart && (
+          <button className="btn-primary" onClick={onRestart}>
+            {restartLabel}
+          </button>
+        )}
         {weakIds.length > 0 && (
-          <Link href={weakHref} className="btn-primary">
+          <Link href={weakHref} className={restartFirst && onRestart ? "btn-ghost" : "btn-primary"}>
             {weakLabel}
           </Link>
         )}
-        {onRestart && (
+        {onRestart && !restartFirst && (
           <button className={weakIds.length ? "btn-ghost" : "btn-primary"} onClick={onRestart}>
             {restartLabel}
           </button>

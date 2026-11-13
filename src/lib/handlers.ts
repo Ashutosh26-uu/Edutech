@@ -1,6 +1,8 @@
 import { TOPIC_BY_ID } from "@/data/topics";
 import { getProvider } from "./ai";
 import { MIN_SET_SIZE } from "./difficulty";
+import { generatedSet, hasGenerator } from "./generators";
+import { isUnlimitedLevel, UNLIMITED_SET_SIZE } from "./unlimited";
 import type { VideoBreakdown } from "./types";
 import { fetchTranscript, parsePastedTranscript, parseVideoId, type VideoTranscript } from "./youtube";
 
@@ -50,9 +52,16 @@ export async function handleVideo(body: { url?: string; transcript?: string }, o
   return ok(result);
 }
 
-export async function handlePractice(body: { topicIds?: string[]; count?: number; weights?: Record<string, number> }): Promise<HandlerResult> {
-  const ids = (body.topicIds ?? []).filter((id) => TOPIC_BY_ID.has(id));
+export async function handlePractice(body: { topicIds?: string[]; count?: number; weights?: Record<string, number>; generated?: boolean; level?: string }): Promise<HandlerResult> {
+  const ids = (Array.isArray(body.topicIds) ? body.topicIds : []).filter((id) => TOPIC_BY_ID.has(id));
   if (!ids.length) return fail(400, "Pick at least one topic.");
+  if (body.generated) {
+    // Unlimited practice: generated questions only, never the bank, so it needs topics that have a generator.
+    const able = [...new Set(ids)].filter(hasGenerator);
+    if (!able.length) return fail(400, "Unlimited practice is available for Quantitative Aptitude topics only.");
+    const count = Math.min(50, Math.max(1, Math.floor(Number(body.count)) || UNLIMITED_SET_SIZE));
+    return ok({ questions: generatedSet(able, count, isUnlimitedLevel(body.level) ? body.level : "mixed") });
+  }
   const weights = body.weights && Object.fromEntries(ids.map((id) => [id, Math.max(0, Number(body.weights![id]) || 0)]));
   // Every set has at least MIN_SET_SIZE questions so all four difficulty tiers are covered.
   const questions = await getProvider().practiceQuestions({ topicIds: ids, count: Math.min(50, Math.max(MIN_SET_SIZE, body.count ?? MIN_SET_SIZE)), weights });

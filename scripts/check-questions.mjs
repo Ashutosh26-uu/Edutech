@@ -9,7 +9,9 @@ import { NOTES_LOADERS } from "@/data/notes";
 import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { PATTERNS, mockPlan } from "@/data/patterns";
 import { localProvider } from "@/lib/ai/local";
-import { generateQuestions, hasGenerator } from "@/lib/generators";
+import { generatedSet, generateQuestions, hasGenerator } from "@/lib/generators";
+import { handlePractice } from "@/lib/handlers";
+import { UNLIMITED_LEVELS, UNLIMITED_SET_SIZE, UNLIMITED_TOPIC_IDS } from "@/lib/unlimited";
 import { DIFFICULTIES, MIN_SET_SIZE, tierQuota } from "@/lib/difficulty";
 
 let fails = 0;
@@ -147,6 +149,7 @@ const CHECKS = [
     return (milk * +m[5]) / +m[4] - (+m[1] - milk);
   }],
   [/Convert (\d+) km\/h into metres per second/, (m) => (+m[1] * 5) / 18],
+  [/Convert ([\d.]+) m\/s into kilometres per hour/, (m) => +m[1] * 3.6],
   [/A train (\d+) m long runs at (\d+) km\/h\. How long/, (m) => +m[1] / ((+m[2] * 5) / 18)],
   [/A train (\d+) m long crosses a (\d+) m long platform in (\d+) seconds/, (m) => ((+m[1] + +m[2]) / +m[3]) * 3.6],
   [/Two trains, (\d+) m and (\d+) m long, .* at (\d+) km\/h and (\d+) km\/h/, (m) => (+m[1] + +m[2]) / (((+m[3] + +m[4]) * 5) / 18)],
@@ -521,6 +524,39 @@ for (const id of genTopics) {
 CHECKS.forEach(([re], i) => {
   if (!hits[i]) fail("answer check never matched a generated question", String(re));
 });
+
+// 6. Unlimited practice: the topic list matches the generators, and its sets are generated questions only
+const quant = TOPICS.filter((x) => x.subject === "Quantitative Aptitude").map((x) => x.id);
+for (const id of quant) if (!hasGenerator(id)) fail(`unlimited: Quant topic ${id} has no generator`);
+if ([...UNLIMITED_TOPIC_IDS].sort().join() !== TOPICS.filter((x) => hasGenerator(x.id)).map((x) => x.id).sort().join()) fail("unlimited: UNLIMITED_TOPIC_IDS is out of step with the generators");
+const isGenerated = (q, ids) => ids.includes(q.topicId) && q.id.startsWith(`${q.topicId}-g`) && !q.source && !q.pyq;
+for (const id of UNLIMITED_TOPIC_IDS) {
+  for (const level of UNLIMITED_LEVELS) {
+    const qs = generatedSet([id], UNLIMITED_SET_SIZE, level);
+    if (qs.length !== UNLIMITED_SET_SIZE || new Set(qs.map((q) => q.question)).size !== qs.length) fail(`unlimited ${id}/${level}: not ${UNLIMITED_SET_SIZE} distinct questions`, `${qs.length}`);
+    if (!qs.every((q) => isGenerated(q, [id]))) fail(`unlimited ${id}/${level}: a question is not generated`);
+    if (!qs.every((q) => q.questionHi && q.explanationHi)) fail(`unlimited ${id}/${level}: a question has no Hindi`);
+    const want = level === "mixed" ? tierQuota(UNLIMITED_SET_SIZE) : { ...Object.fromEntries(DIFFICULTIES.map((d) => [d, 0])), [level]: UNLIMITED_SET_SIZE };
+    if (JSON.stringify(tiers(qs)) !== JSON.stringify(want)) fail(`unlimited ${id}/${level}: wrong mix of tiers`, JSON.stringify(tiers(qs)));
+    if (qs.some((q, i) => i && DIFFICULTIES.indexOf(q.difficulty) < DIFFICULTIES.indexOf(qs[i - 1].difficulty))) fail(`unlimited ${id}/${level}: does not ramp`);
+  }
+}
+{
+  // Several topics share a set; topics without a generator are refused; the level is validated.
+  const many = await handlePractice({ topicIds: [...UNLIMITED_TOPIC_IDS, "polity-constitution-basics", "no-such-topic"], count: 10, generated: true, level: "hard" });
+  const qs = many.json.questions ?? [];
+  if (many.status !== 200 || qs.length !== 10 || !qs.every((q) => isGenerated(q, UNLIMITED_TOPIC_IDS) && q.difficulty === "hard")) fail("unlimited: handlePractice with many topics", JSON.stringify(many.json).slice(0, 200));
+  if (new Set(qs.map((q) => q.topicId)).size < 8) fail("unlimited: topics do not take turns in a set", qs.map((q) => q.topicId).join());
+  const nonQuant = TOPICS.find((x) => !hasGenerator(x.id)).id;
+  for (const ids of [[nonQuant], ["constructor"], ["__proto__"], []]) {
+    const res = await handlePractice({ topicIds: ids, generated: true });
+    if (res.status !== 400) fail("unlimited: handlePractice accepted topics without a generator", ids.join());
+  }
+  const odd = await handlePractice({ topicIds: ["quant-percentage"], generated: true, level: "nonsense", count: 9999 });
+  if (odd.status !== 200 || odd.json.questions.length !== 50 || !odd.json.questions.every((q) => isGenerated(q, ["quant-percentage"]))) fail("unlimited: handlePractice limits", `${odd.json.questions?.length}`);
+  const plain = await handlePractice({ topicIds: ["quant-percentage"], count: 10 });
+  if (plain.status !== 200 || plain.json.questions.length !== 10) fail("practice: a normal set is no longer built");
+}
 
 console.log(`Checked ${QUESTION_BANK.length} bank questions, ${TOPICS.length} topics, ${EXAMS.length} exams, ${derived} generated answers, ${hindi} Hindi versions.`);
 console.log(fails ? `\n${fails} check(s) failed` : "All checks passed");

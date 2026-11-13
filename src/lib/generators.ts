@@ -1,4 +1,4 @@
-import { DIFFICULTIES } from "./difficulty";
+import { DIFFICULTIES, tierQuota } from "./difficulty";
 import type { Difficulty, MCQ } from "./types";
 import { shuffle } from "./nlp";
 
@@ -136,7 +136,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Successive change: net = a − b − ab/100.
-      const [a, b] = pick([[20, 10], [25, 10], [30, 20], [10, 20], [20, 25], [40, 25], [50, 20], [15, 10]], r);
+      const [a, b] = until(() => {
+        const v = [pick([5, 10, 15, 20, 25, 30, 40, 50, 60], r), pick([5, 10, 15, 20, 25, 30, 40, 50], r)];
+        return v[0] !== v[1] && v[0] - v[1] - (v[0] * v[1]) / 100 !== 0 ? v : null;
+      });
       const net = a - b - (a * b) / 100;
       const up = net > 0;
       const ans = Math.abs(net);
@@ -152,8 +155,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const pop = pick([10000, 20000, 40000, 50000, 80000], r);
-      const rate = pick([5, 10, 20], r);
+      const [pop, rate] = until(() => {
+        const v = [2000 * rint(2, 60, r), pick([5, 10, 15, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) * (100 + v[1])) / 10000) ? v : null;
+      });
       const ans = (pop * (100 + rate) * (100 + rate)) / 10000;
       const factor = (((100 + rate) / 100) ** 2).toFixed(4).replace(/0+$/, "");
       return numeric(
@@ -281,7 +286,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Dishonest dealer: false weight plus a markup on cost.
-      const [g, x, ans] = pick([[800, 20, 50], [900, 8, 20], [960, 20, 25], [800, 10, 37.5], [750, 5, 40], [900, 0, 11.11], [950, 14, 20]], r);
+      const [g, x, ans] = until(() => {
+        if (r() < 0.1) return [900, 0, 11.11];
+        const [w, up] = [pick([600, 625, 720, 750, 800, 840, 875, 880, 900, 920, 950, 960, 980], r), pick([0, 4, 5, 8, 10, 12, 14, 15, 17, 20, 25, 26], r)];
+        const gain = (1000 * (100 + up)) / w - 100;
+        // Keep answers that are exact to two decimal places.
+        return Math.abs(gain * 100 - Math.round(gain * 100)) < 1e-9 ? [w, up, Math.round(gain * 100) / 100] : null;
+      });
       return numeric(
         id, "quant-profit-loss", "hard",
         x
@@ -298,7 +309,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const [mark, disc] = pick([[50, 20], [40, 25], [60, 25], [25, 12], [100, 40], [30, 10], [50, 10], [20, 10], [75, 20]], r);
+      const [mark, disc] = until(() => {
+        const v = [pick([20, 25, 30, 40, 50, 60, 75, 80, 100, 120, 150], r), pick([5, 10, 12, 15, 20, 25, 30, 40], r)];
+        const sp = ((100 + v[0]) * (100 - v[1])) / 100;
+        return Number.isInteger(sp) && sp > 100 ? v : null;
+      });
       const ans = Math.round(((100 + mark) * (100 - disc)) / 100 - 100);
       const sp = fmt(((100 + mark) * (100 - disc)) / 100);
       return numeric(
@@ -540,7 +555,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-time-work": {
     easy: (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [12, 6], [20, 5], [30, 60], [18, 9], [24, 8], [21, 42], [15, 10], [40, 60]], r);
+      const [a, b] = workPair(r);
       const t = (a * b) / (a + b);
       return numeric(
         id, "quant-time-work", "easy",
@@ -555,7 +570,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [30, 60], [15, 10], [40, 60], [21, 42], [24, 8], [18, 9], [20, 5], [12, 6]], r);
+      const [a, b] = workPair(r);
       const t = (a * b) / (a + b);
       return numeric(
         id, "quant-time-work", "moderate",
@@ -571,7 +586,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Men × days × hours stays constant for the same work.
-      const [m1, d1, h1, m2, h2] = pick([[12, 18, 8, 16, 9], [15, 20, 6, 10, 9], [20, 12, 9, 24, 6], [8, 24, 6, 12, 8], [18, 10, 8, 12, 6], [25, 12, 8, 20, 10]], r);
+      const [m1, d1, h1, m2, h2] = until(() => {
+        const v = [rint(6, 30, r), rint(6, 30, r), pick([5, 6, 8, 9, 10], r), rint(6, 30, r), pick([5, 6, 8, 9, 10], r)];
+        return v[0] !== v[3] && v[2] !== v[4] && Number.isInteger((v[0] * v[1] * v[2]) / (v[3] * v[4])) ? v : null;
+      });
       const ans = (m1 * d1 * h1) / (m2 * h2);
       return numeric(
         id, "quant-time-work", "hard",
@@ -585,8 +603,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " days",
       );
     }, (id, r) => {
-      const [a, b] = pick([[10, 15], [12, 24], [20, 30], [6, 12], [30, 60], [40, 60], [21, 42], [15, 10]], r);
-      const k = pick([1, 2, 3, 4, 5], r);
+      const [a, b] = workPair(r);
+      const k = pick([1, 2, 3, 4, 5, 6, 8], r);
       const ans = b * (1 - k / a - k / b);
       if (ans <= 0 || !Number.isInteger(ans)) return GENERATORS["quant-time-work"].hard(id, r);
       const done = fmt((k * (a + b)) / (a * b));
@@ -605,10 +623,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     }),
     "very-hard": either((id, r) => {
       // Pipes: A and B fill, C empties; after t hours C is shut, and A + B finish the rest.
-      const [a, b, c, t] = pick([[10, 15, 30, 5], [6, 12, 8, 4], [20, 30, 60, 5], [15, 20, 60, 3], [8, 12, 24, 1], [12, 16, 48, 1]], r);
-      const filled = t * (1 / a + 1 / b - 1 / c);
-      const ans = Math.round(((1 - filled) / (1 / a + 1 / b)) * 1e6) / 1e6;
-      if (!Number.isInteger(ans) || ans <= 0) return GENERATORS["quant-time-work"]["very-hard"](id, r);
+      const tank = [6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 36, 40, 45, 48, 60];
+      const [a, b, c, t, ans] = until(() => {
+        const v = [pick(tank, r), pick(tank, r), pick(tank, r), rint(1, 8, r)];
+        const rest = Math.round(((1 - v[3] * (1 / v[0] + 1 / v[1] - 1 / v[2])) / (1 / v[0] + 1 / v[1])) * 1e6) / 1e6;
+        // C must be slower than A and B together, and the tank must still be filling when C is closed.
+        return v[0] !== v[1] && v[2] > v[0] && v[2] > v[1] && Number.isInteger(rest) && rest > 0 ? [...v, rest] : null;
+      });
       const L = (a * b * c) / gcd(gcd(a, b), c);
       const net = L / a + L / b - L / c;
       return numeric(
@@ -624,10 +645,13 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // Pairwise rates: A+B, B+C, C+A given; find one person alone.
-      const [a, b, c] = pick([[20, 30, 60], [30, 60, 20], [40, 60, 120], [15, 30, 30], [6, 12, 12], [60, 20, 30]], r);
       const pair = (x: number, y: number) => (x * y) / (x + y);
+      const days = [6, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45, 60, 72, 90, 120];
+      const [a, b, c] = until(() => {
+        const v = [pick(days, r), pick(days, r), pick(days, r)];
+        return new Set(v).size > 1 && [pair(v[0], v[1]), pair(v[1], v[2]), pair(v[2], v[0]), pair(pair(v[0], v[1]), v[2])].every(Number.isInteger) ? v : null;
+      });
       const [ab, bc, ca] = [pair(a, b), pair(b, c), pair(c, a)];
-      if (![ab, bc, ca].every(Number.isInteger)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
       const who = pick(["A", "C"], r);
       const ans = who === "A" ? a : c;
       const all = pair(pair(a, b), c);
@@ -644,7 +668,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " days",
       );
     }, (id, r) => {
-      const [a, b, c, ans] = pick([[6, 12, 8, 8], [12, 18, 36, 9], [20, 30, 60, 15], [8, 12, 24, 6], [15, 20, 30, 12], [6, 8, 24, 4]], r);
+      const pipes = [4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 36, 40, 45, 48, 60];
+      const [a, b, c, ans] = until(() => {
+        const v = [pick(pipes, r), pick(pipes, r), pick(pipes, r)];
+        const time = Math.round((1 / (1 / v[0] + 1 / v[1] - 1 / v[2])) * 1e6) / 1e6;
+        return v[0] !== v[1] && v[2] !== v[0] && v[2] !== v[1] && Number.isInteger(time) && time > 0 ? [...v, time] : null;
+      });
       const lcm = [a, b, c].reduce((x, y) => (x * y) / gcd(x, y));
       const net = lcm / a + lcm / b - lcm / c;
       return numeric(
@@ -660,7 +689,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // One worker k times as efficient as the other.
-      const [k, t] = pick([[2, 18], [3, 12], [2, 12], [4, 20], [3, 24], [2, 24]], r);
+      const k = rint(2, 5, r);
+      const t = k * rint(2, 15, r);
       const askA = r() < 0.5;
       const ans = askA ? (t * (k + 1)) / k : t * (k + 1);
       const units = (k + 1) * t;
@@ -677,10 +707,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // A works alone for a third of his time, then B joins: back out B's rate from the finishing time.
-      const [a, b] = pick([[18, 9], [15, 10], [30, 20], [36, 12], [36, 18], [18, 36], [45, 30], [27, 54], [24, 24], [30, 30]], r);
+      const [a, b] = until(() => {
+        const v = [3 * rint(3, 30, r), rint(6, 90, r)];
+        return Number.isInteger((2 * v[0] * v[1]) / (3 * (v[0] + v[1]))) ? v : null;
+      });
       const n = a / 3;
       const m = (2 * a * b) / (3 * (a + b));
-      if (!Number.isInteger(m)) return GENERATORS["quant-time-work"]["very-hard"](id, r);
       const lcm = (a * b) / gcd(a, b);
       const left = lcm - n * (lcm / a);
       return numeric(
@@ -735,7 +767,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     hard: either((id, r) => {
       // Average speed over equal distances is the harmonic mean, not the plain average.
-      const [x, y] = pick([[40, 60], [30, 60], [60, 90], [20, 30], [45, 90], [36, 45], [60, 40]], r);
+      const [x, y] = until(() => {
+        const v = [rint(10, 120, r), rint(10, 120, r)];
+        return v[0] !== v[1] && Number.isInteger((2 * v[0] * v[1]) / (v[0] + v[1])) ? v : null;
+      });
       const ans = (2 * x * y) / (x + y);
       return numeric(
         id, "quant-average", "hard",
@@ -749,9 +784,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " km/h",
       );
     }, (id, r) => {
-      const n = pick([20, 24, 29, 30, 35, 39], r);
-      const avg = pick([12, 14, 15, 16], r);
-      const d = pick([1, 2], r);
+      const [n, avg, d] = until(() => {
+        const v = [rint(15, 49, r), rint(10, 18, r), pick([1, 1, 2], r)];
+        // Keep the teacher at a believable age.
+        const age = v[1] + (v[0] + 1) * v[2];
+        return age >= 26 && age <= 62 ? v : null;
+      });
       const ans = avg + (n + 1) * d;
       return numeric(
         id, "quant-average", "hard",
@@ -845,8 +883,15 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const [a, b] = pick([[2, 3], [3, 4], [4, 5], [5, 6], [2, 5], [3, 7]], r);
-      const [c, d] = pick([[4, 5], [2, 3], [5, 7], [3, 4], [6, 7], [3, 8]], r);
+      const [a, b, c, d] = until(() => {
+        const v = [rint(1, 9, r), rint(2, 9, r), rint(1, 9, r), rint(2, 9, r)];
+        if (v[0] === v[1] || v[2] === v[3] || gcd(v[0], v[1]) !== 1 || gcd(v[2], v[3]) !== 1) return null;
+        // At least three wrong options that differ from the answer and from each other.
+        const right = ratio(v[0] * v[2], v[1] * v[3]);
+        const wrong = new Set([ratio(v[0] * v[3], v[1] * v[2]), ratio(v[1] * v[3], v[0] * v[2]), ratio(v[0], v[3]), ratio(v[0] * v[2], v[3]), ratio(v[0] + v[2], v[1] + v[3])]);
+        wrong.delete(right);
+        return wrong.size >= 3 ? v : null;
+      });
       const ans = ratio(a * c, b * d);
       return choice(
         id, "quant-ratio", "moderate",
@@ -940,7 +985,19 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-tsd": {
     easy: (id, r) => {
-      const kmh = pick([18, 36, 54, 72, 90, 108, 126, 144], r);
+      if (r() < 0.5) {
+        const mps = pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 12.5, 7.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5], r);
+        const speed = (mps * 18) / 5;
+        return numeric(
+          id, "quant-tsd", "easy",
+          `Convert ${mps} m/s into kilometres per hour.`,
+          speed,
+          `Multiply by 18/5: ${mps} × 18/5 = ${speed} km/h.`,
+          { q: `${mps} मीटर/सेकंड को किमी/घंटा में बदलिए।`, e: `18/5 से गुणा करें: ${mps} × 18/5 = ${speed} किमी/घंटा।` },
+          r, "", " km/h",
+        );
+      }
+      const kmh = 9 * rint(2, 30, r);
       const ms = (kmh * 5) / 18;
       return numeric(
         id, "quant-tsd", "easy",
@@ -952,9 +1009,9 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const kmh = pick([36, 54, 72, 90, 108], r);
+      const kmh = 18 * rint(2, 8, r);
       const v = (kmh * 5) / 18;
-      const t = pick([6, 8, 9, 10, 12, 15, 18], r);
+      const t = rint(5, 30, r);
       return numeric(
         id, "quant-tsd", "moderate",
         `A train ${v * t} m long runs at ${kmh} km/h. How long does it take to pass a pole?`,
@@ -1077,7 +1134,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-ci": {
     easy: (id, r) => {
-      const [p, rate] = pick([[5000, 10], [8000, 10], [2000, 20], [4000, 5], [8000, 5], [5000, 8], [10000, 4], [12000, 10], [2500, 20]], r);
+      const [p, rate] = until(() => {
+        const v = [500 * rint(2, 60, r), pick([4, 5, 8, 10, 12, 15, 20, 25], r)];
+        return Number.isInteger((v[0] * (200 * v[1] + v[1] * v[1])) / 10000) ? v : null;
+      });
       const ci = (p * (200 * rate + rate * rate)) / 10000;
       return numeric(
         id, "quant-ci", "easy",
@@ -1092,8 +1152,8 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     moderate: (id, r) => {
-      const p = pick([5000, 8000, 10000, 12000, 20000, 25000], r);
-      const rate = pick([4, 5, 8, 10, 12], r);
+      const p = 1000 * rint(2, 50, r);
+      const rate = pick([2, 4, 5, 6, 8, 10, 12, 15, 20, 25], r);
       const ans = (p * rate * rate) / 10000;
       if (!Number.isInteger(ans)) return GENERATORS["quant-ci"].moderate(id, r);
       return numeric(
@@ -1109,7 +1169,7 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     },
     hard: (id, r) => {
-      const p = pick([1000, 2000, 5000, 8000, 10000, 15000, 20000], r);
+      const p = 1000 * rint(1, 60, r);
       const rate = pick([10, 20], r);
       const amt = (p * (100 + rate) ** 3) / 1e6;
       const factor = (((100 + rate) / 100) ** 3).toFixed(3);
@@ -1127,23 +1187,25 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
     },
     "very-hard": either((id, r) => {
       // Three-year CI − SI = P × r²(300 + r)/10⁶: the two-year shortcut P(r/100)² is the trap.
-      const [rate, p] = pick([[10, 10000], [10, 20000], [10, 5000], [5, 8000], [5, 16000], [5, 40000], [20, 5000], [20, 2500], [20, 10000]], r);
+      const [rate, p] = until(() => {
+        const v = [pick([5, 10, 20], r), 500 * rint(2, 100, r)];
+        return Number.isInteger((v[1] * v[0] * v[0] * (300 + v[0])) / 1e6) ? v : null;
+      });
       const diff = (p * rate * rate * (300 + rate)) / 1e6;
-      if (!Number.isInteger(diff)) return GENERATORS["quant-ci"]["very-hard"](id, r);
       return numeric(
         id, "quant-ci", "very-hard",
         `The difference between the compound interest and the simple interest on a sum for 3 years at ${rate}% per annum is ₹${fmt(diff)}. What is the sum?`,
         p,
-        `For 3 years, CI − SI = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}. So P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}. (The 2-year formula P(r/100)² would give the wrong sum.)`,
+        `For 3 years, CI − SI = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${String((rate * rate * (300 + rate)) / 1e6)}. So P = ${fmt(diff)} ÷ ${String((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}. (The 2-year formula P(r/100)² would give the wrong sum.)`,
         {
           q: `किसी धनराशि पर ${rate}% वार्षिक दर से 3 वर्ष के चक्रवृद्धि ब्याज और साधारण ब्याज का अंतर ₹${fmt(diff)} है। वह धनराशि क्या है?`,
-          e: `3 वर्ष के लिए चक्रवृद्धि ब्याज − साधारण ब्याज = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${fmt((rate * rate * (300 + rate)) / 1e6)}। अतः P = ${fmt(diff)} ÷ ${fmt((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}। (2 वर्ष वाला सूत्र P(r/100)² यहाँ गलत उत्तर देगा।)`,
+          e: `3 वर्ष के लिए चक्रवृद्धि ब्याज − साधारण ब्याज = P × (r/100)² × (3 + r/100) = P × ${rate}² × ${300 + rate} ÷ 10⁶ = P × ${String((rate * rate * (300 + rate)) / 1e6)}। अतः P = ${fmt(diff)} ÷ ${String((rate * rate * (300 + rate)) / 1e6)} = ₹${fmt(p)}। (2 वर्ष वाला सूत्र P(r/100)² यहाँ गलत उत्तर देगा।)`,
         },
         r, "₹",
       );
     }, (id, r) => {
-      const n = pick([3, 4, 5, 6, 8, 10], r);
-      const [times, pow] = pick([[4, 2], [8, 3], [16, 4]], r);
+      const n = rint(3, 15, r);
+      const [times, pow] = pick([[4, 2], [8, 3], [16, 4], [32, 5]], r);
       return numeric(
         id, "quant-ci", "very-hard",
         `A sum of money doubles itself in ${n} years at compound interest. In how many years will it become ${times} times itself?`,
@@ -1156,7 +1218,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", " years",
       );
     }, (id, r) => {
-      const [p, rate] = pick([[10000, 10], [20000, 10], [40000, 5], [10000, 20], [5000, 20], [16000, 25]], r);
+      const [p, rate] = until(() => {
+        const v = [1000 * rint(2, 80, r), pick([5, 10, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) ** 2) / 1e4) && Number.isInteger((v[0] * (100 + v[1]) ** 3) / 1e6) ? v : null;
+      });
       const a2 = (p * (100 + rate) ** 2) / 1e4;
       const a3 = (a2 * (100 + rate)) / 100;
       return numeric(
@@ -1171,7 +1236,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r, "", "%",
       );
     }, (id, r) => {
-      const [p, rate] = pick([[10000, 10], [8000, 5], [20000, 10], [5000, 20], [15625, 4], [30000, 10]], r);
+      const [p, rate] = until(() => {
+        const v = [1000 * rint(2, 60, r), pick([4, 5, 10, 20], r)];
+        // The answer must come out in whole paise.
+        return Number.isInteger((v[0] * v[1] * v[1] * (300 + v[1])) / 1e4) ? v : null;
+      });
       const ans = Math.round(((p * rate * rate) / 1e4) * (3 + rate / 100) * 100) / 100;
       return numeric(
         id, "quant-ci", "very-hard",
@@ -1186,10 +1255,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
       );
     }, (id, r) => {
       // Two equal annual instalments: P = x/q + x/q² with q = 1 + R/100, so x = P × q²/(1 + q).
-      const [p, rate] = pick([[2100, 10], [4200, 10], [6300, 10], [5500, 20], [2200, 20], [3300, 20], [8200, 5], [4100, 5], [3600, 25], [7200, 25], [1800, 25], [5100, 4]], r);
+      const [p, rate] = until(() => {
+        const v = [100 * rint(10, 300, r), pick([4, 5, 10, 20, 25], r)];
+        return Number.isInteger((v[0] * (100 + v[1]) ** 2) / (100 * (200 + v[1]))) ? v : null;
+      });
       const q = 100 + rate;
       const ans = (p * q * q) / (100 * (100 + q));
-      if (!Number.isInteger(ans)) return GENERATORS["quant-ci"]["very-hard"](id, r);
       // Exact decimals (1.1025, not 1.1), so the working can be followed.
       const q1 = String(q / 100);
       const q2 = String((q * q) / 1e4);
@@ -1209,7 +1280,12 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 
   "quant-number-system": {
     easy: either((id, r) => {
-      const [a, b] = pick([[12, 18], [15, 20], [24, 36], [16, 40], [21, 28], [18, 27], [30, 45], [14, 35], [20, 32], [36, 48], [25, 40], [42, 56]], r);
+      const [a, b] = until(() => {
+        const v = [rint(6, 60, r), rint(6, 60, r)];
+        const f = gcd(v[0], v[1]);
+        // Two different numbers that share a factor, neither a multiple of the other.
+        return v[0] < v[1] && f > 1 && f < v[0] && (v[0] * v[1]) / f <= 720 ? v : null;
+      });
       const h = gcd(a, b);
       const l = (a * b) / h;
       return numeric(
@@ -1224,7 +1300,11 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
         r,
       );
     }, (id, r) => {
-      const [a, b, c] = pick([[24, 36, 60], [18, 30, 42], [16, 40, 56], [27, 45, 63], [32, 48, 80], [21, 35, 56], [36, 54, 90], [25, 75, 100], [44, 66, 110]], r);
+      const [a, b, c] = until(() => {
+        const f = rint(2, 16, r);
+        const m = [rint(1, 9, r), rint(2, 10, r), rint(3, 12, r)];
+        return m[0] < m[1] && m[1] < m[2] && gcd(gcd(m[0], m[1]), m[2]) === 1 ? m.map((x) => x * f) : null;
+      });
       const h = gcd(gcd(a, b), c);
       return numeric(
         id, "quant-number-system", "easy",
@@ -1645,6 +1725,10 @@ const GENERATORS: Record<string, Record<Difficulty, Gen>> = {
 // ---------------------------------------------------------------------------
 
 const AG = "quant-algebra-geometry";
+/** Days for two workers (never equal) who finish together in a whole number of days. */
+const WORK_PAIRS: [number, number][] = [];
+for (let a = 3; a <= 90; a++) for (let b = 3; b <= 90; b++) if (a !== b && (a * b) % (a + b) === 0) WORK_PAIRS.push([a, b]);
+const workPair = (r: Rand) => pick(WORK_PAIRS, r);
 /** A whole number from lo to hi, both included. */
 const rint = (lo: number, hi: number, r: Rand) => lo + Math.floor(r() * (hi - lo + 1));
 /** Keeps drawing until the numbers come out clean (`make` returns null for a draw it rejects). */
@@ -3122,7 +3206,7 @@ GENERATORS[DI] = {
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const ordinal = (n: number) => `${n}${["th", "st", "nd", "rd"][n % 10 > 3 || Math.floor(n / 10) === 1 ? 0 : n % 10]}`;
 
-export const hasGenerator = (topicId: string) => topicId in GENERATORS;
+export const hasGenerator = (topicId: string) => Object.prototype.hasOwnProperty.call(GENERATORS, topicId);
 
 let seq = 0;
 
@@ -3139,6 +3223,33 @@ export function generateQuestions(topicId: string, count: number, r: Rand = Math
     if (!seen.has(q.question)) {
       seen.add(q.question);
       out.push(q);
+    }
+  }
+  return out;
+}
+
+/**
+ * A set made only of generated questions, for unlimited practice. `level` is one tier, or "mixed"
+ * for the usual ramp from easy to very hard (see tierQuota). With several topics, the topics take
+ * turns in a shuffled order so each gets a fair share of the set.
+ */
+export function generatedSet(topicIds: string[], count: number, level: Difficulty | "mixed" = "mixed", r: Rand = Math.random): MCQ[] {
+  const ids = topicIds.filter(hasGenerator);
+  if (!ids.length || count < 1) return [];
+  const quota = level === "mixed" ? tierQuota(count) : null;
+  const tiers = DIFFICULTIES.flatMap((d) => Array<Difficulty>(quota ? quota[d] : d === level ? count : 0).fill(d));
+  const seen = new Set<string>();
+  const out: MCQ[] = [];
+  let turn: string[] = [];
+  for (const tier of tiers) {
+    for (let tries = 0; tries < 20; tries++) {
+      if (!turn.length) turn = shuffle(ids, r);
+      const q = generateQuestions(turn.pop()!, 1, r, tier)[0];
+      if (q && !seen.has(q.question)) {
+        seen.add(q.question);
+        out.push(q);
+        break;
+      }
     }
   }
   return out;

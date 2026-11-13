@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, BookOpen, Info, Loader2, Sparkles, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Info, Infinity as InfinityIcon, Loader2, Sparkles, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +14,7 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
 import { topicWeights } from "@/lib/adaptive";
 import { api, IS_STATIC, postJson, request } from "@/lib/api";
+import { DIFFICULTIES } from "@/lib/difficulty";
 import { clearResume, readResume, writeResume, type QuizProgress } from "@/lib/practiceResume";
 import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
 import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
@@ -22,6 +23,7 @@ import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
 import { shuffle } from "@/lib/nlp";
 import { track } from "@/lib/track";
+import { canUnlimited, isUnlimitedLevel, questionKey, readUnlimitedSession, UNLIMITED_HINT, UNLIMITED_LEVEL_LABEL, UNLIMITED_LEVELS, UNLIMITED_SET_SIZE, writeUnlimitedSession, type UnlimitedLevel } from "@/lib/unlimited";
 import { useStore } from "@/lib/useStore";
 import { isWeeklyExam } from "@/lib/weekly";
 
@@ -68,6 +70,10 @@ function PracticeView() {
   const challenge = readChallenge(params);
   const section = params.get("section") ?? "";
   const requestedTopics = (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
+  // Unlimited practice: generated Quant questions only, ten at a time, for as long as the student likes.
+  const wantsUnlimited = params.get("unlimited") === "1" && !isTimed && !isSmart && !isMistakes && !isSaved && !challenge;
+  const unlimitedTopics = requestedTopics.filter(canUnlimited);
+  const isUnlimited = wantsUnlimited && unlimitedTopics.length > 0;
   const plan = exam ? mockPlan(exam) : null;
   const planSection = section && plan ? plan.sections.find((s) => s.subject === section) : undefined;
   // A timed test covers one paper section, the chosen topics, or the whole exam syllabus.
@@ -76,10 +82,10 @@ function PracticeView() {
   const isFullMock = isTimed && !isSectionTest && !isTopicTest;
   // The Sunday All-India Mock: a full mock on the week's shared paper, free, one attempt a week.
   const isWeekly = isFullMock && params.get("weekly") === "1" && !!exam && isWeeklyExam(exam.id);
-  const topicIds = isSectionTest ? planSection!.topicIds : isTopicTest ? requestedTopics : (isTimed || isSmart) && exam ? examTopicIds(exam) : requestedTopics;
-  const size = isSectionTest ? planSection!.questions : isTopicTest ? TOPIC_TEST_SIZE : isFullMock ? (plan ? totalQuestions(plan.sections) : MOCK_SIZE) : isTimedSet ? TIMED_SET_SIZE : PRACTICE_SIZE;
+  const topicIds = isUnlimited ? unlimitedTopics : isSectionTest ? planSection!.topicIds : isTopicTest ? requestedTopics : (isTimed || isSmart) && exam ? examTopicIds(exam) : requestedTopics;
+  const size = isUnlimited ? UNLIMITED_SET_SIZE : isSectionTest ? planSection!.questions : isTopicTest ? TOPIC_TEST_SIZE : isFullMock ? (plan ? totalQuestions(plan.sections) : MOCK_SIZE) : isTimedSet ? TIMED_SET_SIZE : PRACTICE_SIZE;
 
-  const [phase, setPhase] = useState<Phase>(isTimed ? "start" : "running");
+  const [phase, setPhase] = useState<Phase>(isTimed || isUnlimited ? "start" : "running");
   const [questions, setQuestions] = useState<MCQ[] | null>(null);
   const [serverTest, setServerTest] = useState<ServerTest | null>(null);
   const [localSections, setLocalSections] = useState<QuizSection[] | null>(null);
@@ -94,9 +100,38 @@ function PracticeView() {
   const [examMode, setExamMode] = useExamModePref();
   const key = topicIds.join(",");
   // Untimed sets are kept in this tab per URL, so a refresh or reopened tab resumes them.
-  const resumeKey = !isTimed && !isTimedSet ? `${path}?${params.toString()}` : null;
+  // An unlimited session keeps one set in progress per topic choice, whatever the level in the link.
+  const resumeKey = isUnlimited ? `${path}?topics=${key}&unlimited=1` : !isTimed && !isTimedSet ? `${path}?${params.toString()}` : null;
   const [resumed, setResumed] = useState<QuizProgress | null>(null);
   const skipResume = useRef(false);
+  // Unlimited practice: the level, the session tally and the questions already shown (never repeated in a session).
+  const levelParam = params.get("level");
+  const [level, setLevel] = useState<UnlimitedLevel>(isUnlimitedLevel(levelParam) ? levelParam : "mixed");
+  const [tally, setTally] = useState({ sets: 0, correct: 0, attempted: 0 });
+  const [recycled, setRecycled] = useState(false);
+  const seen = useRef<Set<string>>(new Set());
+  // The tally is also kept in a ref, so saving the session never writes a stale count from an older render.
+  const tallyRef = useRef(tally);
+  const saveSession = (l: UnlimitedLevel, t?: { sets: number; correct: number; attempted: number }) => {
+    if (t) {
+      tallyRef.current = t;
+      setTally(t);
+    }
+    writeUnlimitedSession(key, { level: l, ...tallyRef.current, seen: [...seen.current] });
+  };
+
+  // A refresh or reopened tab picks the unlimited session up again: tally, level, seen questions and any set in progress.
+  useEffect(() => {
+    if (!isUnlimited) return;
+    const s = readUnlimitedSession(key);
+    seen.current = new Set(s?.seen ?? []);
+    tallyRef.current = s ? { sets: s.sets, correct: s.correct, attempted: s.attempted } : { sets: 0, correct: 0, attempted: 0 };
+    setTally(tallyRef.current);
+    setRecycled(false);
+    if (s && !isUnlimitedLevel(levelParam)) setLevel(s.level);
+    setPhase(readResume(`${path}?topics=${key}&unlimited=1`) ? "running" : "start");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUnlimited, key]);
 
   // Full screen is requested on the Start click; leave it if the test didn't start after all.
   useEffect(() => {
@@ -152,6 +187,42 @@ function PracticeView() {
       if (!data.questions.length) return nothing("Nothing in your mistake notebook for this yet. Wrong answers in practice and tests land here.");
       return setQuestions(data.questions);
     }
+    if (isUnlimited) {
+      // Generated questions only. Anything this session has already shown is dropped and replaced by a
+      // fresh question of the same difficulty, so the set keeps its shape and nothing repeats.
+      const picked: MCQ[] = [];
+      let need: MCQ["difficulty"][] | null = null;
+      let spare: MCQ[] = [];
+      for (let attempt = 0; attempt < 4 && (need === null || need.length > 0); attempt++) {
+        const { ok, json } = await api("practice", { topicIds: key.split(","), count: UNLIMITED_SET_SIZE, generated: true, level });
+        if (!ok) return setError(json.error);
+        const got = json.questions as MCQ[];
+        const fresh = got.filter((q) => !seen.current.has(questionKey(q.question)) && !picked.some((p) => p.question === q.question));
+        spare = got.filter((q) => !picked.some((p) => p.question === q.question));
+        if (need === null) {
+          picked.push(...fresh);
+          need = got.filter((q) => !fresh.includes(q)).map((q) => q.difficulty);
+        } else {
+          for (const q of fresh) {
+            const i = need.indexOf(q.difficulty);
+            if (i < 0) continue;
+            need.splice(i, 1);
+            picked.push(q);
+          }
+        }
+      }
+      if (need?.length) {
+        // Every variation at this level has been shown: start the cycle again rather than run dry.
+        seen.current.clear();
+        for (const q of spare) if (picked.length < UNLIMITED_SET_SIZE && !picked.some((p) => p.question === q.question)) picked.push(q);
+        setRecycled(true);
+      }
+      if (!picked.length) return setError("Could not make new questions just now.");
+      for (const q of picked) seen.current.add(questionKey(q.question));
+      saveSession(level);
+      const rank = (q: MCQ) => DIFFICULTIES.indexOf(q.difficulty ?? "moderate");
+      return setQuestions(picked.map((q, i) => ({ q, i })).sort((a, b) => rank(a.q) - rank(b.q) || a.i - b.i).map(({ q }) => q));
+    }
     if (isFullMock && plan) {
       // Demo build: the pattern mock is built section by section, as the server does.
       const all: MCQ[] = [];
@@ -175,7 +246,7 @@ function PracticeView() {
     if (!ok) setError(json.error);
     else setQuestions(json.questions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, server, account.user, account.ready, params, resumeKey]);
+  }, [key, size, isSmart, isMistakes, isSaved, isFullMock, isUnlimited, level, server, account.user, account.ready, params, resumeKey]);
 
   useEffect(() => {
     if (!account.ready) return;
@@ -233,6 +304,10 @@ function PracticeView() {
     setResumed(null);
     if (!isTimed) setFinished(results);
     const answered = results.filter((r) => r.chosen !== null);
+    if (isUnlimited) {
+      const t = tallyRef.current;
+      saveSession(level, { sets: t.sets + 1, correct: t.correct + results.filter((r) => r.correct).length, attempted: t.attempted + answered.length });
+    }
     recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
     // progress and the mistake notebook follow the account.
@@ -248,6 +323,7 @@ function PracticeView() {
     }
   };
 
+  if (wantsUnlimited && !isUnlimited) return <UnlimitedUnavailable topicId={requestedTopics[0]} />;
   if (!topicIds.length && !isMistakes && !isSaved && !challenge) return <PickPractice />;
   if (isTimed && server && !exam) {
     return <div className="card text-sm">Timed tests belong to an exam. <Link href="/exams" className="font-medium text-brand-700">Choose an exam</Link> first.</div>;
@@ -256,6 +332,8 @@ function PracticeView() {
   const topicName = requestedTopics.length === 1 ? TOPIC_BY_ID.get(requestedTopics[0])!.name : `${requestedTopics.length} topics`;
   const title = challenge
     ? `${challenge.by} challenged you`
+    : isUnlimited
+    ? `Unlimited practice: ${unlimitedTopics.length === 1 ? TOPIC_BY_ID.get(unlimitedTopics[0])!.name : `${unlimitedTopics.length} Quant topics`}`
     : isSaved
     ? "My saved questions"
     : isMistakes
@@ -286,6 +364,8 @@ function PracticeView() {
   const weeklyNote = isWeekly ? "Same paper for every student this week · free · one attempt · " : "";
   const description = challenge
     ? `${challenge.ids.length} questions · ${challenge.by} scored ${challenge.score}/${challenge.ids.length}. Answer them all, then compare.`
+    : isUnlimited
+    ? `${UNLIMITED_HINT}. ${UNLIMITED_SET_SIZE} questions at a time, with the answer and working after each one. Free, with no daily limit.`
     : isSaved
     ? "Questions you starred to revise, up to 20 at a time in a new order."
     : isMistakes
@@ -313,6 +393,10 @@ function PracticeView() {
           <Link href={`/exams/${exam.id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" /> {exam.name} syllabus
           </Link>
+        ) : isUnlimited ? (
+          <Link href={unlimitedTopics.length === 1 ? `/topics/${unlimitedTopics[0]}` : "/drills#unlimited"} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" /> {unlimitedTopics.length === 1 ? TOPIC_BY_ID.get(unlimitedTopics[0])!.name : "Unlimited Quant questions"}
+          </Link>
         ) : isSaved ? (
           <Link href="/saved" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" /> Saved questions
@@ -325,8 +409,43 @@ function PracticeView() {
         <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
         <p className="text-sm text-slate-600">{description}</p>
       </div>
+      {isUnlimited && phase === "running" && (
+        <div className="flex flex-wrap items-center gap-2 text-sm" role="status" aria-label="This session">
+          <span className="chip bg-brand-50 text-brand-800">
+            <InfinityIcon className="h-3.5 w-3.5" aria-hidden /> {UNLIMITED_LEVEL_LABEL[level]}
+          </span>
+          <span className="chip bg-slate-100 text-slate-700">Sets done: {tally.sets}</span>
+          <span className="chip bg-slate-100 text-slate-700">
+            Correct: {tally.correct}/{tally.attempted}
+            {tally.attempted > 0 && ` (${Math.round((tally.correct * 100) / tally.attempted)}%)`}
+          </span>
+          <button
+            type="button"
+            className="min-h-10 px-1 font-medium text-brand-700 underline underline-offset-2"
+            onClick={() => {
+              if (resumeKey) clearResume(resumeKey);
+              setQuestions(null);
+              setFinished(null);
+              setPhase("start");
+            }}
+          >
+            Change level
+          </button>
+        </div>
+      )}
       <div className="card">
-        {phase === "start" ? (
+        {phase === "start" && isUnlimited ? (
+          <UnlimitedStart
+            level={level}
+            setLevel={setLevel}
+            tally={tally}
+            onStart={() => {
+              saveSession(level);
+              setPhase("running");
+              setRound((r) => r + 1);
+            }}
+          />
+        ) : phase === "start" ? (
           !account.ready ? (
             <p className="text-sm text-slate-500">Loading…</p>
           ) : isWeekly && !server ? (
@@ -369,6 +488,11 @@ function PracticeView() {
           <p className="text-sm text-slate-500">Preparing questions…</p>
         ) : (
           <>
+          {recycled && isUnlimited && (
+            <p className="-mx-1 mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
+              You have now seen every question this level can make for {unlimitedTopics.length === 1 ? "this topic" : "these topics"}, so some will come round again. Try another level for new ones.
+            </p>
+          )}
           {resumed && (
             <div className="-mx-1 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900" role="status">
               <span>Resumed where you left off</span>
@@ -403,6 +527,8 @@ function PracticeView() {
             share={{ title: challenge ? "Challenge set" : title, examId: exam?.id }}
             examMode={isTimed && examMode}
             candidate={account.user?.name ?? undefined}
+            restartLabel={isUnlimited ? `Next ${UNLIMITED_SET_SIZE} questions` : undefined}
+            restartFirst={isUnlimited}
             onRestart={() => {
               setServerTest(null);
               setLocalSections(null);
@@ -413,8 +539,74 @@ function PracticeView() {
           </>
         )}
       </div>
-      {finished && !isTimed && !isMistakes && <ChallengeBox results={finished} challenge={challenge} />}
+      {finished && !isTimed && !isMistakes && !isUnlimited && <ChallengeBox results={finished} challenge={challenge} />}
       {IS_STATIC && isTimed && <p className="text-xs text-slate-500">Demo build: scores stay in this browser.</p>}
+    </div>
+  );
+}
+
+const LEVEL_NOTE: Record<UnlimitedLevel, string> = {
+  mixed: "Starts easy and gets harder, like a normal practice set.",
+  easy: "Direct, one-step questions to learn the method.",
+  moderate: "Standard exam questions.",
+  hard: "Two-step questions that need a little more thought.",
+  "very-hard": "The hardest questions, at topper level.",
+};
+
+/** The first screen of unlimited practice: choose a level, then start. */
+function UnlimitedStart({ level, setLevel, tally, onStart }: { level: UnlimitedLevel; setLevel: (l: UnlimitedLevel) => void; tally: { sets: number; correct: number; attempted: number }; onStart: () => void }) {
+  return (
+    <div className="mx-auto max-w-md space-y-4 py-4 text-center sm:py-6">
+      <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-brand-50 text-brand-700">
+        <InfinityIcon className="h-5 w-5" aria-hidden />
+      </span>
+      <div>
+        <h2 className="text-lg font-semibold">Choose a level</h2>
+        <p className="mt-1 text-sm text-slate-600">{UNLIMITED_HINT}</p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Difficulty level">
+        {UNLIMITED_LEVELS.map((l) => (
+          <button
+            key={l}
+            type="button"
+            role="radio"
+            aria-checked={level === l}
+            onClick={() => setLevel(l)}
+            className={`chip min-h-10 px-3.5 text-sm ${level === l ? "bg-ink text-on-ink" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+          >
+            {UNLIMITED_LEVEL_LABEL[l]}
+          </button>
+        ))}
+      </div>
+      <p className="text-sm text-slate-600">{LEVEL_NOTE[level]}</p>
+      <button type="button" className="btn-primary w-full py-2.5" onClick={onStart}>
+        {tally.sets > 0 ? `Next ${UNLIMITED_SET_SIZE} questions` : `Start: ${UNLIMITED_SET_SIZE} questions`} <ArrowRight className="h-4 w-4" />
+      </button>
+      <p className="text-xs text-slate-500">
+        {tally.sets > 0 ? `This session: ${tally.sets} set${tally.sets === 1 ? "" : "s"} done · ${tally.correct}/${tally.attempted} correct. ` : ""}
+        Every set is new, and no question repeats in a session. No login needed.
+      </p>
+    </div>
+  );
+}
+
+/** An unlimited link for a topic that has no question generator: say so and offer what does work. */
+function UnlimitedUnavailable({ topicId }: { topicId?: string }) {
+  const topic = topicId ? TOPIC_BY_ID.get(topicId) : undefined;
+  return (
+    <div className="card mx-auto max-w-xl space-y-3 text-sm">
+      <h1 className="text-lg font-semibold text-slate-900">Unlimited practice is for Quant topics</h1>
+      <p className="text-slate-600">Questions with new numbers every time can only be made for the 12 Quantitative Aptitude topics.{topic ? ` ${topic.name} has its own question bank instead.` : ""}</p>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/drills#unlimited" className="btn-primary">
+          See the 12 Quant topics
+        </Link>
+        {topic && (
+          <Link href={`/practice?topics=${topic.id}`} className="btn-ghost">
+            Practise {topic.name}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
