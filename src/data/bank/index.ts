@@ -224,7 +224,7 @@ export const BANK_SIZES: Record<string, number> = {
   "gk-states-culture": 100,
   "gk-static": 99,
   "hindi-sahitya": 130,
-  "hindi-vyakaran": 228,
+  "hindi-vyakaran": 248,
   "history-ancient": 140,
   "history-art-culture": 115,
   "history-bhakti-sufi": 115,
