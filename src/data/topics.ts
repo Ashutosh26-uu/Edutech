@@ -2247,6 +2247,21 @@ export const TOPICS: Topic[] = [
       "Services marketing adds people, process and physical evidence; the gaps model ends in Gap 5 (expected vs perceived service), caused by the four provider gaps",
     ],
   },
+  {
+    id: "mgmt-hr-ob",
+    name: "HR, Organisational Behaviour & Principles of Management",
+    subject: "Management & Commerce",
+    aliases: ["principles of management","organisational behaviour","OB","human resource management","HRM","leadership and motivation theories","HR metrics"],
+    summary: "Management principles, organisational behaviour and HRM as tested in HR, consulting-analyst and MBA placement rounds: functions of management, Fayol, Taylor and Weber, planning and MBO, organisation structure and span of control, decision making, leadership and motivation theories applied to cases, perception, personality, groups, conflict, culture and change, and the HR cycle from job analysis and selection to training evaluation, appraisal, pay and HR metrics, with Indian labour-law principles and workplace ethics.",
+    keyPoints: [
+      "Classical thinkers: Fayol gave 14 principles and five functions (planning, organising, commanding, coordinating, controlling); Taylor gave time-and-motion study and differential piece rates; Weber described rational-legal bureaucracy",
+      "Motivation: Herzberg's hygiene factors only prevent dissatisfaction while motivators create satisfaction; Vroom's motivation = expectancy × instrumentality × valence, so any zero kills it; Adams compares one's output/input ratio with a referent's",
+      "Leadership: Blake–Mouton grid (9,9 team management), Hersey–Blanchard matches telling/selling/participating/delegating to follower readiness, transformational leaders inspire through vision and individual consideration",
+      "Groups and conflict: Tuckman's forming → storming → norming → performing → adjourning; Thomas–Kilmann styles vary by assertiveness and cooperativeness — collaborating is high on both, avoiding low on both",
+      "Change: Lewin's unfreeze → change → refreeze; Kotter's eight steps start with a sense of urgency and a guiding coalition and end by anchoring change in the culture",
+      "HR metrics: attrition = separations ÷ average headcount; cost-per-hire = (internal + external recruiting cost) ÷ hires; absenteeism = days lost ÷ (employees × working days); Kirkpatrick evaluates reaction, learning, behaviour and results",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
