@@ -98,6 +98,7 @@ export const NOTES_LOADERS: Record<string, () => Promise<{ default: TopicNotes }
   "math-statistics": () => import("./math-statistics"),
   "math-straight-lines-circles": () => import("./math-straight-lines-circles"),
   "math-trigonometry": () => import("./math-trigonometry"),
+  "mgmt-accounting": () => import("./mgmt-accounting"),
   "phy-current-electricity": () => import("./phy-current-electricity"),
   "phy-electrostatics": () => import("./phy-electrostatics"),
   "phy-em-waves-dual-nature": () => import("./phy-em-waves-dual-nature"),

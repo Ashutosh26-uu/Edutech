@@ -2232,6 +2232,21 @@ export const TOPICS: Topic[] = [
       "Logs and inequalities: digits = ⌊log N⌋ + 1; zeros after the decimal point = |characteristic| − 1; in rational inequalities exclude points where the denominator is zero",
     ],
   },
+  {
+    id: "mgmt-accounting",
+    name: "Financial & Cost Accounting",
+    subject: "Management & Commerce",
+    aliases: ["accounting","financial accounting","cost accounting","ratio analysis","final accounts","management accounting"],
+    summary: "Accounting as it is tested in Big 4 audit, bank management-trainee and MBA placement papers: journal to final accounts, rectification, depreciation, bank reconciliation, partnership and company accounts, cash-flow statements, ratio analysis and cost accounting (marginal costing, break-even, standard-costing variances and budgets). Questions are mostly numericals and treatment scenarios where one wrong sign or one missed adjustment gives a listed option.",
+    keyPoints: [
+      "Accounting equation: Assets = Liabilities + Capital; every transaction keeps it balanced, and errors of omission, commission, principle and compensation do not disturb the trial balance",
+      "Depreciation: SLM = (cost − residual) ÷ life on cost every year; WDV = rate on the opening book value; profit or loss on sale = sale price − book value on the date of sale",
+      "Final-account adjustments hit two places: outstanding and prepaid items, accrued income, closing stock, bad-debt provision on debtors after further bad debts, and depreciation",
+      "Ratios: current = CA ÷ CL, quick = (CA − inventory − prepaid) ÷ CL, debt–equity = long-term debt ÷ equity, ROE = net margin × asset turnover × equity multiplier (DuPont)",
+      "Marginal costing: contribution = sales − variable cost; P/V ratio = contribution ÷ sales; BEP = fixed cost ÷ P/V ratio; margin of safety = profit ÷ P/V ratio",
+      "Variances: material price = AQ(SP − AP), usage = SP(SQ − AQ); labour rate and efficiency likewise; a variance is favourable when actual cost is below standard",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
