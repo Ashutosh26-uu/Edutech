@@ -158,7 +158,7 @@ export const BANK_SIZES: Record<string, number> = {
   "apt-pnc-probability": 140,
   "apt-pseudocode": 155,
   "apt-verbal-placement": 139,
-  "bank-awareness": 184,
+  "bank-awareness": 500,
   "bio-animal-kingdom": 90,
   "bio-biomolecules-enzymes": 100,
   "bio-biotechnology": 90,
