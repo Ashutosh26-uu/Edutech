@@ -33,7 +33,7 @@ export function ExamBrowser() {
             key={c}
             onClick={() => setCat(c)}
             aria-pressed={cat === c}
-            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors ${cat === c ? "border-ink bg-ink text-on-ink" : "border-slate-200 bg-surface text-slate-600 hover:border-slate-400"}`}
+            className={`pill shrink-0 ${cat === c ? "border-ink bg-ink text-on-ink hover:border-ink hover:text-on-ink" : ""}`}
           >
             {c === "All" ? "All exams" : c}
           </button>

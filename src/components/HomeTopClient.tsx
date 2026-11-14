@@ -201,17 +201,22 @@ function Onboarding({ featured, examCount, initialDate, currentExamId, onCancel,
               <>
                 <p className="text-xs text-slate-500">Popular</p>
                 <ul className="mt-2 flex flex-wrap gap-2">
-                  {featured.map((e) => (
+                  {featured.slice(0, 8).map((e) => (
                     <li key={e.id}>
                       <button
                         type="button"
                         onClick={() => choose(e)}
-                        className={`btn border px-3 py-1.5 ${e.id === currentExamId ? "border-ink bg-ink text-on-ink" : "border-slate-200 bg-surface text-slate-700 hover:border-slate-300 hover:bg-slate-100"}`}
+                        className={`pill ${e.id === currentExamId ? "border-ink bg-ink text-on-ink hover:border-ink hover:text-on-ink" : ""}`}
                       >
                         {e.name}
                       </button>
                     </li>
                   ))}
+                  <li>
+                    <Link href="/exams" className="pill border-transparent bg-transparent text-slate-500 hover:border-slate-200">
+                      All exams →
+                    </Link>
+                  </li>
                 </ul>
               </>
             )}

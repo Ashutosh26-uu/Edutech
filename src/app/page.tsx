@@ -3,7 +3,7 @@ import Link from "next/link";
 import { HomeTop } from "@/components/HomeTop";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
-import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
+import { EXAMS } from "@/data/exams";
 
 const HOME_CATEGORIES = ["SSC", "Banking", "Railways", "UPSC", "State PSC", "Teaching", "Defence", "Engineering & Medical", "Law & Management", "Campus Placement"];
 import { StartChecklist } from "@/components/StartChecklist";
@@ -93,7 +93,7 @@ export default function Home() {
         </div>
         <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
           {HOME_CATEGORIES.map((c) => (
-            <Link key={c} href={`/exams?cat=${encodeURIComponent(c)}`} className="shrink-0 rounded-full border border-slate-200 bg-surface px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900">
+            <Link key={c} href={`/exams?cat=${encodeURIComponent(c)}`} className="pill shrink-0">
               {c}
             </Link>
           ))}
@@ -104,27 +104,27 @@ export default function Home() {
       <section>
         <div className="max-w-2xl">
           <p className="eyebrow">Features</p>
-          <h2 className="mt-2 text-3xl font-semibold">From a long lecture to exam-ready, in one place</h2>
-          <p className="mt-3 text-slate-600">Built on methods with strong evidence behind them: retrieval practice with feedback, spaced repetition and interleaved practice.</p>
+          <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">From a long lecture to exam-ready, in one place</h2>
+          <p className="mt-3 hidden text-slate-600 sm:block">Built on methods with strong evidence behind them: retrieval practice with feedback, spaced repetition and interleaved practice.</p>
         </div>
-        <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:mt-10 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="bg-surface p-6">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-700">
+            <div key={f.title} className="group bg-surface p-4 transition-colors hover:bg-slate-50 sm:p-6">
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-700 transition-colors group-hover:border-slate-300 group-hover:text-slate-900">
                 <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
               </span>
-              <h3 className="mt-4 font-medium">{f.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{f.text}</p>
+              <h3 className="mt-3 text-sm font-medium sm:mt-4 sm:text-base">{f.title}</h3>
+              <p className="mt-1.5 hidden text-sm leading-relaxed text-slate-600 sm:block">{f.text}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How it works */}
-      <section className="grid gap-10 lg:grid-cols-[1fr_2fr]">
+      <section className="grid gap-6 sm:gap-10 lg:grid-cols-[1fr_2fr]">
         <div>
           <p className="eyebrow">How it works</p>
-          <h2 className="mt-2 text-3xl font-semibold">Three steps per lecture</h2>
+          <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Three steps per lecture</h2>
           <p className="mt-3 text-slate-600">Chapters come from the video’s own captions. Nothing is downloaded: videos play in YouTube’s official player.</p>
         </div>
         <ol className="grid gap-4 sm:grid-cols-3">
@@ -136,31 +136,6 @@ export default function Home() {
             </li>
           ))}
         </ol>
-      </section>
-
-      {/* Exam cards */}
-      <section>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Exam preparation</p>
-            <h2 className="mt-2 text-3xl font-semibold">Choose your exam</h2>
-          </div>
-          <Link href="/exams" className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-            All {EXAMS.length} exams <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:gap-3 lg:grid-cols-4">
-          {FEATURED_EXAMS.map((e) => (
-            <Link key={e.id} href={`/exams/${e.id}`} className="group card-link flex min-w-0 flex-col p-3.5 sm:p-4">
-              <span className="truncate font-medium text-slate-900">{e.name}</span>
-              <span className="mt-1 hidden line-clamp-2 text-xs text-slate-500 sm:block">{e.fullName}</span>
-              <span className="mt-2 flex items-center justify-between gap-1 text-xs text-slate-500 sm:mt-4">
-                <span className="truncate">{e.category}<span className="hidden sm:inline"> · {examTopicIds(e).length} topics</span></span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </Link>
-          ))}
-        </div>
       </section>
 
       {/* Closing call to action */}

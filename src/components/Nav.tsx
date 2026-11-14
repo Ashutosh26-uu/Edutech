@@ -287,7 +287,7 @@ export function NewHereLink() {
   const store = useStore();
   if (!store || store.examId || path === "/start") return null;
   return (
-    <Link href="/start" className="shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50">
+    <Link href="/start" className="shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50 lg:hidden 2xl:inline-flex">
       New here?
     </Link>
   );
