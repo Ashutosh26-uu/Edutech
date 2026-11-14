@@ -2232,6 +2232,21 @@ export const TOPICS: Topic[] = [
       "Logs and inequalities: digits = ⌊log N⌋ + 1; zeros after the decimal point = |characteristic| − 1; in rational inequalities exclude points where the denominator is zero",
     ],
   },
+  {
+    id: "mgmt-finance",
+    name: "Corporate Finance & Financial Markets",
+    subject: "Management & Commerce",
+    aliases: ["corporate finance","financial management","NPV IRR WACC","capital budgeting","finance analyst test","bank management trainee finance","MBA finance placement"],
+    summary: "The finance section of analyst, KPO, Big 4 advisory, bank management-trainee and MBA placement tests: time value of money, capital budgeting, cost of capital, leverage and capital structure, working capital, dividend policy, bond and equity valuation, risk and return, markets and derivatives, and core banking ratios. Most questions are multi-step numericals whose distractors come from timing, rate-conversion and sign errors.",
+    keyPoints: [
+      "Time value: PV = FV/(1+r)ⁿ; annuity PV = C[1 − (1+r)⁻ⁿ]/r; perpetuity C/r; growing perpetuity C₁/(r − g); EAR = (1 + i/m)ᵐ − 1; an annuity due is worth (1 + r) times an ordinary annuity",
+      "Capital budgeting: accept if NPV > 0; IRR makes NPV = 0; for mutually exclusive projects NPV wins when NPV and IRR disagree; PI = PV of inflows / outlay; discounted payback is always longer than simple payback",
+      "Cost of capital: Ke = Rf + β(Rm − Rf) or D₁/P₀ + g; Kd after tax = Kd(1 − t); WACC uses market-value weights",
+      "Leverage: DOL = contribution/EBIT, DFL = EBIT/(EBIT − interest), DCL = DOL × DFL; MM without taxes: firm value is independent of leverage, with taxes V_L = V_U + tD",
+      "Working capital: operating cycle = inventory days + receivable days; cash conversion cycle = operating cycle − payable days; EOQ = √(2AO/C)",
+      "Valuation and markets: bond price = PV of coupons + PV of face value; price and yield move inversely; call payoff = max(S − K, 0), put payoff = max(K − S, 0); NIM = (interest earned − interest paid)/average earning assets",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
