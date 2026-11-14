@@ -2232,6 +2232,21 @@ export const TOPICS: Topic[] = [
       "Logs and inequalities: digits = ⌊log N⌋ + 1; zeros after the decimal point = |characteristic| − 1; in rational inequalities exclude points where the denominator is zero",
     ],
   },
+  {
+    id: "mgmt-operations-analytics",
+    name: "Operations, Supply Chain & Business Analytics",
+    subject: "Management & Commerce",
+    aliases: ["operations management","supply chain management","business analytics","operations research","quantitative techniques for management","Excel for analysts"],
+    summary: "The quantitative core of operations, supply-chain, business-analyst and consulting placement tests: capacity, bottlenecks and Little's law, line balancing, queues, forecasting, inventory models, quality and Six Sigma, CPM/PERT, linear programming, transportation and assignment, decision theory, and the analyst toolkit of statistics, regression, hypothesis tests, spreadsheet formulas and SQL. Questions are mostly multi-step numericals and short business caselets.",
+    keyPoints: [
+      "Flow: throughput is set by the bottleneck; Little's law L = λW holds for any stable system or sub-system; takt = available time ÷ demand and minimum stations = ⌈work content ÷ cycle time⌉",
+      "Inventory: EOQ = √(2DS/H), total cost is lowest where ordering cost equals holding cost, reorder point = demand during lead time + safety stock (z·σ_LT)",
+      "Forecasting and quality: exponential smoothing F(t+1) = F(t) + α(A(t) − F(t)); judge forecasts by MAD, MSE, MAPE and bias; DPMO = defects ÷ (units × opportunities) × 10⁶, Six Sigma ≈ 3.4 DPMO",
+      "Projects: the critical path is the longest path and has zero total float; PERT te = (a + 4m + b)/6, variance = ((b − a)/6)², and only critical activities are worth crashing, cheapest per day first",
+      "Decisions and LP: EMV picks the highest expected payoff, EVPI = EV with perfect information − best EMV; LP optima lie at corner points of the feasible region",
+      "Analytics: R² is the share of variance explained, slope is the change in y per unit x, a p-value below α rejects H0; know exactly how VLOOKUP/XLOOKUP, SUMIFS/COUNTIFS, $ references, GROUP BY/HAVING and joins behave",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
