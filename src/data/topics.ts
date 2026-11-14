@@ -2307,6 +2307,36 @@ export const TOPICS: Topic[] = [
       "Strategy: Porter's five forces and generic strategies, SWOT, BCG matrix (stars, cash cows, question marks, dogs), Ansoff matrix, value chain and McKinsey 7S; guesstimates start from a clear population and funnel of assumptions",
     ],
   },
+  {
+    id: "mgmt-accounting",
+    name: "Financial & Cost Accounting",
+    subject: "Management & Commerce",
+    aliases: ["accounting","financial accounting","cost accounting","ratio analysis","final accounts","management accounting"],
+    summary: "Accounting as it is tested in Big 4 audit, bank management-trainee and MBA placement papers: journal to final accounts, rectification, depreciation, bank reconciliation, partnership and company accounts, cash-flow statements, ratio analysis and cost accounting (marginal costing, break-even, standard-costing variances and budgets). Questions are mostly numericals and treatment scenarios where one wrong sign or one missed adjustment gives a listed option.",
+    keyPoints: [
+      "Accounting equation: Assets = Liabilities + Capital; every transaction keeps it balanced, and errors of omission, commission, principle and compensation do not disturb the trial balance",
+      "Depreciation: SLM = (cost − residual) ÷ life on cost every year; WDV = rate on the opening book value; profit or loss on sale = sale price − book value on the date of sale",
+      "Final-account adjustments hit two places: outstanding and prepaid items, accrued income, closing stock, bad-debt provision on debtors after further bad debts, and depreciation",
+      "Ratios: current = CA ÷ CL, quick = (CA − inventory − prepaid) ÷ CL, debt–equity = long-term debt ÷ equity, ROE = net margin × asset turnover × equity multiplier (DuPont)",
+      "Marginal costing: contribution = sales − variable cost; P/V ratio = contribution ÷ sales; BEP = fixed cost ÷ P/V ratio; margin of safety = profit ÷ P/V ratio",
+      "Variances: material price = AQ(SP − AP), usage = SP(SQ − AQ); labour rate and efficiency likewise; a variance is favourable when actual cost is below standard",
+    ],
+  },
+  {
+    id: "mgmt-tax-law",
+    name: "Taxation & Business Law",
+    subject: "Management & Commerce",
+    aliases: ["GST","income tax","business law","contract act","companies act","mercantile law","taxation"],
+    summary: "Indirect and direct tax mechanics with the core of Indian business law, as tested in Big 4 tax, bank management-trainee, CA Foundation and MBA placement papers: GST supply, place of supply, input tax credit and reverse charge; heads of income, residential status, capital gains and TDS; the Contract, Sale of Goods, Negotiable Instruments, Partnership and LLP Acts; Companies Act basics, consumer protection and IPR. Rates and thresholds change, so questions state the rate and test the mechanism.",
+    keyPoints: [
+      "GST: intra-state supply → CGST + SGST, inter-state → IGST; IGST credit is used first (against IGST, then CGST/SGST), and CGST credit can never pay SGST or vice versa; reverse-charge tax is paid in cash",
+      "Input tax credit needs a tax invoice, receipt of goods or services, tax actually paid by the supplier and a return filed; Section 17(5) blocks credits such as most passenger cars, food, club membership, free samples and works contracts for buildings",
+      "Income tax: residential status depends on days of stay in India, not citizenship; income is computed head by head and losses set off within the rules before total income is taxed",
+      "Contract Act: a valid contract needs offer, acceptance, consideration, competent parties, free consent and a lawful object; agreements with minors are void, while consent obtained by coercion, undue influence, fraud or misrepresentation makes the contract voidable",
+      "Special contracts: indemnity protects against loss, a guarantee involves three parties and a surety's liability is co-extensive with the debtor's; a bailee must take reasonable care, and an agent binds the principal within actual or apparent authority",
+      "Negotiable instruments: holder in due course takes free of defects; cheque dishonour under Section 138 needs presentment within validity, a demand notice within 30 days and non-payment within 15 days of the notice",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
