@@ -1009,7 +1009,7 @@ export const SITE: Faq[] = [
     keys: ["pdf", "print"],
     en: "Two ways:\n- **Exam tomorrow** → revision sheet: one-page key points for every topic of your exam with **Print / PDF** (first topic free; the full sheet is the ₹19 revision pack).\n- **Video breakdown** notes download free as Markdown or PDF.\nTopic notes on Learn can be read and listened to online.",
     hi: "Do tareeke:\n- **Exam tomorrow** → revision sheet: aapke exam ke har topic ke one-page key points, **Print / PDF** ke saath (pehla topic free; poori sheet ₹19 ke revision pack mein).\n- **Video breakdown** ke notes free mein Markdown ya PDF download hote hain.\nLearn ke topic notes online padh aur sun sakte ho.",
-    links: [["Exam tomorrow pack", "/last-minute"]],
+    links: [["My notes", "/notes", "My notes kholo"], ["Exam tomorrow pack", "/last-minute"]],
     next: ["revision-pack", "video-export"],
   },
   {
