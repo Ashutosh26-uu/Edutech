@@ -345,3 +345,11 @@ main:focus-visible {
     margin: 14mm;
   }
 }
+
+/* Horizontal pill rows that scroll on phones without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

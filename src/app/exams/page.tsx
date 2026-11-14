@@ -11,7 +11,7 @@ export default function ExamsPage() {
       <PageHeader
         path="/exams"
         title="Choose your exam"
-        intro={`Find your exam below and open it. You will see its syllabus, practise its topics and take mock tests. ${EXAMS.length} exams across ${CATEGORIES.length} categories, from SSC and banking to state PSCs, teaching, defence and entrance exams.`}
+        intro={`Open your exam for its syllabus, topic practice and mock tests. ${EXAMS.length} exams in ${CATEGORIES.length} categories.`}
         secondary={{ href: "/start", label: "New here? See how StudyClip works" }}
       />
       <ExamBrowser />
