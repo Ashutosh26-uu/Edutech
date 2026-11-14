@@ -59,6 +59,7 @@ export const SECTIONS: NavSection[] = [
       { href: "/topics", label: "Topics & notes", description: "Short notes and key points for every topic" },
       { href: "/learn", label: "Search & question solver", description: "Search a topic or get help with a question" },
       { href: "/formulas", label: "Formula sheets", description: "Printable one-page formulas and tricks" },
+      { href: "/notes", label: "My notes", description: "Write your own notes and download them as PDF", private: true },
       { href: "/review", label: "Flashcards", description: "Spaced repetition that schedules itself" },
       { href: "/listen", label: "Audio revision", description: "Listen to key points of your weak topics" },
       { href: "/video", label: "Video breakdown", description: "Lecture notes, chapters and a quiz from YouTube" },

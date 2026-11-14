@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle2, Infinity as InfinityIcon, ListChecks, Sigma } from "lucide-react";
+import { BookOpen, CheckCircle2, Infinity as InfinityIcon, ListChecks, NotebookPen, Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -98,6 +98,9 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-wrap gap-2">
             <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost">
               <BookOpen className="h-4 w-4" /> Read on Learn
+            </Link>
+            <Link href={`/notes?topic=${id}`} className="btn-ghost">
+              <NotebookPen className="h-4 w-4" /> My notes
             </Link>
             {hasFormulaSheet(topic, notes) && (
               <Link href={`/formulas/${id}`} className="btn-ghost">

@@ -4,6 +4,8 @@ import { HomeTop } from "@/components/HomeTop";
 import { ProductPreview } from "@/components/ProductPreview";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { EXAMS, FEATURED_EXAMS, examTopicIds } from "@/data/exams";
+
+const HOME_CATEGORIES = ["SSC", "Banking", "Railways", "UPSC", "State PSC", "Teaching", "Defence", "Engineering & Medical", "Law & Management", "Campus Placement"];
 import { StartChecklist } from "@/components/StartChecklist";
 
 const FEATURES = [
@@ -81,13 +83,18 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* Exams */}
-      <section className="border-y border-slate-200 py-8">
-        <p className="text-center text-sm text-slate-500">Syllabus, practice questions and mock tests for {EXAMS.length} exams, including</p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-          {FEATURED_EXAMS.map((e) => (
-            <Link key={e.id} href={`/exams/${e.id}`} className="text-lg font-semibold tracking-tight text-slate-400 transition-colors hover:text-slate-900">
-              {e.name}
+      {/* Exams by category: one short row instead of a wall of names */}
+      <section className="border-y border-slate-200 py-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm text-slate-500">{EXAMS.length} exams, by category</p>
+          <Link href="/exams" className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
+            All exams <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+          {HOME_CATEGORIES.map((c) => (
+            <Link key={c} href={`/exams?cat=${encodeURIComponent(c)}`} className="shrink-0 rounded-full border border-slate-200 bg-surface px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900">
+              {c}
             </Link>
           ))}
         </div>
@@ -142,13 +149,13 @@ export default function Home() {
             All {EXAMS.length} exams <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:gap-3 lg:grid-cols-4">
           {FEATURED_EXAMS.map((e) => (
-            <Link key={e.id} href={`/exams/${e.id}`} className="group card-link flex flex-col p-4">
-              <span className="font-medium text-slate-900">{e.name}</span>
-              <span className="mt-1 line-clamp-2 text-xs text-slate-500">{e.fullName}</span>
-              <span className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                {e.category} · {examTopicIds(e).length} topics
+            <Link key={e.id} href={`/exams/${e.id}`} className="group card-link flex min-w-0 flex-col p-3.5 sm:p-4">
+              <span className="truncate font-medium text-slate-900">{e.name}</span>
+              <span className="mt-1 hidden line-clamp-2 text-xs text-slate-500 sm:block">{e.fullName}</span>
+              <span className="mt-2 flex items-center justify-between gap-1 text-xs text-slate-500 sm:mt-4">
+                <span className="truncate">{e.category}<span className="hidden sm:inline"> · {examTopicIds(e).length} topics</span></span>
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             </Link>

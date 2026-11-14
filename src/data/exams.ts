@@ -29,6 +29,12 @@ const CS_CORE = ["cs-dbms-sql", "cs-operating-systems", "cs-computer-networks", 
 const P_QUANT = ["apt-advanced-quant", "apt-pnc-probability", "quant-percentage", "quant-profit-loss", "quant-time-work", "quant-tsd", "quant-ratio", "quant-average", "quant-number-system", "quant-data-interpretation"];
 const P_LOGIC = ["apt-logical-placement", "reason-series", "reason-coding", "reason-blood-relations", "reason-direction", "reason-seating-puzzles", "reason-syllogism", "reason-data-sufficiency"];
 const P_VERBAL = ["apt-verbal-placement", "eng-grammar", "eng-vocabulary", "eng-reading-comprehension", "eng-cloze-rearrangement"];
+// Management & commerce hiring (BBA, BCom, MBA): domain subjects plus the usual aptitude.
+const M_ACC = ["mgmt-accounting", "mgmt-tax-law"];
+const M_FIN = ["mgmt-finance", "mgmt-business-economics"];
+const M_MKT = ["mgmt-marketing", "mgmt-hr-ob"];
+const M_OPS = ["mgmt-operations-analytics"];
+const M_APT = ["quant-percentage", "quant-profit-loss", "quant-ratio", "quant-ci", "quant-data-interpretation", "apt-logical-placement", "reason-critical-reasoning"];
 
 type Subject = Exam["subjects"][number];
 const s = (name: string, topicIds: string[] = []): Subject => ({ name, topicIds });
@@ -279,6 +285,11 @@ EXAMS.push(
     { id: "techmahindra-placement", name: "Tech Mahindra", fullName: "Tech Mahindra fresher hiring test", conductedBy: "Tech Mahindra", negativeMarking: null, subjects: [s("Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("English", P_VERBAL), s("Technical", [...PROG, ...CS_CORE])] },
     { id: "ibm-placement", name: "IBM", fullName: "IBM Associate Developer / Systems Engineer hiring test", conductedBy: "IBM", negativeMarking: null, subjects: [s("Cognitive Ability (Numerical & Logical)", [...P_QUANT, ...P_LOGIC]), s("English Language", P_VERBAL), s("Technical (MCQ)", [...PROG, ...DSA, ...CS_CORE])] },
     { id: "deloitte-placement", name: "Deloitte", fullName: "Deloitte USI Analyst hiring test", conductedBy: "Deloitte", negativeMarking: null, subjects: [s("Quantitative Aptitude", P_QUANT), s("Logical Reasoning", P_LOGIC), s("Verbal Ability", P_VERBAL), s("Technical (MCQ)", [...PROG, ...CS_CORE])] },
+    { id: "big4-commerce", name: "Big 4 Audit, Tax & Advisory (Commerce)", fullName: "Associate / analyst hiring test for BCom, BBA and MBA graduates at Big 4 and similar firms", conductedBy: "Big 4 and audit firms", negativeMarking: null, subjects: [s("Accounting, Tax & Law", M_ACC), s("Finance & Economics", M_FIN), s("Aptitude & Reasoning", M_APT), s("Business English", P_VERBAL)] },
+    { id: "bank-mt", name: "Bank Management Trainee (Private)", fullName: "Management trainee and relationship-manager hiring tests of private banks and NBFCs", conductedBy: "Private banks and NBFCs", negativeMarking: null, subjects: [s("Banking & Finance", ["mgmt-finance", "bank-awareness", "eco-money-inflation"]), s("Accounting", ["mgmt-accounting"]), s("Aptitude & Reasoning", M_APT), s("Business English", P_VERBAL)] },
+    { id: "fmcg-sales-mt", name: "FMCG & Sales Management Trainee", fullName: "Sales, marketing and HR management trainee tests for BBA and MBA graduates", conductedBy: "FMCG, retail and consumer companies", negativeMarking: null, subjects: [s("Marketing, HR & Management", M_MKT), s("Business Economics & Strategy", ["mgmt-business-economics"]), s("Aptitude & Reasoning", M_APT), s("Business English", P_VERBAL)] },
+    { id: "business-analyst", name: "Business / Finance Analyst (KPO)", fullName: "Business analyst, finance analyst and operations analyst hiring tests", conductedBy: "KPOs, consulting and analytics firms", negativeMarking: null, subjects: [s("Finance & Accounting", ["mgmt-finance", "mgmt-accounting"]), s("Operations & Analytics", M_OPS), s("Aptitude & Reasoning", M_APT), s("Business English", P_VERBAL)] },
+    { id: "mba-placement", name: "MBA Placement Test (all specialisations)", fullName: "Summer and final placement tests for MBA students: finance, marketing, HR and operations", conductedBy: "Companies hiring from B-schools", negativeMarking: null, featured: true, subjects: [s("Finance & Accounting", [...M_FIN, ...M_ACC]), s("Marketing & HR", M_MKT), s("Operations & Analytics", M_OPS), s("Aptitude & Reasoning", M_APT)] },
     { id: "product-sde", name: "Product Company SDE (MCQ round)", fullName: "Online-assessment MCQ round of product companies (Amazon, Microsoft, Adobe and similar)", conductedBy: "Product companies", negativeMarking: null, featured: true, subjects: [s("Data Structures & Algorithms", DSA), s("CS Fundamentals", CS_CORE), s("Programming & Output Prediction", PROG), s("Aptitude", ["apt-advanced-quant", "apt-pnc-probability", "apt-logical-placement"])] },
   ]),
 );
