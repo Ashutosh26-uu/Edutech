@@ -255,7 +255,7 @@ export const BANK_SIZES: Record<string, number> = {
   "math-statistics": 118,
   "math-straight-lines-circles": 128,
   "math-trigonometry": 127,
-  "mgmt-accounting": 225,
+  "mgmt-accounting": 250,
   "mgmt-business-economics": 200,
   "mgmt-finance": 200,
   "mgmt-hr-ob": 200,
