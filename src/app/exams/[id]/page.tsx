@@ -73,7 +73,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
           intro={
             <>
               {exam.fullName} ({exam.category} · {exam.level}).{" "}
-              {hasPractice ? "New here? Tap Start practice for 10 questions with an answer after each one. Take a full mock test when you feel ready." : "See the exam pattern and syllabus below."}
+              {hasPractice ? "Start with 10 practice questions, with the answer after each one. Take a full mock when you feel ready." : "See the exam pattern and syllabus below."}
             </>
           }
         >
@@ -92,10 +92,10 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             <MakeMyExamButton examId={exam.id} />
             {hasPractice && (
               <>
-                <Link href={`/last-minute?exam=${exam.id}`} className="btn-ghost">
+                <Link href={`/last-minute?exam=${exam.id}`} className="btn-quiet">
                   <Clock className="h-4 w-4" /> Exam tomorrow?
                 </Link>
-                <Link href={`/leaderboard?exam=${exam.id}`} className="btn-ghost">
+                <Link href={`/leaderboard?exam=${exam.id}`} className="btn-quiet">
                   <Trophy className="h-4 w-4" /> Leaderboard
                 </Link>
               </>

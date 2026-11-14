@@ -28,17 +28,12 @@ export default function Home() {
     <div className="-mt-10 space-y-24">
       {/* Personal top (exam picker or dashboard), with the generic hero for new visitors */}
       <HomeTop>
-        <section className="relative -mx-4 overflow-hidden px-4 pb-4 pt-16 sm:pt-20">
-          <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
-          <div className="relative grid items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
+        <section className="pb-4 pt-20 sm:pt-28">
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
             <div>
-              <Link href="/exams" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600 hover:border-slate-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                For SSC, banking, railway, UPSC, JEE/NEET and campus-placement students
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-              <h1 className="mt-5 text-4xl font-semibold leading-[1.1] sm:text-5xl">Learn from long lectures without watching every minute.</h1>
-              <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-slate-600">
+              <p className="eyebrow">Lecture breakdown</p>
+              <h2 className="mt-3 text-3xl font-semibold leading-[1.15] sm:text-4xl">Learn from long lectures without watching every minute.</h2>
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-600 sm:text-[17px]">
                 Paste a YouTube link. StudyClip splits the lecture into chapters, marks what matters for your exam, and turns it into notes, quizzes and flashcards.
               </p>
               <div className="mt-8 max-w-lg">

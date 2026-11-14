@@ -242,6 +242,10 @@ html.dark {
 @utility btn-primary {
   @apply btn bg-ink text-on-ink shadow-sm hover:opacity-90 dark:shadow-none;
 }
+/* Borderless secondary action: sits beside a primary button without competing with it. */
+@utility btn-quiet {
+  @apply btn px-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900;
+}
 @utility btn-ghost {
   @apply btn border border-slate-200 bg-surface text-slate-700 hover:border-slate-300 hover:bg-slate-100;
 }

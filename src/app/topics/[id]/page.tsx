@@ -93,20 +93,9 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
         <PageHeader
           path={`/topics/${id}`}
           title={topic.name}
-          intro={`${topic.subject}. Read the short notes and key points below, then practise questions on this topic to check what you remember.`}
+          intro={`${topic.subject} · short notes, key points and practice questions.`}
         >
           <div className="flex flex-wrap gap-2">
-            <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-ghost">
-              <BookOpen className="h-4 w-4" /> Read on Learn
-            </Link>
-            <Link href={`/notes?topic=${id}`} className="btn-ghost">
-              <NotebookPen className="h-4 w-4" /> My notes
-            </Link>
-            {hasFormulaSheet(topic, notes) && (
-              <Link href={`/formulas/${id}`} className="btn-ghost">
-                <Sigma className="h-4 w-4" /> Formula sheet
-              </Link>
-            )}
             {count > 0 && (
               <Link href={`/practice?topics=${id}`} className="btn-primary">
                 <ListChecks className="h-4 w-4" /> Practise {count} questions
@@ -117,6 +106,17 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                 <InfinityIcon className="h-4 w-4" /> Unlimited practice
               </Link>
             )}
+            {hasFormulaSheet(topic, notes) && (
+              <Link href={`/formulas/${id}`} className="btn-ghost">
+                <Sigma className="h-4 w-4" /> Formula sheet
+              </Link>
+            )}
+            <Link href={`/learn?topic=${encodeURIComponent(topic.name)}`} className="btn-quiet">
+              <BookOpen className="h-4 w-4" /> Read on Learn
+            </Link>
+            <Link href={`/notes?topic=${id}`} className="btn-quiet">
+              <NotebookPen className="h-4 w-4" /> My notes
+            </Link>
           </div>
           {canUnlimited(id) && <p className="mt-2 text-xs text-slate-500">Unlimited practice: {UNLIMITED_HINT}</p>}
         </PageHeader>
@@ -214,12 +214,27 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             <section className="card">
               <h2 className="font-semibold text-slate-900">Asked in these exams</h2>
               <div className="mt-3 flex flex-wrap gap-2">
-                {exams.map((e) => (
-                  <Link key={e.id} href={`/exams/${e.id}`} className="chip bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-brand-50">
+                {exams.slice(0, 10).map((e) => (
+                  <Link key={e.id} href={`/exams/${e.id}`} className="pill px-3 py-1">
                     {e.name}
                   </Link>
                 ))}
               </div>
+              {exams.length > 10 && (
+                <details className="group mt-2">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-slate-500 hover:text-slate-900">
+                    <span className="group-open:hidden">Show all {exams.length} exams</span>
+                    <span className="hidden group-open:inline">Show fewer</span>
+                  </summary>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {exams.slice(10).map((e) => (
+                      <Link key={e.id} href={`/exams/${e.id}`} className="pill px-3 py-1">
+                        {e.name}
+                      </Link>
+                    ))}
+                  </div>
+                </details>
+              )}
             </section>
           )}
           <section className="card">
