@@ -249,7 +249,7 @@ export const BANK_SIZES: Record<string, number> = {
   "math-statistics": 118,
   "math-straight-lines-circles": 128,
   "math-trigonometry": 127,
-  "mgmt-operations-analytics": 180,
+  "mgmt-operations-analytics": 200,
   "phy-current-electricity": 128,
   "phy-electrostatics": 129,
   "phy-em-waves-dual-nature": 118,
