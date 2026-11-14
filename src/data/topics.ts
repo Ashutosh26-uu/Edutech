@@ -2232,6 +2232,21 @@ export const TOPICS: Topic[] = [
       "Logs and inequalities: digits = ⌊log N⌋ + 1; zeros after the decimal point = |characteristic| − 1; in rational inequalities exclude points where the denominator is zero",
     ],
   },
+  {
+    id: "mgmt-marketing",
+    name: "Marketing & Sales Management",
+    subject: "Management & Commerce",
+    aliases: ["marketing management","sales management","STP and 4P","FMCG management trainee marketing","digital marketing metrics","pricing and distribution"],
+    summary: "Marketing and sales as tested in FMCG and sales management-trainee tests and MBA placement rounds: marketing orientations, segmentation–targeting–positioning, consumer buying behaviour, the 4P/7P mix, product life cycle and diffusion, branding, pricing and margin arithmetic, channel margins, promotion and IMC, sales funnels, quotas and territories, customer economics (CAC, LTV, churn), digital ad metrics, market research and the services gaps model. Most questions are short cases or calculations rather than definitions.",
+    keyPoints: [
+      "STP runs segment → target → position; a usable segment is measurable, substantial, accessible, differentiable and actionable, and a positioning map shows only the gaps that the chosen attributes reveal",
+      "Markup is on cost and margin is on selling price: margin = markup / (1 + markup); in a channel each member's margin is taken on its own selling price, so work backwards from MRP",
+      "Product life cycle: introduction builds awareness (skimming or penetration), growth adds features and outlets, maturity defends share and modifies market/product/mix, decline harvests or divests",
+      "Funnel and customer economics: multiply stage conversion rates; CAC = acquisition spend / new customers; LTV ≈ margin per period / churn rate; payback = CAC / monthly margin",
+      "Digital metrics: CTR = clicks/impressions, CPC = spend/clicks, CPM = spend per 1,000 impressions, CPA = spend/conversions, ROAS = revenue/ad spend (not profit)",
+      "Services marketing adds people, process and physical evidence; the gaps model ends in Gap 5 (expected vs perceived service), caused by the four provider gaps",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
