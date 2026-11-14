@@ -261,7 +261,7 @@ export const BANK_SIZES: Record<string, number> = {
   "mgmt-hr-ob": 200,
   "mgmt-marketing": 200,
   "mgmt-operations-analytics": 200,
-  "mgmt-tax-law": 224,
+  "mgmt-tax-law": 248,
   "phy-current-electricity": 128,
   "phy-electrostatics": 129,
   "phy-em-waves-dual-nature": 118,
