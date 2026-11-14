@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BANK_SIZES } from "@/data/bank";
 import { EXAMS, FEATURED_EXAMS } from "@/data/exams";
 import { HomeTopClient } from "@/components/HomeTopClient";
 
@@ -10,7 +11,7 @@ import { HomeTopClient } from "@/components/HomeTopClient";
 export function HomeTop({ children }: { children: ReactNode }) {
   const featured = FEATURED_EXAMS.map(({ id, name, fullName }) => ({ id, name, fullName }));
   return (
-    <HomeTopClient featured={featured} examCount={EXAMS.length}>
+    <HomeTopClient featured={featured} examCount={EXAMS.length} questionCount={Object.values(BANK_SIZES).reduce((a, b) => a + b, 0)}>
       {children}
     </HomeTopClient>
   );

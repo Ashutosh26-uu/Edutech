@@ -43,7 +43,7 @@ function useExams(needed: boolean): ExamsModule | null {
  * returning visitor with a saved exam is marked before first paint (see HomeTop), which swaps the
  * picker and hero for a placeholder until the dashboard is ready.
  */
-export function HomeTopClient({ children, featured, examCount }: { children: ReactNode; featured: ExamLite[]; examCount: number }) {
+export function HomeTopClient({ children, featured, examCount, questionCount }: { children: ReactNode; featured: ExamLite[]; examCount: number; questionCount: number }) {
   const store = useStore();
   const [editing, setEditing] = useState(false);
   const [justPlanned, setJustPlanned] = useState(false);
@@ -71,6 +71,7 @@ export function HomeTopClient({ children, featured, examCount }: { children: Rea
             <Onboarding
               featured={featured}
               examCount={examCount}
+              questionCount={questionCount}
               initialDate={store?.examDate}
               currentExamId={exam?.id}
               onCancel={exam ? () => setEditing(false) : undefined}
@@ -99,7 +100,7 @@ export function HomeTopClient({ children, featured, examCount }: { children: Rea
 
 // ---------- First visit: pick an exam, then a date ----------
 
-function Onboarding({ featured, examCount, initialDate, currentExamId, onCancel, onDone }: { featured: ExamLite[]; examCount: number; initialDate?: string; currentExamId?: string; onCancel?: () => void; onDone: () => void }) {
+function Onboarding({ featured, examCount, questionCount, initialDate, currentExamId, onCancel, onDone }: { featured: ExamLite[]; examCount: number; questionCount: number; initialDate?: string; currentExamId?: string; onCancel?: () => void; onDone: () => void }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [picked, setPicked] = useState<ExamLite | null>(null);
   const [q, setQ] = useState("");
@@ -131,12 +132,26 @@ function Onboarding({ featured, examCount, initialDate, currentExamId, onCancel,
 
   const todayIso = dayKey();
 
+  const hero = !currentExamId && step === 1;
+  const Heading = hero ? "h1" : "h2";
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="onboarding-heading">
+    <section
+      className={hero ? "relative pb-2 pt-6 sm:pt-12" : "rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm sm:p-7"}
+      aria-labelledby="onboarding-heading"
+    >
+      {hero && <div aria-hidden className="bg-grid pointer-events-none absolute inset-x-[-1rem] -top-10 bottom-0 -z-10 opacity-50 [mask-image:radial-gradient(ellipse_at_top_left,black_10%,transparent_65%)]" />}
       <div className="flex items-center justify-between gap-3">
-        <p className="eyebrow">
-          {currentExamId ? "Change exam" : "Get started"} · Step {step} of 2
-        </p>
+        {hero ? (
+          <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-surface px-3 py-1 text-xs text-slate-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {questionCount.toLocaleString("en-IN")} practice questions · {examCount} exams · Free
+          </p>
+        ) : (
+          <p className="eyebrow">
+            {currentExamId ? "Change exam" : "Get started"} · Step {step} of 2
+          </p>
+        )}
         {onCancel && (
           <button type="button" onClick={onCancel} className="text-sm font-medium text-slate-500 hover:text-slate-900">
             Cancel
@@ -146,15 +161,24 @@ function Onboarding({ featured, examCount, initialDate, currentExamId, onCancel,
 
       {step === 1 ? (
         <>
-          <h2 id="onboarding-heading" ref={headingRef} tabIndex={-1} className="mt-2 text-2xl font-semibold outline-none sm:text-3xl">
-            Which exam are you preparing for?
-          </h2>
-          <p className="mt-1.5 text-sm text-slate-600">We’ll set up practice questions, mock tests and a daily plan for it. Saved in this browser only.</p>
+          <Heading
+            id="onboarding-heading"
+            ref={headingRef}
+            tabIndex={-1}
+            className={hero ? "mt-5 max-w-3xl text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.03em] outline-none sm:text-6xl" : "mt-2 text-2xl font-semibold outline-none sm:text-3xl"}
+          >
+            {hero ? "Prepare for your exam with practice that adapts to you." : "Which exam are you preparing for?"}
+          </Heading>
+          <p className={hero ? "mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg" : "mt-1.5 text-sm text-slate-600"}>
+            {hero
+              ? "Pick your exam to get its topics, mock tests and a daily plan. No sign-up needed."
+              : "We’ll set up practice questions, mock tests and a daily plan for it. Saved in this browser only."}
+          </p>
 
-          <div className="relative mt-5">
+          <div className={`relative ${hero ? "mt-7 max-w-xl" : "mt-5"}`}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              className="input py-2.5 pl-9 text-base"
+              className={`input pl-9 text-base ${hero ? "rounded-xl py-3 shadow-sm sm:py-3.5" : "py-2.5"}`}
               placeholder={`Search ${examCount} exams, e.g. SSC CGL, IBPS PO, NEET…`}
               value={q}
               onFocus={() => setWantList(true)}
@@ -201,17 +225,22 @@ function Onboarding({ featured, examCount, initialDate, currentExamId, onCancel,
               <>
                 <p className="text-xs text-slate-500">Popular</p>
                 <ul className="mt-2 flex flex-wrap gap-2">
-                  {featured.map((e) => (
+                  {featured.slice(0, 8).map((e) => (
                     <li key={e.id}>
                       <button
                         type="button"
                         onClick={() => choose(e)}
-                        className={`btn border px-3 py-1.5 ${e.id === currentExamId ? "border-ink bg-ink text-on-ink" : "border-slate-200 bg-surface text-slate-700 hover:border-slate-300 hover:bg-slate-100"}`}
+                        className={`pill ${e.id === currentExamId ? "border-ink bg-ink text-on-ink hover:border-ink hover:text-on-ink" : ""}`}
                       >
                         {e.name}
                       </button>
                     </li>
                   ))}
+                  <li>
+                    <Link href="/exams" className="pill border-transparent bg-transparent text-slate-500 hover:border-slate-200">
+                      All exams →
+                    </Link>
+                  </li>
                 </ul>
               </>
             )}

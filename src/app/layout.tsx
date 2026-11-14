@@ -53,6 +53,8 @@ const FOOTER: { title: string; links: [label: string, href: string][] }[] = [
   { title: "Company", links: visible(COMPANY_LINKS).map((i): [string, string] => [i.label, i.href]) },
 ];
 
+const FOOTER_ON_PHONE = ["Practise", "Popular exams", "Company"];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`dark ${sans.variable} ${mono.variable}`}>
@@ -83,16 +85,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main id="main-content" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6 sm:py-10">{children}</main>
         <footer className="border-t border-slate-200 bg-surface">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:py-14">
             <div className="max-w-md space-y-4">
               <Logo showName />
-              <p className="text-sm leading-relaxed text-slate-500">Study from YouTube lectures in less time, and prepare for one-day exams with practice that adapts to you.</p>
-              <p className="text-xs leading-relaxed text-slate-500">SSC · Banking · Railways · UPSC &amp; State PSC · Teaching · Defence</p>
+              <p className="text-sm leading-relaxed text-slate-500">Exam practice that adapts to you, for government exams, entrance tests and campus placements.</p>
             </div>
-            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:grid-cols-7">
+            <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4 sm:gap-y-10 lg:grid-cols-7">
               {FOOTER.map((col) => (
-                <div key={col.title}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-900">{col.title}</h3>
+                // Phones show the three columns people use most; the phone menu has every page.
+                <div key={col.title} className={FOOTER_ON_PHONE.includes(col.title) ? "" : "hidden sm:block"}>
+                  <h3 className="text-xs font-medium text-slate-900">{col.title}</h3>
                   <ul className="mt-4 space-y-2.5 text-sm">
                     {col.links.map(([label, href]) => (
                       <li key={`${href}-${label}`}>

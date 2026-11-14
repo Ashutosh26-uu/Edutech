@@ -226,17 +226,25 @@ html.dark {
 }
 
 @utility card {
-  @apply rounded-xl border border-slate-200 bg-surface p-4 shadow-xs sm:p-5;
+  @apply rounded-xl border border-slate-200 bg-surface p-4 shadow-xs sm:p-5 dark:shadow-none;
 }
 /* A card that is a link: lifts a little under the pointer. */
 @utility card-link {
-  @apply card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:translate-y-0 active:shadow-xs;
+  @apply card transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_28px_-14px_rgb(0_0_0/0.22)] active:translate-y-0 active:shadow-xs dark:hover:shadow-none;
+}
+/* Rounded filter or quick-pick chip: quiet at rest, clear on hover and when picked. */
+@utility pill {
+  @apply inline-flex touch-manipulation items-center rounded-full border border-slate-200 bg-surface px-3.5 py-1.5 text-sm whitespace-nowrap text-slate-700 transition-[background-color,border-color,color,transform] duration-150 select-none hover:border-slate-400 hover:text-slate-900 active:scale-[0.97] pointer-coarse:min-h-10;
 }
 @utility btn {
   @apply inline-flex touch-manipulation items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium pointer-coarse:min-h-11 transition-[background-color,border-color,color,opacity,transform] select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
 }
 @utility btn-primary {
-  @apply btn bg-ink text-on-ink shadow-sm hover:opacity-90;
+  @apply btn bg-ink text-on-ink shadow-sm hover:opacity-90 dark:shadow-none;
+}
+/* Borderless secondary action: sits beside a primary button without competing with it. */
+@utility btn-quiet {
+  @apply btn px-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900;
 }
 @utility btn-ghost {
   @apply btn border border-slate-200 bg-surface text-slate-700 hover:border-slate-300 hover:bg-slate-100;
