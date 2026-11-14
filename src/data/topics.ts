@@ -2247,6 +2247,21 @@ export const TOPICS: Topic[] = [
       "Valuation and markets: bond price = PV of coupons + PV of face value; price and yield move inversely; call payoff = max(S − K, 0), put payoff = max(K − S, 0); NIM = (interest earned − interest paid)/average earning assets",
     ],
   },
+  {
+    id: "mgmt-business-economics",
+    name: "Business Economics & Strategy",
+    subject: "Management & Commerce",
+    aliases: ["business economics","managerial economics","microeconomics and macroeconomics","elasticity","game theory","business strategy frameworks","Porter five forces","guesstimates","case interview"],
+    summary: "The economics and strategy section of Big 4 advisory, consulting, bank management-trainee and MBA placement tests: demand, supply and elasticity calculations, consumer surplus, production and costs, market structures and pricing, game theory, national income and macro policy, and the standard strategy frameworks, with guesstimate and business-case reasoning.",
+    keyPoints: [
+      "Elasticity: Ed = %ΔQ/%ΔP (use the midpoint method for arcs); revenue rises with price only when |Ed| < 1; income elasticity < 0 means inferior, > 1 luxury; cross elasticity > 0 substitutes, < 0 complements",
+      "Taxes and controls: the less elastic side bears more of a tax; deadweight loss = ½ × tax × fall in quantity; a binding ceiling causes shortage, a binding floor surplus",
+      "Costs and markets: profit is maximised where MR = MC; a competitive firm shuts down below minimum AVC; monopoly markup rule P = MC/(1 − 1/|e|); third-degree price discrimination charges more in the less elastic market",
+      "Game theory: a Nash equilibrium is a pair of strategies where neither player gains by changing alone; in the prisoner's dilemma both defect although both would gain from cooperating",
+      "Macro: GDP = C + I + G + (X − M); GNP = GDP + net factor income from abroad; NDP = GDP − depreciation; simple multiplier = 1/(1 − MPC), with taxes and imports 1/[1 − MPC(1 − t) + MPM]",
+      "Strategy: Porter's five forces and generic strategies, SWOT, BCG matrix (stars, cash cows, question marks, dogs), Ansoff matrix, value chain and McKinsey 7S; guesstimates start from a clear population and funnel of assumptions",
+    ],
+  },
 ];
 
 export const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
