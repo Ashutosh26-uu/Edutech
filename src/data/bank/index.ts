@@ -219,7 +219,7 @@ export const BANK_SIZES: Record<string, number> = {
   "geo-soils-agriculture": 106,
   "geo-solar-system": 135,
   "geo-world": 106,
-  "gk-international-orgs": 100,
+  "gk-international-orgs": 125,
   "gk-science-tech": 100,
   "gk-states-culture": 125,
   "gk-static": 125,
