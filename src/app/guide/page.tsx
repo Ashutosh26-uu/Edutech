@@ -2,6 +2,7 @@ import { Building2, GraduationCap, KeyRound, PenLine, Presentation } from "lucid
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { COMMUNITY_URL } from "@/data/site";
 
 export const metadata: Metadata = {
   title: "How to use StudyClip",
@@ -149,7 +150,11 @@ export default function GuidePage() {
         </section>
       ))}
       <p className="text-sm text-slate-600">
-        Still stuck? Ask the help button at the bottom right, or write to us on the <L href="/contact">Contact</L> page.
+        Still stuck? Ask the help button at the bottom right, ask other users on our{" "}
+        <a href={COMMUNITY_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-700 underline-offset-2 hover:underline">
+          community forum
+        </a>
+        , or write to us on the <L href="/contact">Contact</L> page.
       </p>
     </div>
   );

@@ -1,9 +1,9 @@
-import { Clock, Mail, Receipt } from "lucide-react";
+import { Clock, Mail, MessagesSquare, Receipt } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm";
 import { InfoPage } from "@/components/InfoPage";
-import { COMPANY, CONTACT_EMAIL, SITE_NAME } from "@/data/site";
+import { COMMUNITY_URL, COMPANY, CONTACT_EMAIL, SITE_NAME } from "@/data/site";
 
 export const metadata: Metadata = {
   title: "Contact us",
@@ -13,6 +13,16 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <InfoPage eyebrow="Contact" title="We’re here to help" intro="Questions about your account, a payment, a wrong answer in a question, or an idea for the app? Send us a message.">
+      <p className="mt-6 flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm">
+        <MessagesSquare className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
+        <span>
+          General question or an idea for a new feature? Ask on our{" "}
+          <a href={COMMUNITY_URL} target="_blank" rel="noopener noreferrer">
+            community forum
+          </a>
+          , where other students, trainers and our team can answer. For your account or a payment, use the form below.
+        </span>
+      </p>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="card space-y-2">
           <Mail className="h-5 w-5 text-brand-700" />

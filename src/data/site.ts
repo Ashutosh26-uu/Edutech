@@ -20,6 +20,9 @@ export function absoluteUrl(path: string) {
  */
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 
+/** Public community forum (GitHub Discussions): questions, ideas and answers from other users. */
+export const COMMUNITY_URL = "https://github.com/Ashutosh26-uu/Edutech/discussions";
+
 /** What a Contact-page message can be about, with the label shown in the form. */
 export const CONTACT_TOPICS = {
   account: "Account or login",
