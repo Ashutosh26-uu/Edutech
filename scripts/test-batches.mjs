@@ -13,8 +13,10 @@ if (!/127\.0\.0\.1|localhost/.test(url)) {
 
 const { db, schema, sql } = await import("../src/db/index.ts");
 const B = await import("../src/server/batches.ts");
-const { submitTest } = await import("../src/server/tests.ts");
+const { submitTest, answersOpenAt } = await import("../src/server/tests.ts");
+const { windowOf, istWeek } = await import("../src/lib/weekly.ts");
 const { getStanding } = await import("../src/server/quality.ts");
+const { getProgress } = await import("../src/server/progress.ts");
 const { eq } = await import("drizzle-orm");
 
 const mkUser = async (name) => {
@@ -83,10 +85,44 @@ try {
   const r2 = await submitTest(s2, a2.attemptId, a2.questions.map(() => 0));
   assert.equal(r2.correct + r2.wrong + r2.skipped, 12);
 
+  // Answers stay hidden while the test is open (it is due tomorrow): right/wrong only, no keys for
+  // wrong answers, no explanations, and the mistakes wait out of the notebook.
+  assert.equal(r2.answersLocked, true);
+  assert.ok(r2.answersOpenAt > Date.now());
+  assert.ok(r2.questions.every((q, i) => q.explanation === "" && (q.answer === -1 || q.answer === r2.answers[i])));
+  assert.equal(r2.questions.filter((q) => q.answer >= 0).length, r2.correct);
+  assert.equal(r1.answersLocked, true);
+  const hidden = await getProgress(s2);
+  assert.equal(hidden.mistakes.length, 0);
+  await expectHttp(B.releaseBatchAnswers(s1, test.id), 404);
+  await B.releaseBatchAnswers(trainer, test.id);
+  const open = await submitTest(s2, a2.attemptId, a2.questions.map(() => 0)); // already submitted: returns the stored review
+  assert.equal(open.answersLocked, false);
+  assert.ok(open.questions.every((q) => q.answer >= 0));
+  if (r2.wrong) assert.ok((await getProgress(s2)).mistakes.length > 0);
+  assert.equal((await B.batchTestResults(trainer, test.id)).test.answersAt <= Date.now(), true);
+
+  // Sunday mock: hidden until the window closes (plus the 2-minute grace), open afterwards
+  const w = windowOf(istWeek(Date.now()));
+  const sunday = { kind: "weekly", startedAt: new Date(w.opensAt + 60_000), batchTestId: null };
+  assert.equal(await answersOpenAt(sunday, w.opensAt + 90_000), w.closesAt + 120_000);
+  assert.equal(await answersOpenAt(sunday, w.closesAt + 121_000), null);
+  assert.equal(await answersOpenAt({ kind: "full", startedAt: new Date(), batchTestId: null }), null);
+
+  // No due time: answers right after submitting, unless the trainer holds them
+  const c1 = await B.startBatchTest(s1, custom.id);
+  assert.equal((await submitTest(s1, c1.attemptId, c1.questions.map(() => 1))).answersLocked, false);
+  const held = await B.createBatchTest(trainer, batch.id, { title: "Held", examId: "tcs-nqt", count: 8, minutes: 10, holdAnswers: true });
+  const h1 = await B.startBatchTest(s1, held.id);
+  const hr = await submitTest(s1, h1.attemptId, h1.questions.map(() => 1));
+  assert.equal(hr.answersLocked, true);
+  assert.equal(hr.answersOpenAt, null);
+  await B.deleteBatchTest(trainer, held.id);
+
   // Counts on the trainer's pages (correlated subqueries must use the outer row's id)
   const det = await B.batchDetail(trainer, batch.id);
   assert.equal(det.tests.find((t) => t.id === test.id).submitted, 2);
-  assert.equal(det.tests.find((t) => t.id === custom.id).submitted, 0);
+  assert.equal(det.tests.find((t) => t.id === custom.id).submitted, 1);
   assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).tests, 2);
   assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).members, 2);
 

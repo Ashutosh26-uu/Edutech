@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import { PageSkeleton } from "@/components/Skeleton";
 import { batchApi, fmtDate, fmtMinutes } from "@/lib/batches";
 
 interface Results {
-  test: { id: string; title: string; total: number; maxScore: number; marks: number; negativeMarking: number; minutes: number; dueAt: number | null; createdAt: number };
+  test: { id: string; title: string; total: number; maxScore: number; marks: number; negativeMarking: number; minutes: number; dueAt: number | null; answersAt: number | null; createdAt: number };
   batch: { id: string; name: string };
   summary: { members: number; submitted: number; average: number | null; highest: number | null };
   rows: { userId: string; name: string; email: string; status: "submitted" | "late" | "in-progress" | "not-started"; score: number | null; correct: number | null; wrong: number | null; skipped: number | null; accuracy: number | null; seconds: number | null; submittedAt: number | null }[];
@@ -33,9 +33,20 @@ function ResultsView() {
   const testId = useSearchParams().get("id") ?? "";
   const [r, setR] = useState<Results | null>(null);
   const [error, setError] = useState("");
+  const [releasing, setReleasing] = useState(false);
+  const load = () => batchApi<Results>(`/tests/${testId}/results`).then((x) => (x.data ? setR(x.data) : setError(x.error ?? "")));
   useEffect(() => {
-    batchApi<Results>(`/tests/${testId}/results`).then((x) => (x.data ? setR(x.data) : setError(x.error ?? "")));
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testId]);
+  async function release() {
+    if (!confirm("Show the correct answers and explanations to every student now?")) return;
+    setReleasing(true);
+    const x = await batchApi(`/tests/${testId}`, { method: "PATCH", body: { releaseAnswers: true } });
+    setReleasing(false);
+    if (x.error) return alert(x.error);
+    load();
+  }
 
   if (error) return <p className="card text-sm text-red-700">{error}</p>;
   if (!r) return <PageSkeleton tiles={4} />;
@@ -57,6 +68,23 @@ function ResultsView() {
           </a>
         }
       />
+
+      {(() => {
+        const open = r.test.answersAt !== null && r.test.answersAt <= Date.now();
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm">
+            <span className="flex items-center gap-2 text-slate-600">
+              {open ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {open ? "Students can see answers and explanations." : r.test.answersAt ? `Answers open for students on ${fmtDate(r.test.answersAt)}.` : "Answers are hidden from students until you release them."}
+            </span>
+            {!open && (
+              <button className="btn-quiet" onClick={release} disabled={releasing}>
+                {releasing ? "Releasing…" : "Show answers now"}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

@@ -7,6 +7,7 @@ import { getProvider } from "@/lib/ai";
 import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
+import { istWeek, windowOf } from "@/lib/weekly";
 import { recordMistakes } from "./progress";
 import { picksFromTest, recordPicks } from "./quality";
 
@@ -14,6 +15,8 @@ const FULL_SIZE = 25;
 const TOPIC_SIZE = 15;
 /** Late submissions within this window still count (slow networks, auto-submit at 0:00). */
 const GRACE_MS = 2 * 60_000;
+/** Mistakes from a paper whose answers the trainer holds wait until this date (or the release). */
+const HELD_UNTIL = Date.parse("9999-12-31T00:00:00Z");
 
 export type PublicQuestion = Pick<MCQ, "id" | "question" | "options" | "questionHi" | "optionsHi" | "topicId" | "difficulty" | "source" | "pyq">;
 
@@ -128,9 +131,28 @@ export async function startTest(user: SessionUser, examId: string, opts: StartOp
 
 type Attempt = typeof schema.testAttempts.$inferSelect;
 
+/**
+ * Shared papers (the Sunday mock, batch tests) are the same for every taker, so their answers and
+ * explanations stay hidden until the paper closes: the Sunday window's close (plus the grace for
+ * late submissions), or the batch test's answer time (its due time, or when the trainer releases
+ * them). Returns when the answers open (Infinity = held by the trainer), or null if they are open.
+ */
+export async function answersOpenAt(attempt: Pick<Attempt, "kind" | "startedAt" | "batchTestId">, now = Date.now()): Promise<number | null> {
+  let at = 0;
+  if (attempt.kind === "weekly") at = windowOf(istWeek(attempt.startedAt.getTime())).closesAt + GRACE_MS;
+  else if (attempt.kind === "batch" && attempt.batchTestId) {
+    const [t] = await db.select({ answersAt: schema.batchTests.answersAt }).from(schema.batchTests).where(eq(schema.batchTests.id, attempt.batchTestId)).limit(1);
+    if (t) at = t.answersAt?.getTime() ?? Infinity;
+  }
+  return at > now ? at : null;
+}
+
 /** Everything the review and analysis screens need for a submitted attempt. */
-function review(attempt: Attempt, answers: (number | null)[], times: number[] | null, late = false) {
+function review(attempt: Attempt, answers: (number | null)[], times: number[] | null, late = false, openAt: number | null = null) {
   const { marks, negative } = markingFor(attempt.examId);
+  // While answers are hidden, a question keeps its key only where the taker picked it (they know
+  // that one was right); every other key and all explanations are left out.
+  const questions = openAt === null ? attempt.questions : attempt.questions.map((q, i) => ({ ...q, answer: answers[i] === q.answer ? q.answer : -1, explanation: "" }));
   return {
     attemptId: attempt.id,
     examId: attempt.examId,
@@ -141,8 +163,11 @@ function review(attempt: Attempt, answers: (number | null)[], times: number[] | 
     wrong: attempt.wrong ?? 0,
     skipped: attempt.skipped ?? 0,
     score: attempt.score ?? 0,
-    questions: attempt.questions,
+    questions,
     answers,
+    answersLocked: openAt !== null,
+    /** When the answers open (ms); null when open now or held until the trainer releases them. */
+    answersOpenAt: openAt === null || openAt === Infinity ? null : openAt,
     times,
     sections: attempt.sections,
     sectional: attempt.sectional,
@@ -161,7 +186,7 @@ export async function submitTest(user: SessionUser, attemptId: string, answers: 
   if (!attempt) throw new HttpError(404, "Test not found.");
 
   // Submitting twice (double click, retry after a network error) returns the first result.
-  if (attempt.submittedAt) return review(attempt, attempt.answers ?? [], attempt.times);
+  if (attempt.submittedAt) return review(attempt, attempt.answers ?? [], attempt.times, false, await answersOpenAt(attempt));
 
   const qs = attempt.questions;
   if (answers.length !== qs.length) throw new HttpError(400, "Answer count doesn’t match the test.");
@@ -191,6 +216,7 @@ export async function submitTest(user: SessionUser, attemptId: string, answers: 
   const skipped = qs.length - correct - wrong;
   const { negative } = markingFor(attempt.examId);
   const score = Math.round((correct - wrong * negative) * 100) / 100;
+  const openAt = await answersOpenAt(attempt);
 
   const updated = await db.transaction(async (tx) => {
     const rows = await tx
@@ -210,7 +236,7 @@ export async function submitTest(user: SessionUser, attemptId: string, answers: 
             lastPracticed: sql`now()`,
           },
         });
-      await recordMistakes(tx, user.id, outcomes);
+      await recordMistakes(tx, user.id, outcomes, openAt === null ? undefined : new Date(Math.min(openAt, HELD_UNTIL)));
     }
     return rows.length > 0;
   });
@@ -218,7 +244,7 @@ export async function submitTest(user: SessionUser, attemptId: string, answers: 
   if (!updated) return submitTest(user, attemptId, answers, times); // a concurrent submit won; return its result
   // Answer statistics are a nice-to-have: a failure here must not lose the submitted result.
   await recordPicks(picksFromTest(attempt.questions, clean)).catch((e) => console.error("recordPicks failed", e));
-  return { ...review({ ...attempt, correct, wrong, skipped, score, submittedAt: new Date() }, clean, cleanTimes, late) };
+  return { ...review({ ...attempt, correct, wrong, skipped, score, submittedAt: new Date() }, clean, cleanTimes, late, openAt) };
 }
 
 /** A submitted attempt, for the analysis screen. */
@@ -229,7 +255,7 @@ export async function getAttempt(user: SessionUser, attemptId: string) {
     .where(and(eq(schema.testAttempts.id, attemptId), eq(schema.testAttempts.userId, user.id)))
     .limit(1);
   if (!attempt?.submittedAt) throw new HttpError(404, "Test not found.");
-  return review(attempt, attempt.answers ?? [], attempt.times);
+  return review(attempt, attempt.answers ?? [], attempt.times, false, await answersOpenAt(attempt));
 }
 
 /** The user's submitted tests, newest first, without the questions. */

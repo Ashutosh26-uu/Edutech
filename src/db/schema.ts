@@ -191,6 +191,8 @@ export const batchTests = pgTable(
     questions: jsonb("questions").$type<MCQ[]>().notNull(),
     minutes: integer("minutes").notNull(),
     dueAt: timestamp("due_at", { withTimezone: true }),
+    /** When takers may see correct answers and explanations; null = held until the trainer releases them. */
+    answersAt: timestamp("answers_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("batch_tests_batch_idx").on(t.batchId, t.createdAt)],

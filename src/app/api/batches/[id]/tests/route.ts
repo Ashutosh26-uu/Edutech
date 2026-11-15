@@ -11,6 +11,7 @@ const Body = z.object({
   count: z.number().int().min(LIMITS.minQuestions).max(LIMITS.maxQuestions),
   minutes: z.number().int().min(LIMITS.minMinutes).max(LIMITS.maxMinutes),
   dueAt: z.number().int().positive().nullable().optional(),
+  holdAnswers: z.boolean().optional(),
 });
 
 /** The trainer assigns a new test (a fixed paper) to the batch. */
