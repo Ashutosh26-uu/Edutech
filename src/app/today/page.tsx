@@ -243,7 +243,9 @@ export default function TodayPage() {
         </div>
       </details>
 
-      <DailyReminder examId={store.examId} />
+      <div id="reminder" className="scroll-mt-20">
+        <DailyReminder examId={store.examId} />
+      </div>
       <BadgeToast store={store} />
     </div>
   );
