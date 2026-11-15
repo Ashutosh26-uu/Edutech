@@ -41,10 +41,19 @@ function CurrentAffairs() {
   useEffect(() => setDone(readJson<Record<string, number>>(DONE_KEY, {})), []);
   useEffect(() => {
     if (IS_STATIC) return;
+    // Switching days quickly: only the latest request may update the page.
+    let live = true;
     setData(null);
-    request(`/api/current-affairs${day ? `?day=${day}` : ""}`)
+    setError("");
+    request(`/api/current-affairs${day ? `?day=${encodeURIComponent(day)}` : ""}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setData, () => setError("Could not load the quiz. Check your connection and try again."));
+      .then(
+        (d) => live && setData(d),
+        () => live && setError("Could not load the quiz. Check your connection and try again."),
+      );
+    return () => {
+      live = false;
+    };
   }, [day]);
 
   if (IS_STATIC) return <StaticNotice>The daily current affairs quiz is on the full site.</StaticNotice>;

@@ -4,10 +4,11 @@
 // - Pages and everything else are network-first, falling back to the last cached copy offline.
 // - API calls are never cached (or even handled here).
 // Bump VERSION to drop every old cache when the caching rules change.
-const VERSION = "v2";
+const VERSION = "v3";
 const PAGES = `studyclip-pages-${VERSION}`;
 const STATIC = `studyclip-static-${VERSION}`;
 const STATIC_MAX = 400; // hashed files pile up across deploys; keep the newest few hundred
+const PAGES_MAX = 120; // offline copies of the pages visited most recently
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
@@ -42,9 +43,11 @@ async function cacheFirst(req) {
 async function networkFirst(req) {
   try {
     const res = await fetch(req);
-    if (cacheable(res)) {
+    // Router payload fetches (?_rsc=…) differ for every navigation state: never store them, or the
+    // cache grows without limit until the browser wipes the whole site's storage.
+    if (cacheable(res) && !new URL(req.url).searchParams.has("_rsc")) {
       const copy = res.clone();
-      caches.open(PAGES).then((c) => c.put(req, copy));
+      caches.open(PAGES).then((c) => c.put(req, copy).then(() => trim(c, PAGES_MAX)));
     }
     return res;
   } catch (err) {

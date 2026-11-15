@@ -117,7 +117,7 @@ export async function rankAgainst(where: SQL, score: number, userId: string) {
 export async function getStanding(user: SessionUser, attemptId: string) {
   const t = schema.testAttempts;
   const [mine] = await db
-    .select({ examId: t.examId, kind: t.kind, topicIds: t.topicIds, score: t.score, startedAt: t.startedAt, submittedAt: t.submittedAt, n: sql<number>`jsonb_array_length(${t.questions})` })
+    .select({ examId: t.examId, kind: t.kind, topicIds: t.topicIds, batchTestId: t.batchTestId, score: t.score, startedAt: t.startedAt, submittedAt: t.submittedAt, n: sql<number>`jsonb_array_length(${t.questions})` })
     .from(t)
     .where(and(eq(t.id, attemptId), eq(t.userId, user.id)))
     .limit(1);
@@ -125,9 +125,15 @@ export async function getStanding(user: SessionUser, attemptId: string) {
   if (!mine.submittedAt || mine.score === null) throw new HttpError(409, "Submit the test to see your rank.");
   if (mine.kind === "weekly") {
     const w = windowAt(mine.startedAt.getTime());
-    return { ...(await rankAgainst(weeklyRankFilter(mine.examId, w), mine.score, user.id)), provisional: Date.now() < w.closesAt };
+    // Final only once late submissions (deadline + 2 minutes) can no longer arrive.
+    return { ...(await rankAgainst(weeklyRankFilter(mine.examId, w), mine.score, user.id)), provisional: Date.now() < w.closesAt + 2 * 60_000 };
   }
-  const sameTopics = mine.kind === "full" ? sql`true` : sql`${t.topicIds} = ${mine.topicIds}`;
+  // An assigned batch paper ranks only against the same assignment, and only on-time submissions.
+  if (mine.kind === "batch" && mine.batchTestId) {
+    return rankAgainst(and(eq(t.batchTestId, mine.batchTestId), isNotNull(t.submittedAt), sql`${t.submittedAt} <= ${t.deadlineAt} + interval '2 minutes'`)!, mine.score, user.id);
+  }
+  // eq() binds the array as one text[] parameter; a raw sql`${array}` would expand it into a list.
+  const sameTopics = mine.kind === "full" ? sql`true` : eq(t.topicIds, mine.topicIds);
   return rankAgainst(and(eq(t.examId, mine.examId), eq(t.kind, mine.kind), isNotNull(t.submittedAt), sql`jsonb_array_length(${t.questions}) = ${mine.n}`, sameTopics)!, mine.score, user.id);
 }
 

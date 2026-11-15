@@ -1,4 +1,4 @@
-# Deploys main to Netlify after every push, running database migrations first.
+# Deploys main to Netlify once CI has passed on it, running database migrations first.
 # Does nothing until these repository secrets are set (Settings → Secrets and variables → Actions):
 #   NETLIFY_AUTH_TOKEN  personal access token (Netlify → User settings → Applications)
 #   NETLIFY_SITE_ID     the site's Project ID (Project configuration → General)
@@ -7,8 +7,12 @@
 # The build reads the site's own environment variables from Netlify, as a manual deploy does.
 name: Deploy to Netlify
 
+# Runs only after the CI workflow succeeds on main, so a change that fails type-checks, tests or the
+# build never reaches production (and never migrates the production database).
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -21,6 +25,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -41,6 +46,9 @@ jobs:
 
       - if: steps.gate.outputs.ready == 'true'
         uses: actions/checkout@v4
+        with:
+          # The commit CI checked, not whatever main points to by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - if: steps.gate.outputs.ready == 'true'
         uses: actions/setup-node@v4
@@ -61,7 +69,8 @@ jobs:
         name: Build and deploy
         run: |
           for i in 1 2 3; do
-            npx --yes netlify-cli deploy --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}" && exit 0
+            # Pinned: a new CLI release must not change how production deploys without review.
+            npx --yes netlify-cli@27.16.2 deploy --prod --site "$NETLIFY_SITE_ID" --message "GitHub ${GITHUB_SHA::7}" && exit 0
             echo "Deploy attempt $i failed; retrying in 20 s"; sleep 20
           done
           exit 1
@@ -69,4 +78,4 @@ jobs:
       # A deploy can report success yet serve pages whose CSS/JS files 404; fail the run if so.
       - if: steps.gate.outputs.ready == 'true'
         name: Check the live site
-        run: npm run check:live
+        run: npm run check:live -- "${{ vars.SITE_URL || 'https://studyclip.netlify.app' }}"

@@ -1,6 +1,6 @@
 import "server-only";
 import type { NextRequest } from "next/server";
-import { requireUser, type SessionUser } from "./auth";
+import { requireUser, roleEmail, type SessionUser } from "./auth";
 import { HttpError } from "./http";
 
 /** Admins are the accounts listed in ADMIN_EMAILS (comma-separated, any case). */
@@ -11,7 +11,7 @@ const ADMINS = new Set(
     .filter(Boolean),
 );
 
-export const isAdmin = (user: SessionUser | null) => !!user && ADMINS.has(user.email.toLowerCase());
+export const isAdmin = (user: SessionUser | null) => !!roleEmail(user) && ADMINS.has(roleEmail(user)!);
 
 export async function requireAdmin(req: NextRequest): Promise<SessionUser> {
   const user = await requireUser(req);

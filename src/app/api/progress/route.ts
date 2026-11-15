@@ -21,6 +21,12 @@ export const POST = route(async (req) => {
   await rateLimit(`progress:${user.id}`, 60, 60_000);
   const { answers } = await parseBody(req, Body);
   await recordPractice(user, answers);
-  await recordPicks(answers.map((a) => ({ questionId: a.questionId, chosenText: a.chosenText ?? null }))).catch((e) => console.error("recordPicks failed", e));
+  // Answer statistics are shared by everyone (they flag suspect answer keys), so one account can add
+  // at most ~20 practice sets' worth a day; beyond that its picks are simply not counted.
+  const canCount = await rateLimit(`picks:${user.id}`, 20, 24 * 60 * 60_000).then(
+    () => true,
+    () => false,
+  );
+  if (canCount) await recordPicks(answers.slice(0, 25).map((a) => ({ questionId: a.questionId, chosenText: a.chosenText ?? null }))).catch((e) => console.error("recordPicks failed", e));
   return json({ ok: true });
 });

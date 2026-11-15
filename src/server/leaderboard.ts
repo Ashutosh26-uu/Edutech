@@ -83,6 +83,8 @@ export async function weeklyBoard(examId: string, viewer: SessionUser | null) {
       from ${a}
       join ${u} on ${u.id} = ${a.userId}
       where ${a.examId} = ${examId}
+        -- Assigned batch papers are private to a batch and can be created at will: never ranked here.
+        and ${a.kind} <> 'batch'
         and ${a.submittedAt} >= ${start.toISOString()}::timestamptz and ${a.submittedAt} < ${end.toISOString()}::timestamptz
         and ${a.submittedAt} <= ${a.deadlineAt} + interval '2 minutes'
         and ${u.leaderboard} and ${u.displayName} is not null

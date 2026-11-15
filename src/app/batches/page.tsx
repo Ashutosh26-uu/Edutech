@@ -48,7 +48,14 @@ function Batches() {
   return (
     <div className="space-y-8">
       <PageHeader path="/batches" title="Batches" intro="Join your trainer’s batch to take assigned tests, or run your own batch as a trainer." />
-      {error && <p className="card text-sm text-red-700">{error}</p>}
+      {error && (
+        <div className="card flex flex-wrap items-center justify-between gap-2 text-sm text-red-700">
+          {error}
+          <button className="btn-ghost" onClick={() => (setError(""), load())}>
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section className="space-y-3" aria-labelledby="my-tests">
@@ -58,7 +65,7 @@ function Batches() {
             </h2>
             {pending > 0 && <span className="chip bg-brand-50 text-brand-700">{pending} to take</span>}
           </div>
-          {!data ? (
+          {!data && error ? null : !data ? (
             <div className="skeleton h-40" />
           ) : data.joined.length === 0 ? (
             <p className="card text-sm text-slate-600">You haven’t joined a batch yet. Ask your trainer for the batch code and enter it on the right.</p>

@@ -13,7 +13,7 @@ interface Results {
   test: { id: string; title: string; total: number; maxScore: number; marks: number; negativeMarking: number; minutes: number; dueAt: number | null; createdAt: number };
   batch: { id: string; name: string };
   summary: { members: number; submitted: number; average: number | null; highest: number | null };
-  rows: { userId: string; name: string; email: string; status: "submitted" | "in-progress" | "not-started"; score: number | null; correct: number | null; wrong: number | null; skipped: number | null; accuracy: number | null; seconds: number | null; submittedAt: number | null }[];
+  rows: { userId: string; name: string; email: string; status: "submitted" | "late" | "in-progress" | "not-started"; score: number | null; correct: number | null; wrong: number | null; skipped: number | null; accuracy: number | null; seconds: number | null; submittedAt: number | null }[];
   topics: { id: string; name: string; asked: number; attempted: number; accuracy: number | null }[];
 }
 
@@ -27,7 +27,7 @@ export default function ResultsPage() {
   );
 }
 
-const STATUS = { submitted: "Submitted", "in-progress": "In progress", "not-started": "Not started" };
+const STATUS = { submitted: "Submitted", late: "Late (not counted)", "in-progress": "In progress", "not-started": "Not started" };
 
 function ResultsView() {
   const testId = useSearchParams().get("id") ?? "";

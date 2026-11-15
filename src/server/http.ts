@@ -17,7 +17,8 @@ export const json = (data: unknown, init?: number | ResponseInit) => NextRespons
 
 /** Best-effort client IP behind Vercel / proxies. */
 export function clientIp(req: NextRequest): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "local";
+  // Headers the platform sets itself come first: a client can put anything in X-Forwarded-For.
+  return req.headers.get("x-nf-client-connection-ip") || req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
 }
 
 /**
