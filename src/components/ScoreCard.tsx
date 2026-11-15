@@ -3,13 +3,14 @@
 import { Download, Image as ImageIcon, Loader2, MessageCircle, Share2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { SITE_URL } from "@/data/site";
 
 /**
  * Shareable score card: a 1080×1350 PNG (portrait, fits a WhatsApp or Instagram status) drawn on a
  * canvas in the browser. No server and no image service, so it also works on the static build.
  */
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://studyclip.netlify.app").replace(/\/+$/, "");
+const SITE = SITE_URL;
 /** Shared with the challenge box, so a name typed once is offered in both places. */
 const NAME_KEY = "studyclip:challenge-name";
 
