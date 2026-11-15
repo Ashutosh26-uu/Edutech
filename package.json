@@ -26,7 +26,8 @@
     "test:batches": "tsx --conditions react-server scripts/test-batches.mjs",
     "test:content": "tsx --conditions react-server scripts/test-content.mjs",
     "test:institutes": "tsx --conditions react-server scripts/test-institutes.mjs",
-    "test:quiz-text": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-quiz-text.mjs"
+    "test:quiz-text": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-quiz-text.mjs",
+    "test:headlines": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-headlines.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",
