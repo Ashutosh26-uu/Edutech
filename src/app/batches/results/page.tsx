@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { BatchGate } from "@/components/BatchGate";
 import { PageHeader } from "@/components/PageHeader";
@@ -30,7 +30,7 @@ export default function ResultsPage() {
 const STATUS = { submitted: "Submitted", "in-progress": "In progress", "not-started": "Not started" };
 
 function ResultsView() {
-  const { testId } = useParams<{ testId: string }>();
+  const testId = useSearchParams().get("id") ?? "";
   const [r, setR] = useState<Results | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -44,11 +44,11 @@ function ResultsView() {
 
   return (
     <div className="space-y-6">
-      <Link href={`/batches/${r.batch.id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+      <Link href={`/batches/manage?id=${r.batch.id}`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
         <ArrowLeft className="h-4 w-4" /> {r.batch.name}
       </Link>
       <PageHeader
-        path={`/batches/results/${testId}`}
+        path="/batches/results"
         title={r.test.title}
         intro={`${r.test.total} questions · ${r.test.minutes} min · out of ${r.test.maxScore}${r.test.negativeMarking ? ` · −${r.test.negativeMarking * r.test.marks} per wrong answer` : ""}${r.test.dueAt ? ` · due ${fmtDate(r.test.dueAt)}` : ""}`}
         aside={

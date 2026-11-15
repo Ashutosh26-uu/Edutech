@@ -113,7 +113,7 @@ function TestAction({ t }: { t: Mine["joined"][number]["tests"][number] }) {
     );
   if (t.status === "missed" || t.status === "expired") return <span className="shrink-0 text-xs text-slate-500">{t.status === "missed" ? "Closed" : "Time ran out"}</span>;
   return (
-    <Link href={`/batches/test/${t.id}`} className={`shrink-0 ${t.status === "in-progress" ? "btn-ghost" : "btn-primary"}`}>
+    <Link href={`/batches/test?id=${t.id}`} className={`shrink-0 ${t.status === "in-progress" ? "btn-ghost" : "btn-primary"}`}>
       {t.status === "in-progress" ? (
         <>
           <Clock className="h-4 w-4" /> Resume
@@ -215,7 +215,7 @@ function TrainerBox({ data, onCreated }: { data: Mine | null; onCreated: () => v
         <ul className="space-y-2">
           {data.teaching.map((t) => (
             <li key={t.id} className="flex items-center gap-2">
-              <Link href={`/batches/${t.id}`} className="card-link flex min-w-0 flex-1 items-center justify-between gap-3 p-3 sm:p-3">
+              <Link href={`/batches/manage?id=${t.id}`} className="card-link flex min-w-0 flex-1 items-center justify-between gap-3 p-3 sm:p-3">
                 <span className="min-w-0">
                   <span className="block truncate font-medium text-slate-900">{t.name}</span>
                   <span className="flex items-center gap-2 text-xs text-slate-500">

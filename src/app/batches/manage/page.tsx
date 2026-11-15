@@ -2,7 +2,7 @@
 
 import { BarChart3, CheckCircle2, Copy, Loader2, Plus, Trash2, UserMinus } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { BatchGate } from "@/components/BatchGate";
 import { PageHeader } from "@/components/PageHeader";
@@ -34,7 +34,7 @@ export default function BatchPage() {
 }
 
 function Batch() {
-  const { id } = useParams<{ id: string }>();
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState("");
@@ -76,7 +76,7 @@ function Batch() {
 
   return (
     <div className="space-y-6">
-      <PageHeader path={`/batches/${id}`} title={d.batch.name} intro={`${d.batch.institution ? `${d.batch.institution} · ` : ""}${d.members.length} students · ${d.tests.length} tests`}>
+      <PageHeader path="/batches/manage" title={d.batch.name} intro={`${d.batch.institution ? `${d.batch.institution} · ` : ""}${d.members.length} students · ${d.tests.length} tests`}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-lg border border-slate-200 bg-surface px-3 py-1.5 text-sm">
             Join code <span className="ml-1 font-mono text-base font-semibold tracking-widest text-slate-900">{d.batch.joinCode}</span>
@@ -111,7 +111,7 @@ function Batch() {
                       <span className="mr-2 text-xs text-slate-500">
                         {t.submitted}/{d.members.length} done{t.average !== null ? ` · avg ${Math.round(t.average * 10) / 10}` : ""}
                       </span>
-                      <Link href={`/batches/results/${t.id}`} className="btn-ghost">
+                      <Link href={`/batches/results?id=${t.id}`} className="btn-ghost">
                         <BarChart3 className="h-4 w-4" /> Results
                       </Link>
                       <button className="btn-quiet px-2 text-slate-400 hover:text-red-600" onClick={() => deleteTest(t.id, t.title)} aria-label={`Delete ${t.title}`}>

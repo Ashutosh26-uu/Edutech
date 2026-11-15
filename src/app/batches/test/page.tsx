@@ -2,7 +2,7 @@
 
 import { ArrowLeft, CheckCircle2, Clock, ListChecks, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { BatchGate } from "@/components/BatchGate";
 import { Quiz, type AnswerResult } from "@/components/Quiz";
@@ -44,7 +44,7 @@ export default function BatchTestPage() {
 }
 
 function BatchTest() {
-  const { testId } = useParams<{ testId: string }>();
+  const testId = useSearchParams().get("id") ?? "";
   const account = useAccount();
   const [info, setInfo] = useState<Info | null>(null);
   const [run, setRun] = useState<Started | null>(null);
