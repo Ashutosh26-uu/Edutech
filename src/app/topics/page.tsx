@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BANK_SIZES } from "@/data/bank";
 import { absoluteUrl } from "@/data/site";
 import { TOPICS } from "@/data/topics";
+import { subjectStyle } from "@/lib/subjectStyle";
 import type { Topic } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -30,17 +31,23 @@ export default function TopicsPage() {
         intro={`Pick a topic to read its short notes, then try solved questions on it. ${TOPICS.length} topics across ${groups.length} subjects, with ${total.toLocaleString("en-IN")} practice questions.`}
       >
         <nav aria-label="Subjects" className="mt-4 flex flex-wrap gap-2">
-          {groups.map(([subject]) => (
-            <a key={subject} href={`#${slug(subject)}`} className="chip bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-brand-50">
-              {subject}
-            </a>
-          ))}
+          {groups.map(([subject]) => {
+            const st = subjectStyle(subject);
+            return (
+              <a key={subject} href={`#${slug(subject)}`} className="pill gap-1.5 py-1 pl-1.5">
+                <span className={`grid h-5 w-5 place-items-center rounded-full ${st.tile}`}>
+                  <st.icon className="h-3 w-3" aria-hidden />
+                </span>
+                {subject}
+              </a>
+            );
+          })}
         </nav>
       </PageHeader>
       <div className="grid items-start gap-5 lg:grid-cols-2">
         {groups.map(([subject, topics]) => (
           <section key={subject} id={slug(subject)} className="card scroll-mt-20">
-            <h2 className="mb-2 font-semibold">{subject}</h2>
+            <SubjectHeading name={subject} count={topics.length} />
             <ul className="divide-y divide-slate-100">
               {topics.map((t) => {
                 const n = BANK_SIZES[t.id] ?? 0;
@@ -57,6 +64,19 @@ export default function TopicsPage() {
           </section>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SubjectHeading({ name, count }: { name: string; count: number }) {
+  const st = subjectStyle(name);
+  return (
+    <div className="mb-2 flex items-center gap-3">
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${st.tile}`}>
+        <st.icon className="h-4 w-4" aria-hidden />
+      </span>
+      <h2 className="min-w-0 flex-1 font-semibold">{name}</h2>
+      <span className="text-xs text-slate-500">{count} topics</span>
     </div>
   );
 }
