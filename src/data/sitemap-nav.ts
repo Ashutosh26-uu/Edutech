@@ -48,6 +48,7 @@ export const SECTIONS: NavSection[] = [
     items: [
       { href: "/exams", label: "Full & section mocks", description: "Open your exam to start a timed mock" },
       { href: "/mock-sunday", label: "Sunday All-India Mock", description: "One free paper for everyone, every Sunday" },
+      { href: "/challenge", label: "Challenge a friend", description: "10 questions, one link: see who scores more", needsAccount: true },
       { href: "/leaderboard", label: "Leaderboards", description: "Weekly ranks for every exam", needsAccount: true, private: true },
       { href: "/last-minute", label: "Exam tomorrow pack", description: "Revision sheet, rapid cards and quick tests" },
       { href: "/progress", label: "Test history", description: "Scores and full analysis of past tests" },

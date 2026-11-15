@@ -242,10 +242,11 @@ export const SITE: Faq[] = [
     cat: "practice",
     q: "Can I challenge a friend?",
     qh: "Dost ko challenge kar sakte hain?",
-    ask: ["challenge friend", "share quiz with friend", "dost ko challenge", "compete with friends", "share questions on whatsapp", "challenge link", "friend ke saath quiz"],
-    keys: ["challenge", "friend", "dost", "share", "whatsapp", "compete"],
-    en: "Yes! After an untimed practice set, the result screen shows a challenge box. Add your name (optional) and tap **Share** (WhatsApp or any app) or **Copy link**. Your friend gets the same questions and sees both scores at the end. No account needed.",
-    hi: "Haan! Untimed practice set ke baad result screen pe challenge box aata hai. Apna naam likho (chaho to) aur **Share** dabao (WhatsApp ya koi bhi app) ya **Copy link**. Dost ko wahi sawaal milenge aur end mein dono ke score dikhenge. Account zaroori nahi.",
+    ask: ["challenge friend", "share quiz with friend", "dost ko challenge", "compete with friends", "share questions on whatsapp", "challenge link", "friend ke saath quiz", "1 vs 1", "one vs one", "duel", "who scores more"],
+    keys: ["challenge", "friend", "dost", "share", "whatsapp", "compete", "duel"],
+    en: "Yes, two ways. **Challenge a friend** (Tests menu, free account): pick your exam, play 10 questions, send the link. Everyone who opens it answers the same 10 once, and all of you see a live scoreboard (a tie goes to the faster one); answers show only after you finish. Without an account: after an untimed practice set, the result screen has a challenge box with **Share** / **Copy link**; your friend gets the same questions and compares with your score.",
+    hi: "Haan, do tarike. **Challenge a friend** (Tests menu, free account): exam chuno, 10 sawal khelo, link bhejo. Jo bhi link khole woh wahi 10 sawal ek baar karega, aur sabko live scoreboard dikhega (barabar score pe jo jaldi kare woh aage); answers khatam karne ke baad hi dikhte hain. Bina account: untimed practice ke baad result screen pe challenge box mein **Share** / **Copy link**; dost ko wahi sawal milte hain aur woh tumhare score se compare karta hai.",
+    links: [["Challenge a friend", "/challenge", "Challenge banao"]],
   },
 
   // ---------------- Tests ----------------
