@@ -49,6 +49,14 @@ export default async function PlacementPage() {
         secondary={{ href: "/resume", label: "Make your resume" }}
       />
 
+      <Link href="/batches" className="card-link flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <span>
+          <span className="block font-semibold text-slate-900">Placement trainer or TPO?</span>
+          <span className="block text-sm text-slate-600">Create a batch, assign company-pattern tests and see every student’s score, weak topics and a CSV report.</span>
+        </span>
+        <span className="text-sm font-medium text-brand-700">Open Batches →</span>
+      </Link>
+
       <section className="space-y-3">
         <h2 className="flex items-center gap-2 font-semibold text-slate-900">
           <Briefcase className="h-4 w-4 text-slate-500" /> Company tests

@@ -57,6 +57,13 @@
       "when": 1794410320676,
       "tag": "0007_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794705363345,
+      "tag": "0008_trainer_batches",
+      "breakpoints": true
     }
   ]
 }
