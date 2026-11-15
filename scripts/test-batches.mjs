@@ -82,6 +82,13 @@ try {
   const r2 = await submitTest(s2, a2.attemptId, a2.questions.map(() => 0));
   assert.equal(r2.correct + r2.wrong + r2.skipped, 12);
 
+  // Counts on the trainer's pages (correlated subqueries must use the outer row's id)
+  const det = await B.batchDetail(trainer, batch.id);
+  assert.equal(det.tests.find((t) => t.id === test.id).submitted, 2);
+  assert.equal(det.tests.find((t) => t.id === custom.id).submitted, 0);
+  assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).tests, 2);
+  assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).members, 2);
+
   // Results: both rows, s1 first, topic breakdown, CSV
   const res = await B.batchTestResults(trainer, test.id);
   assert.equal(res.summary.submitted, 2);

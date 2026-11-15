@@ -10,7 +10,7 @@ import { PageSkeleton } from "@/components/Skeleton";
 import { batchApi, fmtDate, joinLink } from "@/lib/batches";
 
 interface Mine {
-  teaching: { id: string; name: string; institution: string | null; joinCode: string; members: number; tests: number; createdAt: number }[];
+  teaching: { id: string; name: string; institution: string | null; joinCode: string; owner: boolean; members: number; tests: number; createdAt: number }[];
   joined: {
     id: string;
     name: string;
@@ -217,7 +217,10 @@ function TrainerBox({ data, onCreated }: { data: Mine | null; onCreated: () => v
             <li key={t.id} className="flex items-center gap-2">
               <Link href={`/batches/manage?id=${t.id}`} className="card-link flex min-w-0 flex-1 items-center justify-between gap-3 p-3 sm:p-3">
                 <span className="min-w-0">
-                  <span className="block truncate font-medium text-slate-900">{t.name}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate font-medium text-slate-900">{t.name}</span>
+                    {!t.owner && <span className="chip shrink-0 bg-slate-100 text-slate-600">co-trainer</span>}
+                  </span>
                   <span className="flex items-center gap-2 text-xs text-slate-500">
                     <Users className="h-3.5 w-3.5" /> {t.members} · {t.tests} tests · code <span className="font-mono">{t.joinCode}</span>
                   </span>

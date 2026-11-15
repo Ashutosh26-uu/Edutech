@@ -335,3 +335,139 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_hour_idx").on(t.hourIst, t.lastSentOn)],
 );
+
+/**
+ * Co-trainers: the batch owner gives other people (by email) the same access to a batch, so a
+ * university can let its whole placement team assign tests and read results. The email may not
+ * have an account yet; access applies once someone logs in with it.
+ */
+export const batchTrainers = pgTable(
+  "batch_trainers",
+  {
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    email: text("email").notNull(), // lower-cased
+    addedBy: uuid("added_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.batchId, t.email] }), index("batch_trainers_email_idx").on(t.email)],
+);
+
+/**
+ * People who may publish site content (the daily current-affairs quiz and the exam calendar),
+ * granted by an admin (ADMIN_EMAILS) by email, so access can be given before the account exists.
+ */
+export const contentEditors = pgTable("content_editors", {
+  email: text("email").primaryKey(), // lower-cased
+  /** Shown next to what they publish, e.g. a university or coaching name. */
+  organisation: text("organisation"),
+  grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One current-affairs quiz per day (India date). Drafts stay hidden until published. */
+export const dailyQuizzes = pgTable(
+  "daily_quizzes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    day: date("day").notNull().unique(),
+    title: text("title").notNull(),
+    questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    published: boolean("published").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("daily_quizzes_published_idx").on(t.published, t.day)],
+);
+
+/** Exam calendar: application windows, admit cards, exam days and results, with the official link. */
+export const examEvents = pgTable(
+  "exam_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** An exam from data/exams.ts, or null for an event that belongs to no listed exam. */
+    examId: text("exam_id"),
+    kind: text("kind", { enum: ["notification", "apply-start", "apply-end", "admit-card", "exam", "result", "other"] }).notNull(),
+    title: text("title").notNull(),
+    day: date("day").notNull(),
+    /** Optional last day of a range (an exam held over several days). */
+    endDay: date("end_day"),
+    link: text("link"),
+    note: text("note"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("exam_events_day_idx").on(t.day), index("exam_events_exam_idx").on(t.examId, t.day)],
+);
+
+/**
+ * Institution pages: a college, university or coaching centre publishes its own question sets.
+ * Anyone logged in can create one; it is live at once but marked unverified until a site admin
+ * verifies it (or removes it). Public sets are open to everyone; members-only sets need the
+ * institution's join code.
+ */
+export const institutions = pgTable(
+  "institutions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    city: text("city"),
+    about: text("about"),
+    website: text("website"),
+    joinCode: text("join_code").notNull().unique(),
+    verified: boolean("verified").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("institutions_verified_idx").on(t.verified, t.name)],
+);
+
+/** Who runs an institution page: the owner (who created it) and staff the owner adds by email. */
+export const institutionStaff = pgTable(
+  "institution_staff",
+  {
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id, { onDelete: "cascade" }),
+    email: text("email").notNull(), // lower-cased
+    role: text("role", { enum: ["owner", "staff"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.institutionId, t.email] }), index("institution_staff_email_idx").on(t.email)],
+);
+
+/** Students who joined an institution with its code, for members-only sets. */
+export const institutionMembers = pgTable(
+  "institution_members",
+  {
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.institutionId, t.userId] }), index("institution_members_user_idx").on(t.userId)],
+);
+
+/** A question set an institution published. */
+export const institutionSets = pgTable(
+  "institution_sets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    visibility: text("visibility", { enum: ["public", "members"] }).notNull().default("public"),
+    published: boolean("published").notNull().default(true),
+    questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("institution_sets_inst_idx").on(t.institutionId, t.updatedAt)],
+);

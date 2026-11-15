@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CheckCircle2, Copy, Loader2, Plus, Trash2, UserMinus } from "lucide-react";
+import { BarChart3, CheckCircle2, Copy, Loader2, Plus, Trash2, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -14,6 +14,8 @@ import { batchApi, fmtDate, joinLink } from "@/lib/batches";
 
 interface Detail {
   batch: { id: string; name: string; institution: string | null; joinCode: string; createdAt: number };
+  owner: boolean;
+  trainers: string[];
   members: { userId: string; name: string; email: string; joinedAt: number }[];
   tests: { id: string; title: string; examId: string; minutes: number; dueAt: number | null; total: number; submitted: number; average: number | null; createdAt: number }[];
 }
@@ -146,12 +148,76 @@ function Batch() {
               ))}
             </ul>
           )}
-          <button className="btn-quiet w-full justify-start text-red-600" onClick={deleteBatch}>
-            <Trash2 className="h-4 w-4" /> Delete batch
-          </button>
+          {d.owner && (
+            <button className="btn-quiet w-full justify-start text-red-600" onClick={deleteBatch}>
+              <Trash2 className="h-4 w-4" /> Delete batch
+            </button>
+          )}
         </section>
       </div>
+
+      <Trainers batchId={id} owner={d.owner} trainers={d.trainers} onChange={load} />
     </div>
+  );
+}
+
+/** Co-trainers: the owner gives colleagues (by email) the same access to the batch. */
+function Trainers({ batchId, owner, trainers, onChange }: { batchId: string; owner: boolean; trainers: string[]; onChange: () => void }) {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const r = await batchApi(`/${batchId}/trainers`, { method: "POST", body: { email } });
+    setBusy(false);
+    if (r.error) return setError(r.error);
+    setEmail("");
+    onChange();
+  }
+  const remove = async (who: string) => {
+    if (!confirm(`Remove ${who} as a trainer of this batch?`)) return;
+    const r = await batchApi(`/${batchId}/trainers`, { method: "DELETE", body: { email: who } });
+    if (r.error) alert(r.error);
+    onChange();
+  };
+  return (
+    <section className="card space-y-3" aria-labelledby="trainers-h">
+      <div>
+        <h2 id="trainers-h" className="font-semibold">
+          Trainers
+        </h2>
+        <p className="text-sm text-slate-600">
+          {owner
+            ? "Add colleagues by email (for example your college’s placement team). They can assign tests, see results and manage students. Only you can delete the batch or change trainers."
+            : "You are a co-trainer of this batch. The owner manages who else trains it."}
+        </p>
+      </div>
+      {trainers.length > 0 && (
+        <ul className="divide-y divide-slate-100">
+          {trainers.map((t) => (
+            <li key={t} className="flex items-center justify-between gap-2 py-2 text-sm">
+              <span className="truncate text-slate-800">{t}</span>
+              {owner && (
+                <button className="btn-quiet px-2 text-slate-400 hover:text-red-600" onClick={() => remove(t)} aria-label={`Remove ${t}`}>
+                  <UserMinus className="h-4 w-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {owner && (
+        <form onSubmit={add} className="flex flex-col gap-2 sm:flex-row">
+          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="colleague@college.edu" aria-label="Trainer email" />
+          <button className="btn-ghost shrink-0" disabled={busy || !email.includes("@")}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Add trainer
+          </button>
+        </form>
+      )}
+      {error && <p className="text-sm text-red-700">{error}</p>}
+    </section>
   );
 }
 

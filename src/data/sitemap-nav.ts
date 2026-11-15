@@ -35,6 +35,7 @@ export const SECTIONS: NavSection[] = [
     title: "Practise",
     items: [
       { href: "/exams", label: "Exams", description: "Find your exam: syllabus and topic practice" },
+      { href: "/current-affairs", label: "Current affairs quiz", description: "A short quiz on the news, every day" },
       { href: "/mistakes", label: "Mistake notebook", description: "Practise the questions you got wrong", needsAccount: true, private: true },
       { href: "/saved", label: "Saved questions", description: "Questions you starred", private: true },
       { href: "/drills", label: "Speed drills", description: "60-second calculation drills" },
@@ -69,6 +70,7 @@ export const SECTIONS: NavSection[] = [
     id: "plan",
     title: "Plan & track",
     items: [
+      { href: "/calendar", label: "Exam calendar", description: "Application, admit card, exam and result dates" },
       { href: "/tracker", label: "Syllabus tracker", description: "Mark topics done and plan revision" },
       { href: "/focus", label: "Focus timer", description: "Pomodoro blocks that earn XP" },
       { href: "/progress", label: "My progress", description: "Accuracy, weak topics and readiness" },
@@ -81,6 +83,7 @@ export const SECTIONS: NavSection[] = [
       { href: "/placement", label: "Placement hub", description: "Company tests, aptitude and coding rounds" },
       { href: "/interview", label: "Interview prep", description: "HR and technical questions with answers" },
       { href: "/resume", label: "Resume builder", description: "Templates with PDF and Word download" },
+      { href: "/institutes", label: "Institutes", description: "Practice sets from colleges and coaching institutes" },
       { href: "/batches", label: "Batches", description: "Join your trainer’s batch, or run one as a trainer", needsAccount: true, private: true },
     ],
   },
@@ -89,6 +92,7 @@ export const SECTIONS: NavSection[] = [
 /** Pages listed only in the footer (and the phone menu's bottom row). */
 export const COMPANY_LINKS: NavItem[] = [
   { href: "/start", label: "Start here", description: "New to StudyClip? A simple step-by-step guide" },
+  { href: "/guide", label: "How to use", description: "Guides for students, trainers, universities and editors" },
   { href: "/pricing", label: "Pricing", description: "Test credits and revision packs" },
   { href: "/invite", label: "Invite friends", description: "Get a free test for every friend who joins", needsAccount: true, private: true },
   { href: "/about", label: "About us", description: "Who we are" },

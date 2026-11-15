@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, ArrowRightLeft, CalendarCheck, CalendarDays, Flame, Layers, Search, Sparkles, Target, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, CalendarCheck, CalendarDays, Flame, Newspaper, Layers, Search, Sparkles, Target, Timer } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { focusTopics } from "@/lib/adaptive";
+import { IS_STATIC, request } from "@/lib/api";
+import { KIND, fmtDay, whenLabel, type ExamEvent } from "@/lib/calendar";
 import { DAILY_QUESTION_GOAL, dayKey, daysUntilExam, dueCards, setExam, setExamDate, streak, today } from "@/lib/storage";
 import { useStore, type StoreData } from "@/lib/useStore";
 
@@ -394,6 +396,7 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
       </div>
 
       <FocusNext store={store} examId={exam.id} />
+      <TodayStrip examId={exam.id} examName={exam.name} />
     </section>
   );
 }
@@ -456,6 +459,63 @@ function WeekStrip({ store, streakDays }: { store: StoreData; streakDays: number
         ))}
       </span>
     </Link>
+  );
+}
+
+/** Two daily reasons to come back: today's current-affairs quiz and the next date for the exam. */
+function TodayStrip({ examId, examName }: { examId: string; examName: string }) {
+  const [quiz, setQuiz] = useState<{ title: string; count: number } | null>(null);
+  const [next, setNext] = useState<{ today: string; event: ExamEvent } | null>(null);
+  useEffect(() => {
+    if (IS_STATIC) return;
+    let live = true;
+    request("/api/current-affairs")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => live && d?.quiz?.isToday && setQuiz({ title: d.quiz.title, count: d.quiz.questions.length }))
+      .catch(() => {});
+    request(`/api/calendar?exam=${encodeURIComponent(examId)}&limit=5`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { today: string; events: ExamEvent[] } | null) => {
+        const e = d?.events.find((x) => whenLabel(d.today, x) !== "Passed");
+        if (live && d && e) setNext({ today: d.today, event: e });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [examId]);
+  if (!quiz && !next) return null;
+  return (
+    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      {quiz && (
+        <Link href="/current-affairs" className="group flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-700">
+            <Newspaper className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-slate-500">Today’s current affairs · {quiz.count} questions</span>
+            <span className="block truncate text-sm font-medium text-slate-900">{quiz.title}</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
+      {next && (
+        <Link href="/calendar" className="group flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-red-50 text-red-700">
+            <CalendarDays className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-slate-500">
+              {examName} · {KIND[next.event.kind].label} · {whenLabel(next.today, next.event)}
+            </span>
+            <span className="block truncate text-sm font-medium text-slate-900">
+              {next.event.title} <span className="font-normal text-slate-500">({fmtDay(next.event.day)})</span>
+            </span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
+    </div>
   );
 }
 

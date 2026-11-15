@@ -1,6 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -21,18 +21,62 @@ export const LIMITS = { batchesPerTrainer: 30, testsPerBatch: 200, membersPerBat
 
 // No 0/O or 1/I, so codes read cleanly off a projector or a WhatsApp message.
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const newCode = () => Array.from({ length: 6 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join("");
+export const newCode = () => Array.from({ length: 6 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join("");
 export const normaliseCode = (code: string) => code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 const b = schema.batches;
 const m = schema.batchMembers;
 const bt = schema.batchTests;
 const ta = schema.testAttempts;
+const tr = schema.batchTrainers;
 
-async function ownBatch(user: SessionUser, batchId: string) {
+/** The batch, if the user runs it: as its owner, or as a co-trainer the owner added by email. */
+async function trainerAccess(user: SessionUser, batchId: string) {
   const [batch] = await db.select().from(b).where(eq(b.id, batchId)).limit(1);
-  if (!batch || batch.trainerId !== user.id) throw new HttpError(404, "Batch not found.");
-  return batch;
+  if (!batch) throw new HttpError(404, "Batch not found.");
+  if (batch.trainerId === user.id) return { batch, owner: true };
+  const [co] = await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, batchId), eq(tr.email, user.email.toLowerCase()))).limit(1);
+  if (co) return { batch, owner: false };
+  throw new HttpError(404, "Batch not found.");
+}
+
+/** Owner or co-trainer: assign tests, read results, manage students. */
+async function ownBatch(user: SessionUser, batchId: string) {
+  return (await trainerAccess(user, batchId)).batch;
+}
+
+/** Owner only: delete the batch and decide who else trains it. */
+async function ownerBatch(user: SessionUser, batchId: string) {
+  const a = await trainerAccess(user, batchId);
+  if (!a.owner) throw new HttpError(403, "Only the batch owner can do this.");
+  return a.batch;
+}
+
+// Correlated subqueries name the outer column in full: drizzle drops the table name in a
+// single-table select, and inside the subquery a bare "id" would mean the inner table's id.
+const BATCH_ID = sql.raw(`"batches"."id"`);
+const BATCH_TEST_ID = sql.raw(`"batch_tests"."id"`);
+
+const coTrained = (user: SessionUser) => sql`${b.id} in (select ${tr.batchId} from ${tr} where ${tr.email} = ${user.email.toLowerCase()})`;
+
+export async function listTrainers(user: SessionUser, batchId: string) {
+  await ownBatch(user, batchId);
+  const rows = await db.select().from(tr).where(eq(tr.batchId, batchId)).orderBy(asc(tr.createdAt));
+  return rows.map((r) => ({ email: r.email, createdAt: r.createdAt.getTime() }));
+}
+
+export async function addTrainer(user: SessionUser, batchId: string, email: string) {
+  const batch = await ownerBatch(user, batchId);
+  const clean = email.trim().toLowerCase();
+  if (clean === user.email.toLowerCase()) throw new HttpError(400, "You already own this batch.");
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(tr).where(eq(tr.batchId, batch.id));
+  if (n >= 20) throw new HttpError(409, "A batch can have up to 20 co-trainers.");
+  await db.insert(tr).values({ batchId: batch.id, email: clean, addedBy: user.id }).onConflictDoNothing();
+}
+
+export async function removeTrainer(user: SessionUser, batchId: string, email: string) {
+  await ownerBatch(user, batchId);
+  await db.delete(tr).where(and(eq(tr.batchId, batchId), eq(tr.email, email.trim().toLowerCase())));
 }
 
 export async function createBatch(user: SessionUser, input: { name: string; institution?: string }) {
@@ -55,6 +99,8 @@ export async function joinBatch(user: SessionUser, code: string) {
   const [batch] = await db.select().from(b).where(eq(b.joinCode, joinCode)).limit(1);
   if (!batch) throw new HttpError(404, "No batch has this code. Check it with your trainer.");
   if (batch.trainerId === user.id) throw new HttpError(409, "This is your own batch.");
+  const [co] = await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, batch.id), eq(tr.email, user.email.toLowerCase()))).limit(1);
+  if (co) throw new HttpError(409, "You’re a trainer of this batch.");
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(m).where(eq(m.batchId, batch.id));
   if (n >= LIMITS.membersPerBatch) throw new HttpError(409, "This batch is full.");
   await db.insert(m).values({ batchId: batch.id, userId: user.id }).onConflictDoNothing();
@@ -74,11 +120,12 @@ export async function myBatches(user: SessionUser) {
       institution: b.institution,
       joinCode: b.joinCode,
       createdAt: b.createdAt,
-      members: sql<number>`(select count(*)::int from ${m} where ${m.batchId} = ${b.id})`,
-      tests: sql<number>`(select count(*)::int from ${bt} where ${bt.batchId} = ${b.id})`,
+      owner: sql<boolean>`${b.trainerId} = ${user.id}`,
+      members: sql<number>`(select count(*)::int from ${m} where ${m.batchId} = ${BATCH_ID})`,
+      tests: sql<number>`(select count(*)::int from ${bt} where ${bt.batchId} = ${BATCH_ID})`,
     })
     .from(b)
-    .where(eq(b.trainerId, user.id))
+    .where(or(eq(b.trainerId, user.id), coTrained(user)))
     .orderBy(desc(b.createdAt));
 
   const joined = await db
@@ -136,7 +183,8 @@ export async function myBatches(user: SessionUser) {
 
 /** The trainer's view of one batch: members and assigned papers with how many have submitted. */
 export async function batchDetail(user: SessionUser, batchId: string) {
-  const batch = await ownBatch(user, batchId);
+  const { batch, owner } = await trainerAccess(user, batchId);
+  const trainers = await db.select({ email: tr.email }).from(tr).where(eq(tr.batchId, batchId)).orderBy(asc(tr.createdAt));
   const members = await db
     .select({ userId: m.userId, joinedAt: m.joinedAt, name: schema.users.name, email: schema.users.email })
     .from(m)
@@ -152,14 +200,16 @@ export async function batchDetail(user: SessionUser, batchId: string) {
       dueAt: bt.dueAt,
       createdAt: bt.createdAt,
       total: sql<number>`jsonb_array_length(${bt.questions})`,
-      submitted: sql<number>`(select count(*)::int from ${ta} where ${ta.batchTestId} = ${bt.id} and ${ta.submittedAt} is not null)`,
-      average: sql<number | null>`(select avg(${ta.score})::float from ${ta} where ${ta.batchTestId} = ${bt.id} and ${ta.submittedAt} is not null)`,
+      submitted: sql<number>`(select count(*)::int from ${ta} where ${ta.batchTestId} = ${BATCH_TEST_ID} and ${ta.submittedAt} is not null)`,
+      average: sql<number | null>`(select avg(${ta.score})::float from ${ta} where ${ta.batchTestId} = ${BATCH_TEST_ID} and ${ta.submittedAt} is not null)`,
     })
     .from(bt)
     .where(eq(bt.batchId, batchId))
     .orderBy(desc(bt.createdAt));
   return {
     batch: { id: batch.id, name: batch.name, institution: batch.institution, joinCode: batch.joinCode, createdAt: batch.createdAt.getTime() },
+    owner,
+    trainers: trainers.map((t) => t.email),
     members: members.map((x) => ({ ...x, name: x.name ?? x.email.split("@")[0], joinedAt: x.joinedAt.getTime() })),
     tests: tests.map((t) => ({ ...t, dueAt: t.dueAt?.getTime() ?? null, createdAt: t.createdAt.getTime() })),
   };
@@ -171,7 +221,7 @@ export async function removeMember(user: SessionUser, batchId: string, userId: s
 }
 
 export async function deleteBatch(user: SessionUser, batchId: string) {
-  await ownBatch(user, batchId);
+  await ownerBatch(user, batchId);
   await db.delete(b).where(eq(b.id, batchId));
 }
 
@@ -230,7 +280,8 @@ export async function batchTestInfo(user: SessionUser, testId: string) {
     .limit(1);
   if (!t) throw new HttpError(404, "Test not found.");
   const [member] = await db.select({ u: m.userId }).from(m).where(and(eq(m.batchId, t.batchId), eq(m.userId, user.id))).limit(1);
-  if (!member && t.trainerId !== user.id) throw new HttpError(404, "Test not found.");
+  const isTrainer = t.trainerId === user.id || (await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, t.batchId), eq(tr.email, user.email.toLowerCase()))).limit(1)).length > 0;
+  if (!member && !isTrainer) throw new HttpError(404, "Test not found.");
   const [attempt] = await db.select({ id: ta.id, submittedAt: ta.submittedAt, deadlineAt: ta.deadlineAt }).from(ta).where(and(eq(ta.batchTestId, testId), eq(ta.userId, user.id))).limit(1);
   const { marks, negative } = markingFor(t.examId);
   return {
@@ -242,7 +293,7 @@ export async function batchTestInfo(user: SessionUser, testId: string) {
     dueAt: t.dueAt?.getTime() ?? null,
     marks,
     negativeMarking: negative,
-    isTrainer: t.trainerId === user.id,
+    isTrainer,
     attempt: attempt ? { id: attempt.id, submitted: !!attempt.submittedAt, inProgress: !attempt.submittedAt && attempt.deadlineAt.getTime() > Date.now() } : null,
   };
 }
