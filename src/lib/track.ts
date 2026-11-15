@@ -4,7 +4,7 @@
  * no-op on the static build and on localhost.
  */
 
-export const EVENT_NAMES = ["page_view", "practice_start", "mock_start", "mock_submit", "video_breakdown", "signup", "purchase_click", "helpbot_open", "share_click"] as const;
+export const EVENT_NAMES = ["page_view", "practice_start", "mock_start", "mock_submit", "video_breakdown", "signup", "purchase_click", "helpbot_open", "share_click", "challenge_create", "challenge_play"] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);

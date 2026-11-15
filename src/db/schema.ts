@@ -475,3 +475,43 @@ export const institutionSets = pgTable(
   },
   (t) => [index("institution_sets_inst_idx").on(t.institutionId, t.updatedAt)],
 );
+
+/**
+ * A 1-vs-1 challenge: one fixed set of questions shared by link. Everyone who opens the link
+ * answers the same set and sees each other's scores. Rows expire with `expiresAt`.
+ */
+export const challenges = pgTable(
+  "challenges",
+  {
+    /** Short code used in the link (/challenge?id=…). */
+    id: text("id").primaryKey(),
+    creatorId: uuid("creator_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    examId: text("exam_id").notNull(),
+    topicIds: text("topic_ids").array().notNull(),
+    questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("challenges_creator_idx").on(t.creatorId, t.createdAt)],
+);
+
+/** One player's go at a challenge: one per user. */
+export const challengePlays = pgTable(
+  "challenge_plays",
+  {
+    challengeId: text("challenge_id")
+      .notNull()
+      .references(() => challenges.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    answers: jsonb("answers").$type<(number | null)[]>().notNull(),
+    correct: integer("correct").notNull(),
+    wrong: integer("wrong").notNull(),
+    seconds: integer("seconds").notNull(),
+    playedAt: timestamp("played_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.challengeId, t.userId] })],
+);
