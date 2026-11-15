@@ -6,6 +6,7 @@ import { EXAMS, EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { PageHeader } from "@/components/PageHeader";
+import { TopicWeights } from "@/components/TopicWeights";
 import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
@@ -163,6 +164,7 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
             {plan.pattern.sectional && <p className="mt-2 text-xs text-slate-500">In the full mock each section has its own timer and closes when it ends, as in the real paper.</p>}
           </div>
         )}
+        {hasPractice && <TopicWeights exam={exam} />}
         {isWeeklyExam(exam.id) && (
           <Link href="/mock-sunday" className="card-link flex items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
