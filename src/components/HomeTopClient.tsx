@@ -1,14 +1,15 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, CalendarCheck, CalendarDays, Flame, Layers, Search, Sparkles, Target, Timer } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowRightLeft, CalendarCheck, CalendarDays, Flame, Layers, Search, Sparkles, Target, Timer } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { focusTopics } from "@/lib/adaptive";
-import { dayKey, daysUntilExam, dueCards, setExam, setExamDate, streak, today } from "@/lib/storage";
+import { DAILY_QUESTION_GOAL, dayKey, daysUntilExam, dueCards, setExam, setExamDate, streak, today } from "@/lib/storage";
 import { useStore, type StoreData } from "@/lib/useStore";
 
-const DAILY_QUESTIONS = 10; // matches the "Smart practice: 10 questions" task on /today
+const DAILY_QUESTIONS = DAILY_QUESTION_GOAL; // matches the "Smart practice: 10 questions" task on /today
 
 /** The little an exam needs to be shown on the home page; the full list (~50 KB) loads only when needed. */
 export interface ExamLite {
@@ -123,11 +124,18 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
     setStep(2);
   }
 
+  const router = useRouter();
   function finish(withDate: boolean) {
     if (!picked) return;
     onDone();
     setExam(picked.id);
     setExamDate(withDate ? date : undefined);
+  }
+  /** The fastest way to value: save the choice and go straight into a first short set. */
+  function startNow() {
+    if (!picked) return;
+    finish(!!date);
+    router.push(`/practice?exam=${picked.id}&smart=1`);
   }
 
   const todayIso = dayKey();
@@ -249,11 +257,18 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
       ) : (
         <>
           <h2 id="onboarding-heading" ref={headingRef} tabIndex={-1} className="mt-2 text-2xl font-semibold outline-none sm:text-3xl">
-            When is your {picked?.name} exam?
+            Let’s start with {picked?.name}
           </h2>
-          <p className="mt-1.5 text-sm text-slate-600">We use it to count down and to switch to revision mode in the last month.</p>
+          <p className="mt-1.5 text-sm text-slate-600">Ten questions, from easy to hard, with the answer after each one. About ten minutes, and it shows us where you stand.</p>
+          <button type="button" onClick={startNow} className="btn-primary mt-5 w-full px-5 py-3 text-base sm:w-auto">
+            <Sparkles className="h-4 w-4" /> Start my first 10 questions <ArrowRight className="h-4 w-4" />
+          </button>
+
+          <p className="mt-7 text-sm font-medium text-slate-700">
+            When is the exam? <span className="font-normal text-slate-500">Optional: we count down and switch to revision mode in the last month.</span>
+          </p>
           <form
-            className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end"
+            className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end"
             onSubmit={(e) => {
               e.preventDefault();
               finish(!!date);
@@ -263,11 +278,11 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
               Exam date
               <input type="date" className="input mt-1 py-2.5 text-base" min={todayIso} value={date} onChange={(e) => setDate(e.target.value)} />
             </label>
-            <button type="submit" className="btn-primary px-5 py-2.5" disabled={!date}>
-              Build my plan <ArrowRight className="h-4 w-4" />
+            <button type="submit" className="btn-ghost px-5 py-2.5" disabled={!date}>
+              Save date and see my plan
             </button>
-            <button type="button" className="btn-ghost px-5 py-2.5" onClick={() => finish(false)}>
-              Not sure yet
+            <button type="button" className="btn-quiet px-5 py-2.5" onClick={() => finish(false)}>
+              Skip for now
             </button>
           </form>
           <button
@@ -310,11 +325,14 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
     { icon: Flame, value: String(s), label: "day streak" },
   ];
 
-  const actions = [
-    { href: `/practice?exam=${exam.id}&smart=1`, icon: Sparkles, title: "Smart practice", text: "Questions from your weakest topics" },
-    { href: `/practice?exam=${exam.id}&mock=1`, icon: Timer, title: "Take a mock test", text: "Full timed paper with negative marking" },
-    { href: "/today", icon: CalendarCheck, title: "Today’s plan", text: "Your checklist for today" },
-  ];
+  // One clear next step leads: today's questions, then due flashcards, then this week's mock.
+  const left = Math.max(DAILY_QUESTIONS - t.questions, 0);
+  const mockThisWeek = store.mocks.some((m) => m.examId === exam.id && Date.now() - m.takenAt < 7 * 86_400_000);
+  const practice = { href: `/practice?exam=${exam.id}&smart=1`, icon: Sparkles, title: left ? (t.questions ? `Finish today’s set: ${left} left` : "Start today’s 10 questions") : "Bonus set: 10 more", text: left ? "From your weakest topics, about 10 minutes" : "Goal done. Extra practice lifts your weak topics" };
+  const review = { href: "/review", icon: Layers, title: `Review ${due} flashcard${due === 1 ? "" : "s"}`, text: "Two minutes, so you don’t forget" };
+  const mock = { href: `/practice?exam=${exam.id}&mock=1`, icon: Timer, title: mockThisWeek ? "Take another mock test" : "Take this week’s mock test", text: "Full timed paper with negative marking" };
+  const plan = { href: "/today", icon: CalendarCheck, title: "Today’s plan", text: "Your checklist for today" };
+  const actions = left ? [practice, ...(due ? [review] : [mock]), plan] : due ? [review, practice, mock] : !mockThisWeek ? [mock, practice, plan] : [practice, mock, plan];
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="dashboard-heading">
@@ -336,8 +354,8 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
               <CalendarDays className="h-4 w-4" /> Set exam date
             </Link>
           )}
-          <button type="button" onClick={onChangeExam} className="text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline">
-            Change exam
+          <button type="button" onClick={onChangeExam} className="btn-ghost px-3 py-1.5">
+            <ArrowRightLeft className="h-4 w-4" /> Switch exam
           </button>
         </div>
       </div>
@@ -366,6 +384,7 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
           >
             <a.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
             <span className="min-w-0 flex-1">
+              {i === 0 && <span className="block text-[10px] font-semibold uppercase tracking-wider text-on-ink/60">Next up</span>}
               <span className="block font-semibold">{a.title}</span>
               <span className={`block text-xs ${i === 0 ? "text-on-ink/70" : "text-slate-500"}`}>{a.text}</span>
             </span>

@@ -14,7 +14,7 @@ import { attemptStrategy, guessCost, paletteCounts, paletteState, sectionTimes, 
 import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
-import { addCards, toggleBookmark } from "@/lib/storage";
+import { addCards, DAILY_QUESTION_GOAL, streak, toggleBookmark, today } from "@/lib/storage";
 import { useLeaveGuard } from "@/lib/leaveGuard";
 import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
@@ -556,6 +556,35 @@ interface ResultsProps {
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
+/**
+ * Shown on the result screen when this set took today's questions past the daily goal: the moment
+ * to celebrate, show the streak, and offer a reminder so tomorrow happens too.
+ */
+function GoalDone({ answered }: { answered: number }) {
+  const store = useStore();
+  if (!store || !answered) return null;
+  const done = today(store).questions;
+  // Only the set that crossed the line celebrates; later bonus sets don't repeat it.
+  if (done < DAILY_QUESTION_GOAL || done - answered >= DAILY_QUESTION_GOAL) return null;
+  const s = streak(store);
+  return (
+    <div className="anim-pop flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between" role="status">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500 text-white">
+          <Flame className="h-5 w-5" />
+        </span>
+        <span>
+          <span className="block font-semibold text-emerald-900">Daily goal done!</span>
+          <span className="block text-sm text-emerald-800">{s > 1 ? `That’s a ${s}-day streak. Come back tomorrow to make it ${s + 1}.` : "Day 1 of your streak. Come back tomorrow to keep it going."}</span>
+        </span>
+      </div>
+      <Link href="/today#reminder" className="btn-ghost shrink-0 border-emerald-300 bg-surface">
+        Remind me tomorrow
+      </Link>
+    </div>
+  );
+}
+
 export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
@@ -671,6 +700,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
 
   return (
     <div className="space-y-5">
+      <GoalDone answered={attempted} />
       <section aria-labelledby="result-heading" className="space-y-4">
         <div>
           <p className="eyebrow">Your result</p>

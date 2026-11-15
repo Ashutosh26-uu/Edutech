@@ -255,6 +255,9 @@ export function recordMock(m: MockResult) {
   save(s);
 }
 
+/** Questions a day for the daily goal: the home ring, the "Next up" step and the goal-done banner. */
+export const DAILY_QUESTION_GOAL = 10;
+
 export function setExam(examId: string) {
   const s = load();
   if (s.examId === examId) return;
