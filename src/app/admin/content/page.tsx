@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ClipboardPaste, KeyRound, Loader2, Newspaper, Pencil, Plus, Trash2, X } from "lucide-react";
+import { BadgeCheck, Building2, CalendarDays, KeyRound, Loader2, Newspaper, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -8,9 +8,10 @@ import { EXAMS } from "@/data/exams";
 import { useAccount } from "@/lib/account";
 import { request } from "@/lib/api";
 import { KIND, fmtDay, type EventKind, type ExamEvent } from "@/lib/calendar";
-import { parseQuizText, type DraftQuestion } from "@/lib/quizText";
+import { blankQuestion, QuestionsEditor } from "@/components/QuestionsEditor";
+import type { DraftQuestion } from "@/lib/quizText";
 
-type Tab = "quiz" | "calendar" | "access";
+type Tab = "quiz" | "calendar" | "access" | "institutes";
 interface Role {
   role: "admin" | "editor" | null;
   organisation: string | null;
@@ -75,7 +76,12 @@ export default function ContentAdminPage() {
   const tabs: { id: Tab; label: string; icon: typeof Newspaper }[] = [
     { id: "quiz", label: "Daily quiz", icon: Newspaper },
     { id: "calendar", label: "Exam calendar", icon: CalendarDays },
-    ...(role.role === "admin" ? [{ id: "access" as Tab, label: "Access", icon: KeyRound }] : []),
+    ...(role.role === "admin"
+      ? [
+          { id: "access" as Tab, label: "Access", icon: KeyRound },
+          { id: "institutes" as Tab, label: "Institutes", icon: Building2 },
+        ]
+      : []),
   ];
 
   return (
@@ -105,13 +111,14 @@ export default function ContentAdminPage() {
       {tab === "quiz" && <QuizTab />}
       {tab === "calendar" && <CalendarTab />}
       {tab === "access" && role.role === "admin" && <AccessTab />}
+      {tab === "institutes" && role.role === "admin" && <InstitutesTab />}
     </div>
   );
 }
 
 // ---------- Daily quiz ----------
 
-const blank = (): DraftQuestion => ({ question: "", options: ["", "", "", ""], answer: -1, explanation: "" });
+const blank = blankQuestion;
 
 function QuizTab() {
   const [list, setList] = useState<SavedQuiz[] | null>(null);
@@ -178,11 +185,8 @@ function QuizEditor({ initial, onDone }: { initial: { day: string; title: string
   const [title, setTitle] = useState(initial.title);
   const [published, setPublished] = useState(initial.published);
   const [qs, setQs] = useState(initial.questions);
-  const [paste, setPaste] = useState<string | null>(null);
-  const [pasteErrors, setPasteErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const set = (i: number, patch: Partial<DraftQuestion>) => setQs((all) => all.map((q, k) => (k === i ? { ...q, ...patch } : q)));
   const filled = qs.filter((q) => q.question.trim());
 
   async function save() {
@@ -192,15 +196,6 @@ function QuizEditor({ initial, onDone }: { initial: { day: string; title: string
     setBusy(false);
     if (!r.ok) return setError(r.error ?? "");
     onDone();
-  }
-
-  function importText() {
-    const { questions, errors } = parseQuizText(paste ?? "");
-    setPasteErrors(errors);
-    if (questions.length) {
-      setQs((all) => [...all.filter((q) => q.question.trim()), ...questions]);
-      if (!errors.length) setPaste(null);
-    }
   }
 
   return (
@@ -219,60 +214,7 @@ function QuizEditor({ initial, onDone }: { initial: { day: string; title: string
         </label>
       </div>
 
-      {paste === null ? (
-        <button className="btn-ghost" onClick={() => setPaste("")}>
-          <ClipboardPaste className="h-4 w-4" /> Paste many questions as text
-        </button>
-      ) : (
-        <div className="card space-y-2">
-          <p className="text-sm text-slate-600">
-            Separate questions with a blank line. Each one: the question, four options <code>A)</code> to <code>D)</code>, a line <code>Answer: B</code>, and optionally <code>Explanation: …</code>
-          </p>
-          <textarea className="input min-h-48 font-mono text-sm" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={"Q: Which bank …?\nA) SBI\nB) HDFC Bank\nC) ICICI Bank\nD) Axis Bank\nAnswer: B\nExplanation: …"} />
-          {pasteErrors.length > 0 && (
-            <ul className="list-disc pl-5 text-sm text-red-700">
-              {pasteErrors.map((e) => (
-                <li key={e}>{e}</li>
-              ))}
-            </ul>
-          )}
-          <div className="flex gap-2">
-            <button className="btn-primary" onClick={importText} disabled={!paste?.trim()}>
-              Add these questions
-            </button>
-            <button className="btn-quiet" onClick={() => (setPaste(null), setPasteErrors([]))}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      <ol className="space-y-3">
-        {qs.map((q, i) => (
-          <li key={i} className="card space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-semibold text-slate-700">Question {i + 1}</span>
-              <button className="btn-quiet px-2 text-slate-400 hover:text-red-600" onClick={() => setQs((all) => all.filter((_, k) => k !== i))} aria-label={`Remove question ${i + 1}`}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <textarea className="input min-h-16" value={q.question} onChange={(e) => set(i, { question: e.target.value })} placeholder="Question" aria-label={`Question ${i + 1}`} />
-            <div className="grid gap-2 sm:grid-cols-2">
-              {q.options.map((o, k) => (
-                <label key={k} className={`flex items-center gap-2 rounded-lg border px-2 ${q.answer === k ? "border-emerald-400 bg-emerald-50" : "border-slate-200"}`}>
-                  <input type="radio" name={`ans-${i}`} checked={q.answer === k} onChange={() => set(i, { answer: k })} aria-label={`Option ${"ABCD"[k]} is correct`} />
-                  <span className="text-xs font-semibold text-slate-500">{"ABCD"[k]}</span>
-                  <input className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none" value={o} onChange={(e) => set(i, { options: q.options.map((x, m) => (m === k ? e.target.value : x)) })} placeholder={`Option ${"ABCD"[k]}`} />
-                </label>
-              ))}
-            </div>
-            <input className="input text-sm" value={q.explanation} onChange={(e) => set(i, { explanation: e.target.value })} placeholder="Explanation (one or two lines, recommended)" />
-          </li>
-        ))}
-      </ol>
-      <button className="btn-ghost" onClick={() => setQs((all) => [...all, blank()])}>
-        <Plus className="h-4 w-4" /> Add a question
-      </button>
+      <QuestionsEditor value={qs} onChange={setQs} />
 
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="sticky bottom-[var(--float-bottom,1rem)] flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-surface/95 p-3 backdrop-blur">
@@ -419,6 +361,74 @@ function CalendarTab() {
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// ---------- Institutes (admins) ----------
+
+interface AdminInstitute {
+  id: string;
+  slug: string;
+  name: string;
+  city: string | null;
+  verified: boolean;
+  sets: number;
+  createdAt: number;
+}
+
+/** Institute pages go live unverified; the admin checks each one and verifies or removes it. */
+function InstitutesTab() {
+  const [list, setList] = useState<AdminInstitute[] | null>(null);
+  const load = useCallback(() => call<{ institutes: AdminInstitute[] }>("/api/content/institutes").then((r) => setList(r.data?.institutes ?? [])), []);
+  useEffect(() => {
+    load();
+  }, [load]);
+  return (
+    <section className="space-y-3">
+      <p className="text-sm text-slate-600">New pages appear here first. Open each one, check it is a real institute run by its own staff, then verify it. Remove fakes or spam.</p>
+      {!list ? (
+        <div className="skeleton h-16" />
+      ) : list.length === 0 ? (
+        <p className="card text-sm text-slate-600">No institute pages yet.</p>
+      ) : (
+        <ul className="card divide-y divide-slate-100 p-0 sm:p-0">
+          {list.map((i) => (
+            <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+              <span className="min-w-0">
+                <Link href={`/institute?slug=${i.slug}`} className="block font-medium text-slate-900 hover:underline">
+                  {i.name}
+                </Link>
+                <span className="block text-xs text-slate-500">
+                  {i.city ? `${i.city} · ` : ""}
+                  {i.sets} sets · created {new Date(i.createdAt).toLocaleDateString("en-IN")} · {i.verified ? "verified" : "not verified"}
+                </span>
+              </span>
+              <span className="flex gap-1">
+                <button
+                  className={i.verified ? "btn-quiet" : "btn-ghost"}
+                  onClick={async () => {
+                    await call("/api/content/institutes", "PATCH", { id: i.id, verified: !i.verified });
+                    load();
+                  }}
+                >
+                  <BadgeCheck className="h-4 w-4" /> {i.verified ? "Unverify" : "Verify"}
+                </button>
+                <button
+                  className="btn-quiet text-red-600"
+                  onClick={async () => {
+                    if (!confirm(`Remove “${i.name}” with all its sets? This cannot be undone.`)) return;
+                    await call("/api/content/institutes", "DELETE", { id: i.id });
+                    load();
+                  }}
+                >
+                  Remove
                 </button>
               </span>
             </li>

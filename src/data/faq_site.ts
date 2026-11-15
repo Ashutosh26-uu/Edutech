@@ -653,6 +653,18 @@ export const SITE: Faq[] = [
     next: ["batches", "how-to-use"],
   },
   {
+    id: "institute-pages",
+    cat: "tools",
+    q: "Can my college publish its own questions for students?",
+    qh: "Kya college apne sawal students ke liye daal sakta hai?",
+    ask: ["college page", "institute page", "university page", "add our own questions", "college ke questions", "apne questions kaise daale", "coaching page", "institute code", "members only set", "college code"],
+    keys: ["institute", "college", "university", "coaching", "own questions"],
+    en: "Yes. On **Institutes**, a college or coaching institute creates its page (live at once, **Verified** after we check it), adds staff, and publishes question sets: **Public** for everyone or **Members only** for its students. Students find the page on Institutes and enter the institute's code to unlock members-only sets.",
+    hi: "Haan. **Institutes** par college ya coaching apna page banata hai (turant live, check ke baad **Verified**), staff jodta hai aur question sets daalta hai: **Public** sabke liye ya **Members only** apne students ke liye. Students Institutes par page dhoondh ke institute ka code daal kar members-only sets kholte hain.",
+    links: [["Institutes", "/institutes", "Institutes kholo"], ["How to use", "/guide#universities"]],
+    next: ["batches", "how-to-use"],
+  },
+  {
     id: "how-to-use",
     cat: "start",
     q: "Is there a guide for students, teachers and universities?",

@@ -40,6 +40,7 @@ const ROLES: Role[] = [
       { title: "Test yourself under exam conditions", text: <>Open your exam page for full mocks on the real pattern, section tests, and the free <L href="/mock-sunday">Sunday All-India Mock</L> with a rank.</> },
       { title: "Fix your mistakes", text: <>Wrong answers go to the <L href="/mistakes">Mistake notebook</L>; star questions to <L href="/saved">Saved</L>; turn them into <L href="/review">Flashcards</L> that come back just before you forget.</> },
       { title: "Make your own notes", text: <>Use <L href="/notes">My notes</L> (or the My notes button on any topic) and download them as a PDF.</> },
+      { title: "Practise your college’s own questions", text: <>Find your institute on <L href="/institutes">Institutes</L>. Public sets are open to all; enter the code from your college to unlock its members-only sets.</> },
       { title: "Joining your college or coaching batch?", text: <>Open the link your trainer shared, or enter the 6-letter code on <L href="/batches">Batches</L>. Assigned tests appear there; each can be taken once.</> },
     ],
     tips: ["Create a free account to keep progress on every device.", "Turn on the daily reminder on the Today page.", "On a phone, use your browser’s “Add to Home screen” to install StudyClip like an app."],
@@ -65,6 +66,9 @@ const ROLES: Role[] = [
     title: "Universities, TPOs and coaching institutes",
     who: "You run placement or exam preparation for many classes and want one organised setup.",
     steps: [
+      { title: "Create your institute page", text: <>On <L href="/institutes">Institutes</L>, tap <b>Create institute page</b>. It goes live at once with your name and city, and gets a <b>Verified</b> badge after StudyClip checks it.</> },
+      { title: "Publish your own question sets", text: <>In <b>Manage</b>, add sets with your questions (type them or paste many from Word/WhatsApp). Make a set <b>Public</b> so anyone can practise it, or <b>Members only</b> for your students, who join with your institute’s code.</> },
+      { title: "Add your staff", text: <>Add faculty emails under <b>Staff</b> so they can add and edit sets too.</> },
       { title: "One batch per class or branch", text: <>A coordinator (often the TPO) creates a batch for each class, for example “CSE-A 2027”, “ECE 2027”, “MBA Finance”.</> },
       { title: "Add your faculty as trainers", text: <>In each batch, add faculty emails under <b>Trainers</b>. Every trainer sees the same students and results.</> },
       { title: "Run a weekly rhythm", text: <>For example: a company-pattern test every Monday, a topic test on the weakest topics mid-week, and the Sunday All-India Mock for a national rank.</> },

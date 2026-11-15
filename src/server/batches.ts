@@ -21,7 +21,7 @@ export const LIMITS = { batchesPerTrainer: 30, testsPerBatch: 200, membersPerBat
 
 // No 0/O or 1/I, so codes read cleanly off a projector or a WhatsApp message.
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const newCode = () => Array.from({ length: 6 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join("");
+export const newCode = () => Array.from({ length: 6 }, () => CODE_CHARS[randomInt(CODE_CHARS.length)]).join("");
 export const normaliseCode = (code: string) => code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 const b = schema.batches;
@@ -51,6 +51,11 @@ async function ownerBatch(user: SessionUser, batchId: string) {
   if (!a.owner) throw new HttpError(403, "Only the batch owner can do this.");
   return a.batch;
 }
+
+// Correlated subqueries name the outer column in full: drizzle drops the table name in a
+// single-table select, and inside the subquery a bare "id" would mean the inner table's id.
+const BATCH_ID = sql.raw(`"batches"."id"`);
+const BATCH_TEST_ID = sql.raw(`"batch_tests"."id"`);
 
 const coTrained = (user: SessionUser) => sql`${b.id} in (select ${tr.batchId} from ${tr} where ${tr.email} = ${user.email.toLowerCase()})`;
 
@@ -116,8 +121,8 @@ export async function myBatches(user: SessionUser) {
       joinCode: b.joinCode,
       createdAt: b.createdAt,
       owner: sql<boolean>`${b.trainerId} = ${user.id}`,
-      members: sql<number>`(select count(*)::int from ${m} where ${m.batchId} = ${b.id})`,
-      tests: sql<number>`(select count(*)::int from ${bt} where ${bt.batchId} = ${b.id})`,
+      members: sql<number>`(select count(*)::int from ${m} where ${m.batchId} = ${BATCH_ID})`,
+      tests: sql<number>`(select count(*)::int from ${bt} where ${bt.batchId} = ${BATCH_ID})`,
     })
     .from(b)
     .where(or(eq(b.trainerId, user.id), coTrained(user)))
@@ -195,8 +200,8 @@ export async function batchDetail(user: SessionUser, batchId: string) {
       dueAt: bt.dueAt,
       createdAt: bt.createdAt,
       total: sql<number>`jsonb_array_length(${bt.questions})`,
-      submitted: sql<number>`(select count(*)::int from ${ta} where ${ta.batchTestId} = ${bt.id} and ${ta.submittedAt} is not null)`,
-      average: sql<number | null>`(select avg(${ta.score})::float from ${ta} where ${ta.batchTestId} = ${bt.id} and ${ta.submittedAt} is not null)`,
+      submitted: sql<number>`(select count(*)::int from ${ta} where ${ta.batchTestId} = ${BATCH_TEST_ID} and ${ta.submittedAt} is not null)`,
+      average: sql<number | null>`(select avg(${ta.score})::float from ${ta} where ${ta.batchTestId} = ${BATCH_TEST_ID} and ${ta.submittedAt} is not null)`,
     })
     .from(bt)
     .where(eq(bt.batchId, batchId))

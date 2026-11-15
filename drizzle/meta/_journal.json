@@ -71,6 +71,13 @@
       "when": 1794720817785,
       "tag": "0009_daily_calendar_access",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794722392301,
+      "tag": "0010_institutions",
+      "breakpoints": true
     }
   ]
 }

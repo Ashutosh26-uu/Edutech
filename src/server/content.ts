@@ -72,20 +72,21 @@ export interface QuizInput {
   questions: { question: string; options: string[]; answer: number; explanation?: string }[];
 }
 
-function cleanQuestions(day: string, qs: QuizInput["questions"]): MCQ[] {
-  if (qs.length < 3 || qs.length > 25) throw new HttpError(400, "A quiz needs 3 to 25 questions.");
+/** Checks hand-written questions (four distinct options, one marked answer) and gives them stable ids. */
+export function cleanMcqs(idPrefix: string, qs: QuizInput["questions"], max = 25): MCQ[] {
+  if (qs.length < 3 || qs.length > max) throw new HttpError(400, `Add 3 to ${max} questions.`);
   return qs.map((q, i) => {
     const options = q.options.map((o) => o.trim());
     if (!q.question.trim()) throw new HttpError(400, `Question ${i + 1} is empty.`);
     if (options.length !== 4 || options.some((o) => !o)) throw new HttpError(400, `Question ${i + 1} needs four filled options.`);
     if (new Set(options.map((o) => o.toLowerCase())).size !== 4) throw new HttpError(400, `Question ${i + 1} has two identical options.`);
     if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer > 3) throw new HttpError(400, `Question ${i + 1} has no correct answer marked.`);
-    return { id: `ca-${day}-${i + 1}`, question: q.question.trim(), options, answer: q.answer, explanation: q.explanation?.trim() || "", topicId: undefined, difficulty: "moderate" };
+    return { id: `${idPrefix}-${i + 1}`, question: q.question.trim(), options, answer: q.answer, explanation: q.explanation?.trim() || "", topicId: undefined, difficulty: "moderate" };
   });
 }
 
 export async function upsertQuiz(user: SessionUser, input: QuizInput) {
-  const questions = cleanQuestions(input.day, input.questions);
+  const questions = cleanMcqs(`ca-${input.day}`, input.questions);
   const [row] = await db
     .insert(dq)
     .values({ day: input.day, title: input.title.trim(), questions, published: input.published, createdBy: user.id })
