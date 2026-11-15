@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { findQuestions } from "@/lib/bank";
 import { shuffleOptions } from "@/lib/ai/local";
@@ -24,7 +24,11 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * already in it marks it resolved. Only bank questions are kept: generated Quant questions have
  * one-off ids and cannot be replayed.
  */
-export async function recordMistakes(tx: Tx, userId: string, outcomes: Outcome[]) {
+/**
+ * `visibleAt`: for papers whose answers are still hidden (an open Sunday mock or batch test), the
+ * mistakes are dated to when the answers open, and the notebook skips them until then.
+ */
+export async function recordMistakes(tx: Tx, userId: string, outcomes: Outcome[], visibleAt?: Date) {
   const known = await findQuestions(outcomes.map((o) => o.questionId));
   const bank = outcomes.filter((o) => known.has(o.questionId));
   const wrong = bank.filter((o) => !o.correct);
@@ -32,10 +36,10 @@ export async function recordMistakes(tx: Tx, userId: string, outcomes: Outcome[]
   if (wrong.length) {
     await tx
       .insert(schema.mistakes)
-      .values(wrong.map((o) => ({ userId, questionId: o.questionId, topicId: o.topicId })))
+      .values(wrong.map((o) => ({ userId, questionId: o.questionId, topicId: o.topicId, ...(visibleAt ? { lastWrongAt: visibleAt } : {}) })))
       .onConflictDoUpdate({
         target: [schema.mistakes.userId, schema.mistakes.questionId],
-        set: { timesWrong: sql`${schema.mistakes.timesWrong} + 1`, lastWrongAt: sql`now()`, resolvedAt: null },
+        set: { timesWrong: sql`${schema.mistakes.timesWrong} + 1`, lastWrongAt: visibleAt ?? sql`now()`, resolvedAt: null },
       });
   }
   if (right.length) {
@@ -78,7 +82,7 @@ export async function getProgress(user: SessionUser) {
     db
       .select({ questionId: schema.mistakes.questionId, topicId: schema.mistakes.topicId, timesWrong: schema.mistakes.timesWrong, lastWrongAt: schema.mistakes.lastWrongAt })
       .from(schema.mistakes)
-      .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt)))
+      .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt), lte(schema.mistakes.lastWrongAt, sql`now()`)))
       .orderBy(desc(schema.mistakes.lastWrongAt))
       .limit(500),
   ]);
@@ -93,7 +97,7 @@ export async function mistakesSet(user: SessionUser, topicId?: string, limit = 2
   const rows = await db
     .select({ questionId: schema.mistakes.questionId })
     .from(schema.mistakes)
-    .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt), ...(topicId ? [eq(schema.mistakes.topicId, topicId)] : [])))
+    .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt), lte(schema.mistakes.lastWrongAt, sql`now()`), ...(topicId ? [eq(schema.mistakes.topicId, topicId)] : [])))
     .orderBy(desc(schema.mistakes.lastWrongAt))
     .limit(limit);
   const bank = await findQuestions(rows.map((r) => r.questionId));

@@ -229,6 +229,7 @@ function AssignTest({ batchId, onCreated }: { batchId: string; onCreated: () => 
   const [count, setCount] = useState(25);
   const [minutes, setMinutes] = useState(30);
   const [due, setDue] = useState("");
+  const [hold, setHold] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const topics = useMemo(() => {
@@ -242,7 +243,7 @@ function AssignTest({ batchId, onCreated }: { batchId: string; onCreated: () => 
     setError("");
     const r = await batchApi(`/${batchId}/tests`, {
       method: "POST",
-      body: { title: title || `${EXAM_BY_ID.get(examId)?.name ?? "Practice"} test`, examId, topicIds: picked.length ? picked : undefined, count, minutes, dueAt: due ? new Date(due).getTime() : null },
+      body: { title: title || `${EXAM_BY_ID.get(examId)?.name ?? "Practice"} test`, examId, topicIds: picked.length ? picked : undefined, count, minutes, dueAt: due ? new Date(due).getTime() : null, holdAnswers: !due && hold },
     });
     setBusy(false);
     if (r.error) return setError(r.error);
@@ -313,6 +314,14 @@ function AssignTest({ batchId, onCreated }: { batchId: string; onCreated: () => 
           <input className="input" type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
         </label>
       </div>
+      {due ? (
+        <p className="text-xs text-slate-500">Answers and explanations open for students after the due time, so nobody can pass them on while the test is open.</p>
+      ) : (
+        <label className="flex items-start gap-2 text-sm text-slate-600">
+          <input type="checkbox" className="mt-0.5" checked={hold} onChange={(e) => setHold(e.target.checked)} />
+          <span>Hide answers until I release them (from the results page). Otherwise each student sees answers right after submitting.</span>
+        </label>
+      )}
       <p className="text-xs text-slate-500">Every student gets the same questions in their own option order. Marking follows the chosen exam track. Each student can take it once.</p>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex gap-2">

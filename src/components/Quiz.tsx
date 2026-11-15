@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, BookmarkPlus, Check, ChevronDown, Flame, Languages, Play, Star, Timer, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookmarkPlus, Check, ChevronDown, Flame, Languages, Lock, Play, Star, Timer, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -21,6 +21,16 @@ import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
 import type { Difficulty, MCQ } from "@/lib/types";
 import { formatTime } from "@/lib/youtube";
+
+/** A server-scored paper. Shared papers (Sunday mock, batch tests) keep their answers hidden until they close. */
+export interface ScoredPaper {
+  questions: MCQ[];
+  answersLocked?: boolean;
+  answersOpenAt?: number | null;
+}
+
+/** Hidden answers on the result screen: when they open (null = when the trainer releases them). */
+export type AnswersLock = { openAt: number | null } | null;
 
 export interface AnswerResult {
   question: MCQ;
@@ -64,7 +74,7 @@ interface Props {
    * Server-scored tests: questions arrive without answers, and this sends the chosen options and
    * per-question seconds to the server and resolves with the full questions (with answers).
    */
-  submit?: (chosen: (number | null)[], times: number[]) => Promise<MCQ[]>;
+  submit?: (chosen: (number | null)[], times: number[]) => Promise<MCQ[] | ScoredPaper>;
   /** What the shareable score card names (exam or topic) and the exam its link points to. */
   share?: ShareInfo;
   /** Timed mocks: the full-screen layout of a computer-based test (see ExamMode). */
@@ -147,6 +157,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const [marked, setMarked] = useState<boolean[]>(() => questions.map(() => false));
   const [done, setDone] = useState(false);
   const [scored, setScored] = useState<MCQ[] | null>(null);
+  const [lock, setLock] = useState<AnswersLock>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   // Sectional papers: the open section, and the deadline of each (set when it opens).
@@ -193,8 +204,10 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
       setSubmitting(true);
       setSubmitError("");
       try {
-        const full = await submit(chosen, secs);
+        const got = await submit(chosen, secs);
+        const full = Array.isArray(got) ? got : got.questions;
         setScored(full);
+        if (!Array.isArray(got) && got.answersLocked) setLock({ openAt: got.answersOpenAt ?? null });
         setDone(true);
         onFinish?.(full.map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer, seconds: secs[i] })));
       } catch (e) {
@@ -279,7 +292,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
 
   if (!questions.length) return <p className="text-sm text-slate-500">No questions available.</p>;
 
-  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} restartLabel={restartLabel ?? (mode === "mock" ? "Take another test" : "Practise new questions")} restartFirst={restartFirst} attemptId={attemptId} share={share} />;
+  if (done) return <Results results={results} negativeMarking={negativeMarking} marks={marks} sections={sections} previous={previous} onTimestamp={onTimestamp} onRestart={onRestart} restartLabel={restartLabel ?? (mode === "mock" ? "Take another test" : "Practise new questions")} restartFirst={restartFirst} attemptId={attemptId} share={share} answersLock={lock} />;
 
   const q = questions[idx];
   const text = inLang(q, lang);
@@ -553,6 +566,8 @@ interface ResultsProps {
   restartFirst?: boolean;
   attemptId?: string;
   share?: ShareInfo;
+  /** Shared paper still open: answers and explanations are hidden until then. */
+  answersLock?: AnswersLock;
 }
 
 /** Score, time analysis, section and topic breakdown, and the answer review. Also used by /tests?id=…. */
@@ -585,7 +600,7 @@ function GoalDone({ answered }: { answered: number }) {
   );
 }
 
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share }: ResultsProps) {
+export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share, answersLock = null }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
   // Answer review filter: long mocks are easier to review one kind of answer at a time.
@@ -603,7 +618,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   const timeAll = secs(() => true);
   const slowest = [...results].filter((r) => (r.seconds ?? 0) > 0).sort((a, b) => (b.seconds ?? 0) - (a.seconds ?? 0)).slice(0, 3);
   // Generated Quant questions (ids ending in -g…) cannot be replayed, so they make no cards.
-  const wrongBank = results.filter((r) => r.chosen !== null && !r.correct && !/-g[0-9a-z]+$/.test(r.question.id));
+  const wrongBank = results.filter((r) => r.chosen !== null && !r.correct && r.question.answer >= 0 && !/-g[0-9a-z]+$/.test(r.question.id));
   const wrongIds = results.filter((r) => r.chosen !== null && !r.correct && r.question.topicId).map((r) => r.question.id);
 
   // Deeper mock analysis from the per-question seconds (timed tests only).
@@ -701,6 +716,15 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   return (
     <div className="space-y-5">
       <GoalDone answered={attempted} />
+      {answersLock && (
+        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm" role="status">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+          <span className="text-slate-700">
+            <b className="text-slate-900">Answers and explanations open after the paper closes</b>
+            {answersLock.openAt ? ` (${new Date(answersLock.openAt).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })}).` : " (when your trainer releases them)."} Everyone takes the same paper, so they stay hidden until then. You can see your score and which questions you got right; come back here later for the full review.
+          </span>
+        </div>
+      )}
       <section aria-labelledby="result-heading" className="space-y-4">
         <div>
           <p className="eyebrow">Your result</p>
@@ -927,14 +951,14 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
             </div>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : t.options[r.chosen]}</b>
-              {!r.correct && (
+              {!r.correct && r.question.answer >= 0 && (
                 <>
                   {" "}· Correct: <b className="text-emerald-700">{t.options[r.question.answer]}</b>
                 </>
               )}
               {r.seconds !== undefined && <span className="text-slate-500"> · {r.seconds}s</span>}
             </p>
-            <div className="mt-1 whitespace-pre-line text-slate-600"><RichText text={t.explanation} /></div>
+            {t.explanation && <div className="mt-1 whitespace-pre-line text-slate-600"><RichText text={t.explanation} /></div>}
             {r.question.timestamp !== undefined && onTimestamp && (
               <button className="mt-1 font-medium text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
                 <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}

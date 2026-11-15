@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChallengeBox, readChallenge } from "@/components/Challenge";
 import { ExamModeSwitch, PaletteLegend, useExamModePref } from "@/components/ExamMode";
 import { TestPaywall } from "@/components/Paywall";
-import { Quiz, type AnswerResult, type QuizSection } from "@/components/Quiz";
+import { Quiz, type AnswerResult, type QuizSection, type ScoredPaper } from "@/components/Quiz";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -303,11 +303,11 @@ function PracticeView() {
     track("mock_start");
   };
 
-  const submitToServer = async (chosen: (number | null)[], times: number[]): Promise<MCQ[]> => {
+  const submitToServer = async (chosen: (number | null)[], times: number[]): Promise<ScoredPaper> => {
     const { status, data } = await postJson("/api/tests/submit", { attemptId: serverTest!.attemptId, answers: chosen, times });
     if (status !== 200) throw new Error(data.error ?? "Could not submit the test.");
     track("mock_submit");
-    return data.questions;
+    return data as ScoredPaper;
   };
 
   const onFinish = (results: AnswerResult[]) => {

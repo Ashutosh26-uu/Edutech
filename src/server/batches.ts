@@ -1,6 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -245,7 +245,7 @@ function usableTopics(examId: string, topicIds?: string[]) {
 export async function createBatchTest(
   user: SessionUser,
   batchId: string,
-  input: { title: string; examId: string; topicIds?: string[]; count: number; minutes: number; dueAt?: number | null },
+  input: { title: string; examId: string; topicIds?: string[]; count: number; minutes: number; dueAt?: number | null; holdAnswers?: boolean },
 ) {
   await ownBatch(user, batchId);
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(bt).where(eq(bt.batchId, batchId));
@@ -257,9 +257,37 @@ export async function createBatchTest(
   if (questions.length < LIMITS.minQuestions) throw new HttpError(500, "Could not prepare enough questions. Try more topics or fewer questions.");
   const [row] = await db
     .insert(bt)
-    .values({ batchId, title: input.title.trim(), examId: input.examId, topicIds, questions, minutes: input.minutes, dueAt: input.dueAt ? new Date(input.dueAt) : null })
+    .values({
+      batchId,
+      title: input.title.trim(),
+      examId: input.examId,
+      topicIds,
+      questions,
+      minutes: input.minutes,
+      dueAt: input.dueAt ? new Date(input.dueAt) : null,
+      // Answers open after the due time (plus the late-submission grace), or right after each
+      // submission when there is no due time, unless the trainer holds them to release later.
+      answersAt: input.dueAt ? new Date(input.dueAt + 2 * 60_000) : input.holdAnswers ? null : new Date(),
+    })
     .returning({ id: bt.id });
   return { id: row.id, questions: questions.length };
+}
+
+/** Opens the answers of a batch test now (for tests whose answers were held or are not due yet). */
+export async function releaseBatchAnswers(user: SessionUser, testId: string) {
+  const [t] = await db.select({ batchId: bt.batchId, questions: bt.questions }).from(bt).where(eq(bt.id, testId)).limit(1);
+  if (!t) throw new HttpError(404, "Test not found.");
+  await ownBatch(user, t.batchId);
+  await db.transaction(async (tx) => {
+    await tx.update(bt).set({ answersAt: new Date() }).where(eq(bt.id, testId));
+    // Mistakes from this paper were dated to when the answers open; bring them into the notebook now.
+    const ids = t.questions.map((q) => q.id);
+    if (ids.length)
+      await tx
+        .update(schema.mistakes)
+        .set({ lastWrongAt: new Date() })
+        .where(and(inArray(schema.mistakes.questionId, ids), gt(schema.mistakes.lastWrongAt, new Date()), inArray(schema.mistakes.userId, tx.select({ id: ta.userId }).from(ta).where(eq(ta.batchTestId, testId)))));
+  });
 }
 
 export async function deleteBatchTest(user: SessionUser, testId: string) {
@@ -386,7 +414,7 @@ export async function batchTestResults(user: SessionUser, testId: string) {
     .map(([id, s]) => ({ id, name: TOPIC_BY_ID.get(id)?.name ?? id, asked: s.asked, attempted: s.attempted, accuracy: s.attempted ? Math.round((s.correct / s.attempted) * 100) : null }))
     .sort((x, y) => (x.accuracy ?? 101) - (y.accuracy ?? 101));
   return {
-    test: { id: t.id, title: t.title, total, maxScore: total * marks, marks, negativeMarking: negative, minutes: t.minutes, dueAt: t.dueAt?.getTime() ?? null, createdAt: t.createdAt.getTime() },
+    test: { id: t.id, title: t.title, total, maxScore: total * marks, marks, negativeMarking: negative, minutes: t.minutes, dueAt: t.dueAt?.getTime() ?? null, answersAt: t.answersAt?.getTime() ?? null, createdAt: t.createdAt.getTime() },
     batch: { id: batch.id, name: batch.name },
     summary: {
       members: rows.length,

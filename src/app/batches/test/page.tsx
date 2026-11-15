@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { BatchGate } from "@/components/BatchGate";
-import { Quiz, type AnswerResult } from "@/components/Quiz";
+import { Quiz, type AnswerResult, type ScoredPaper } from "@/components/Quiz";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useAccount } from "@/lib/account";
 import { postJson } from "@/lib/api";
@@ -64,10 +64,10 @@ function BatchTest() {
     setRun({ ...data, questions: data.questions.map((q) => ({ ...q, answer: -1, explanation: "" })) });
   }
 
-  const submit = async (chosen: (number | null)[], times: number[]): Promise<MCQ[]> => {
-    const { status, data } = await postJson<{ questions: MCQ[] }>("/api/tests/submit", { attemptId: run!.attemptId, answers: chosen, times });
+  const submit = async (chosen: (number | null)[], times: number[]): Promise<ScoredPaper> => {
+    const { status, data } = await postJson<ScoredPaper>("/api/tests/submit", { attemptId: run!.attemptId, answers: chosen, times });
     if (status !== 200) throw new Error(data.error ?? "Could not submit the test.");
-    return data.questions;
+    return data;
   };
 
   if (error && !info) return <p className="card text-sm text-red-700">{error}</p>;

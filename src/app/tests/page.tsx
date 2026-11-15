@@ -21,6 +21,8 @@ interface Attempt {
   times: number[] | null;
   sections: QuizSection[] | null;
   submittedAt: number | null;
+  answersLocked?: boolean;
+  answersOpenAt?: number | null;
 }
 
 /** Full analysis of a submitted test (/tests?id=…): score, time, sections, topics and every answer. */
@@ -83,7 +85,7 @@ function TestAnalysis() {
         {attempt.submittedAt && <p className="text-sm text-slate-600">Taken on {new Date(attempt.submittedAt).toLocaleString()}</p>}
       </div>
       <div className="card">
-        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} share={{ title: `${exam?.name ?? attempt.examId} · ${title}`, examId: exam?.id }} />
+        <Results results={results} negativeMarking={attempt.negativeMarking} marks={attempt.marks} sections={attempt.sections ?? undefined} attemptId={id} share={{ title: `${exam?.name ?? attempt.examId} · ${title}`, examId: exam?.id }} answersLock={attempt.answersLocked ? { openAt: attempt.answersOpenAt ?? null } : null} />
       </div>
     </div>
   );
