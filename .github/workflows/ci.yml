@@ -64,6 +64,11 @@ jobs:
       - name: Pasted quiz text format
         run: npm run test:quiz-text
 
+      - name: Coding-round problems
+        run: npm run test:coding
+      - name: Headline feed reader
+        run: npm run test:headlines
+
       # The real (server) build with API routes, using placeholder settings: it must compile without
       # touching a database, so build errors in src/server or the API never reach production first.
       - name: Build (server)

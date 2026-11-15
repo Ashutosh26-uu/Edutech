@@ -30,6 +30,7 @@ function placementTopics(): { aptitude: Topic[]; cs: Topic[] } {
 }
 
 const TOOLS = [
+  { href: "/coding", icon: Code2, title: "Coding round practice", text: "Write Python or JavaScript and run it against test cases in your browser." },
   { href: "/interview", icon: MessageSquare, title: "Interview prep", text: "HR, behavioural and technical questions with model answers." },
   { href: "/resume", icon: FileText, title: "Resume builder", text: "A clean one-page fresher CV you can print as a PDF." },
   { href: "/drills", icon: Zap, title: "Speed drills", text: "60-second calculation drills to get faster at aptitude." },
