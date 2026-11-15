@@ -107,14 +107,17 @@ export const testAttempts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     examId: text("exam_id").notNull(),
     // "weekly" is the Sunday All-India Mock (lib/weekly.ts): one shared paper, free, one attempt per week.
-    kind: text("kind", { enum: ["full", "topic", "section", "weekly"] }).notNull(),
+    // "batch" is a test a trainer assigned to a batch (batches.ts): one fixed paper per assignment.
+    kind: text("kind", { enum: ["full", "topic", "section", "weekly", "batch"] }).notNull(),
     topicIds: text("topic_ids").array().notNull(),
     questions: jsonb("questions").$type<MCQ[]>().notNull(),
     /** Paper sections of a full mock on an exam pattern; null for the generic mock and topic tests. */
     sections: jsonb("sections").$type<AttemptSection[]>(),
     /** Whether each section is locked to its own timer. */
     sectional: boolean("sectional").notNull().default(false),
-    paidWith: text("paid_with", { enum: ["free", "credit", "weekly"] }).notNull(),
+    paidWith: text("paid_with", { enum: ["free", "credit", "weekly", "batch"] }).notNull(),
+    /** The trainer's assignment this attempt answers, for kind "batch". */
+    batchTestId: uuid("batch_test_id").references(() => batchTests.id, { onDelete: "set null" }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
@@ -128,7 +131,67 @@ export const testAttempts = pgTable(
   },
   // attempts_rank_idx: ranking a submitted test against everyone else's on the same exam and kind.
   // attempts_week_idx: the weekly leaderboard, every submitted test on an exam within a week.
-  (t) => [index("attempts_user_idx").on(t.userId, t.startedAt), index("attempts_rank_idx").on(t.examId, t.kind, t.submittedAt), index("attempts_week_idx").on(t.examId, t.submittedAt)],
+  // attempts_batch_test_idx: one attempt per student per assignment, and the trainer's results query.
+  (t) => [
+    index("attempts_user_idx").on(t.userId, t.startedAt),
+    index("attempts_rank_idx").on(t.examId, t.kind, t.submittedAt),
+    index("attempts_week_idx").on(t.examId, t.submittedAt),
+    uniqueIndex("attempts_batch_test_idx").on(t.batchTestId, t.userId).where(sql`${t.batchTestId} is not null`),
+  ],
+);
+
+/**
+ * Trainer mode: a trainer (a placement officer or teacher) runs a batch of students. Students
+ * join with the batch's code; the trainer assigns fixed papers and sees every member's result.
+ */
+export const batches = pgTable(
+  "batches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    trainerId: uuid("trainer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    institution: text("institution"),
+    /** Short code students type (or open as a link) to join. */
+    joinCode: text("join_code").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("batches_trainer_idx").on(t.trainerId, t.createdAt)],
+);
+
+export const batchMembers = pgTable(
+  "batch_members",
+  {
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.batchId, t.userId] }), index("batch_members_user_idx").on(t.userId)],
+);
+
+/** A paper a trainer assigned: the same questions for every member (each gets their own option order). */
+export const batchTests = pgTable(
+  "batch_tests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    /** The exam track the paper was built from (its marking applies), or "custom" for chosen topics. */
+    examId: text("exam_id").notNull(),
+    topicIds: text("topic_ids").array().notNull(),
+    questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    minutes: integer("minutes").notNull(),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("batch_tests_batch_idx").on(t.batchId, t.createdAt)],
 );
 
 /**

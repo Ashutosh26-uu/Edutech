@@ -616,6 +616,18 @@ export const SITE: Faq[] = [
     next: ["resume", "placement"],
   },
   {
+    id: "batches",
+    cat: "tools",
+    q: "Can a teacher or placement trainer use StudyClip with a class?",
+    qh: "Kya teacher ya placement trainer class ke saath use kar sakte hain?",
+    ask: ["trainer mode", "teacher account", "tpo", "placement trainer", "create batch", "join batch", "batch code", "assign test to students", "class test", "student results report", "teacher kaise use kare", "batch kaise join kare"],
+    keys: ["batch", "trainer", "teacher", "tpo", "class"],
+    en: "Yes, with **Batches** (needs a free account). A trainer creates a batch and shares its 6-letter code or join link, assigns tests built from any exam track (TCS, Infosys, Big 4, MBA placement…) with a time limit and due date, and sees every student's score, accuracy, time and the batch's weak topics, with a **CSV download**. Students enter the code on the Batches page and take each test once.",
+    hi: "Haan, **Batches** se (free account chahiye). Trainer batch banata hai aur uska 6 akshar ka code ya join link share karta hai, kisi bhi exam track (TCS, Infosys, Big 4, MBA placement…) se time limit aur due date ke saath test assign karta hai, aur har student ka score, accuracy, time aur batch ke kamzor topics dekhta hai, **CSV download** ke saath. Students Batches page pe code daalte hain aur har test ek baar dete hain.",
+    links: [["Batches", "/batches", "Batches kholo"], ["Placement hub", "/placement"]],
+    next: ["placement", "mock-how"],
+  },
+  {
     id: "placement",
     cat: "tools",
     q: "Do you have placement preparation?",

@@ -22,7 +22,8 @@
     "test:revision": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-revision.mjs",
     "test:reminders": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-reminders.mjs",
     "test:analysis": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-analysis.mjs",
-    "test:store": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-store-notify.mjs"
+    "test:store": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-store-notify.mjs",
+    "test:batches": "tsx --conditions react-server scripts/test-batches.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.5.0",
