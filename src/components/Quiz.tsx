@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowRight, BookmarkPlus, Check, ChevronDown, Flame, Lan
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
+import { Discuss } from "@/components/Discuss";
 import { RichText } from "@/components/RichText";
 import { ReportButton, StandingCard, type Standing } from "@/components/QualityWidgets";
 import { ScoreCardButton } from "@/components/ScoreCard";
@@ -966,6 +967,7 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
             )}
             {r.chosen !== null && !r.correct && <MistakeTagPicker question={r.question} />}
             <NoteBox question={r.question} className="mt-2" />
+            <Discuss question={r.question} />
           </div>
           );
         })}

@@ -25,6 +25,7 @@
     "test:store": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-store-notify.mjs",
     "test:batches": "tsx --conditions react-server scripts/test-batches.mjs",
     "test:challenges": "tsx --conditions react-server scripts/test-challenges.mjs",
+    "test:doubts": "tsx --conditions react-server scripts/test-doubts.mjs",
     "test:content": "tsx --conditions react-server scripts/test-content.mjs",
     "test:institutes": "tsx --conditions react-server scripts/test-institutes.mjs",
     "test:quiz-text": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-quiz-text.mjs",

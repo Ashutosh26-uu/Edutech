@@ -629,6 +629,17 @@ export const SITE: Faq[] = [
     next: ["placement", "mock-how"],
   },
   {
+    id: "discuss",
+    cat: "practice",
+    q: "Can I ask other students about a question I don't understand?",
+    qh: "Kisi sawal pe doosre students se doubt pooch sakte hain?",
+    ask: ["discuss question", "ask doubt to students", "doubt under question", "comment on question", "question discussion", "sawal pe doubt", "doubt kaise puche", "reply to doubt", "report comment"],
+    keys: ["discuss", "doubt", "comment", "reply", "discussion"],
+    en: "Yes. In the answer review after any set or test, tap **Discuss this question** under a question. You can read others' doubts without an account; to ask or reply, log in with a verified email. Use **Report** on rude, wrong or spammy posts: three reports hide a post until an admin reviews it. You can delete your own posts. (For an instant step-by-step answer, the question solver on Search & question solver also works.)",
+    hi: "Haan. Kisi bhi set ya test ke answer review mein sawal ke neeche **Discuss this question** dabao. Doosron ke doubts bina account padh sakte ho; poochne ya reply karne ke liye verified email se log in karo. Galat, rude ya spam post pe **Report** dabao: teen report pe post chhup jaati hai jab tak admin na dekhe. Apni post khud delete kar sakte ho. (Turant step-by-step jawab ke liye Search & question solver bhi hai.)",
+    links: [["Search & question solver", "/learn", "Question solver kholo"]],
+  },
+  {
     id: "current-affairs",
     cat: "study",
     q: "Is there a daily current affairs quiz?",

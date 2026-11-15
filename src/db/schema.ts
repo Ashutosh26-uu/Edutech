@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, date, index, integer, jsonb, pgTable, primaryKey, real, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, boolean, check, date, index, integer, jsonb, pgTable, primaryKey, real, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { MCQ } from "@/lib/types";
 
 /** A section of a full mock: questions [from, from + count) of the attempt, with its own minutes. */
@@ -514,4 +514,40 @@ export const challengePlays = pgTable(
     playedAt: timestamp("played_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.challengeId, t.userId] })],
+);
+
+/**
+ * Doubts under a question: students ask and answer each other. A top-level post has no parent;
+ * replies point at it. Posts are hidden by an admin, or automatically after enough reports.
+ */
+export const doubts = pgTable(
+  "doubts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questionId: text("question_id").notNull(),
+    parentId: uuid("parent_id").references((): AnyPgColumn => doubts.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    hidden: boolean("hidden").notNull().default(false),
+    reports: integer("reports").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("doubts_question_idx").on(t.questionId, t.createdAt), index("doubts_reports_idx").on(t.reports)],
+);
+
+/** One report per user per post. */
+export const doubtReports = pgTable(
+  "doubt_reports",
+  {
+    doubtId: uuid("doubt_id")
+      .notNull()
+      .references(() => doubts.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.doubtId, t.userId] })],
 );
