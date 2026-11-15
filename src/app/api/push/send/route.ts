@@ -6,9 +6,9 @@ import { pushConfigured, sendDueReminders } from "@/server/push";
 export const dynamic = "force-dynamic";
 
 /**
- * Sends the daily reminders due this India hour. Called hourly by the Netlify scheduled function
- * (netlify/functions/send-reminders.mts) with `Authorization: Bearer $CRON_SECRET`. Without
- * CRON_SECRET the route does not exist (404).
+ * Sends the daily reminders due this India hour. Called hourly with `Authorization: Bearer $CRON_SECRET`
+ * by any scheduler: .github/workflows/reminders.yml (works on every host) or the Netlify scheduled
+ * function (netlify/functions/send-reminders.mts). Without CRON_SECRET the route does not exist (404).
  */
 export const POST = route(
   async (req: NextRequest) => {

@@ -1,0 +1,38 @@
+# Hourly trigger for the daily study reminders, on any host: asks the app to send the reminders
+# due this India hour. Set in GitHub → Settings → Secrets and variables → Actions:
+#   variable  SITE_URL     the public address, e.g. https://studyclip.in (no trailing slash)
+#   secret    CRON_SECRET  the same value as the app's CRON_SECRET
+# Without both it does nothing. (On Netlify, netlify/functions/send-reminders.mts does the same job;
+# keep only one of the two running so nobody gets a reminder twice.)
+name: Daily reminders
+
+on:
+  schedule:
+    # Minute 30 UTC is the top of the hour in India (UTC+5:30). GitHub may start it a few minutes late.
+    - cron: "30 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send reminders due this hour
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "SITE_URL or CRON_SECRET not set; skipping."
+            exit 0
+          fi
+          # The sender stops after ~7 s and reports "more" when rows are left; call again a few times.
+          for i in 1 2 3; do
+            body=$(curl -sS -X POST "$SITE_URL/api/push/send" -H "Authorization: Bearer $CRON_SECRET" -w '\n%{http_code}')
+            code=$(echo "$body" | tail -n1)
+            echo "attempt $i: HTTP $code $(echo "$body" | head -n1 | cut -c1-200)"
+            [ "$code" = "200" ] || exit 1
+            echo "$body" | head -n1 | grep -q '"more":true' || break
+          done

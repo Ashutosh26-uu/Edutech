@@ -6,6 +6,8 @@ export const COMPANY = "Reasonateai Private Limited";
  * The public address of the site root (including any sub-path it is served from), set with
  * NEXT_PUBLIC_SITE_URL. Used for the sitemap, robots.txt and canonical links.
  */
+// The one place the public address lives: set NEXT_PUBLIC_SITE_URL (e.g. https://your-domain.com) when
+// moving hosts and rebuild; links, share cards, sitemap and PDFs follow it.
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://studyclip.netlify.app").replace(/\/+$/, "");
 
 /** Absolute URL of a page; the static export serves every page with a trailing slash. */

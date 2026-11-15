@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { SITE_URL } from "@/data/site";
 
 /**
  * The student's own notebook: free-text notes, optionally tied to a topic. Browser-only
@@ -138,7 +139,7 @@ ${notes
     return `<article><${notes.length > 1 ? "h2" : "h1"}>${esc(n.title)}</${notes.length > 1 ? "h2" : "h1"}><div class="meta">${topic ? `${esc(topic)} · ` : ""}Updated ${date(n.updatedAt)}</div>${noteHtml(n.body) || "<p><i>Empty note</i></p>"}</article>`;
   })
   .join("")}
-<footer>Written with StudyClip · studyclip.netlify.app</footer>
+<footer>Written with StudyClip · ${esc(SITE_URL.replace(/^https?:\/\//, ""))}</footer>
 <script>window.onload=()=>setTimeout(()=>print(),300)</script></body></html>`;
   const w = window.open("", "_blank");
   if (!w) return false;
