@@ -12,9 +12,9 @@
   --color-slate-100: #f4f4f5;
   --color-slate-200: #e4e4e7;
   --color-slate-300: #d4d4d8;
-  --color-slate-400: #a1a1aa;
-  --color-slate-500: #71717a;
-  --color-slate-600: #52525b;
+  --color-slate-400: #8e8e97;
+  --color-slate-500: #66666f;
+  --color-slate-600: #4b4b53;
   --color-slate-700: #3f3f46;
   --color-slate-800: #27272a;
   --color-slate-900: #18181b;
@@ -48,8 +48,8 @@ html.dark {
   --color-slate-100: #1c1c1f;
   --color-slate-200: #27272a;
   --color-slate-300: #3a3a3f;
-  --color-slate-400: #71717a;
-  --color-slate-500: #a1a1aa;
+  --color-slate-400: #85858e;
+  --color-slate-500: #a8a8b1;
   --color-slate-600: #c4c4c9;
   --color-slate-700: #d4d4d8;
   --color-slate-800: #e4e4e7;
@@ -214,6 +214,40 @@ html.dark {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Answer feedback: a small pop for a right answer, a short shake for a wrong one. */
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+.anim-pop {
+  animation: pop 0.35s ease-out;
+}
+.anim-shake {
+  animation: shake 0.3s ease-in-out;
+}
+.anim-rise {
+  animation: rise 0.25s ease-out backwards;
 }
 
 @keyframes shimmer {

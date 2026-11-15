@@ -342,17 +342,20 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
         </div>
       </div>
 
-      <dl className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-        {stats.map((st) => (
-          <div key={st.label} className="rounded-xl border border-slate-200 p-3">
-            <dt className="flex items-center gap-1.5 text-xs text-slate-500">
-              <st.icon className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{st.label}</span>
-            </dt>
-            <dd className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">{st.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-[1.2fr_1fr_1fr] sm:gap-3">
+        <GoalRing done={t.questions} goal={DAILY_QUESTIONS} href={`/practice?exam=${exam.id}&smart=1`} />
+        <WeekStrip store={store} streakDays={s} />
+        <Link href="/review" className="group flex flex-col justify-between rounded-xl border border-slate-200 p-4 transition-colors hover:border-slate-300 hover:bg-slate-50">
+          <span className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Layers className="h-3.5 w-3.5" /> Flashcards
+          </span>
+          <span className="mt-2 text-2xl font-semibold tabular-nums text-slate-900">{stats[0].value}</span>
+          <span className="flex items-center justify-between text-xs text-slate-500">
+            {stats[0].label}
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
         {actions.map((a, i) => (
@@ -370,7 +373,115 @@ function Dashboard({ store, exam, onChangeExam }: { store: StoreData; exam: Exam
           </Link>
         ))}
       </div>
+
+      <FocusNext store={store} examId={exam.id} />
     </section>
+  );
+}
+
+/** Today's question goal as a ring that fills as questions are answered. */
+function GoalRing({ done, goal, href }: { done: number; goal: number; href: string }) {
+  const p = Math.min(done / goal, 1);
+  const r = 22;
+  const c = 2 * Math.PI * r;
+  const complete = done >= goal;
+  return (
+    <Link href={href} className="group col-span-2 flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition-colors hover:border-slate-300 hover:bg-slate-50 sm:col-span-1">
+      <svg viewBox="0 0 56 56" className="h-14 w-14 shrink-0 -rotate-90" aria-hidden>
+        <circle cx="28" cy="28" r={r} fill="none" strokeWidth="5" className="stroke-slate-200" />
+        <circle
+          cx="28"
+          cy="28"
+          r={r}
+          fill="none"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - p)}
+          className={`transition-[stroke-dashoffset] duration-700 ease-out ${complete ? "stroke-emerald-500" : "stroke-brand-600"}`}
+        />
+      </svg>
+      <span className="min-w-0">
+        <span className="block text-xs text-slate-500">Daily goal</span>
+        <span className="block text-2xl font-semibold tabular-nums text-slate-900">
+          {Math.min(done, 999)}
+          <span className="text-base font-normal text-slate-400">/{goal}</span>
+        </span>
+        <span className={`block text-xs ${complete ? "font-medium text-emerald-700" : "text-slate-500"}`}>
+          {complete ? "Goal done. Nice work!" : done ? `${goal - done} more to go` : "Start today’s questions"}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+/** Streak with the last seven days as dots: filled where the student practised. */
+function WeekStrip({ store, streakDays }: { store: StoreData; streakDays: number }) {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const c = store.counts[dayKey(d)];
+    return { key: dayKey(d), label: d.toLocaleDateString("en-IN", { weekday: "narrow" }), active: !!c && c.questions + c.reviews + c.mocks + c.videos > 0, today: i === 6 };
+  });
+  return (
+    <Link href="/today" className="flex flex-col justify-between rounded-xl border border-slate-200 p-4 transition-colors hover:border-slate-300 hover:bg-slate-50">
+      <span className="flex items-center gap-1.5 text-xs text-slate-500">
+        <Flame className={`h-3.5 w-3.5 ${streakDays ? "text-orange-500" : ""}`} /> {streakDays === 1 ? "1-day streak" : `${streakDays}-day streak`}
+      </span>
+      <span className="mt-3 flex items-end justify-between gap-1" aria-label={`Practised on ${days.filter((d) => d.active).length} of the last 7 days`}>
+        {days.map((d) => (
+          <span key={d.key} className="flex flex-col items-center gap-1">
+            <span className={`h-2.5 w-2.5 rounded-full transition-colors ${d.active ? "bg-orange-500" : "bg-slate-200"} ${d.today ? "ring-2 ring-orange-500/30 ring-offset-1 ring-offset-surface" : ""}`} />
+            <span className={`text-[10px] ${d.today ? "font-semibold text-slate-700" : "text-slate-400"}`}>{d.label}</span>
+          </span>
+        ))}
+      </span>
+    </Link>
+  );
+}
+
+/** The three topics that need work most, each one tap from practice. */
+function FocusNext({ store, examId }: { store: StoreData; examId: string }) {
+  const exams = useExams(true);
+  const [topics, setTopics] = useState<TopicsModule | null>(null);
+  useEffect(() => {
+    let live = true;
+    import("@/data/topics").then((m) => live && setTopics(m), () => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const exam = exams?.EXAM_BY_ID.get(examId);
+  if (!exam || !topics) return <div className="mt-5 h-[7.5rem]" aria-hidden />;
+  const focus = focusTopics(exams!.examTopicIds(exam), store.topics, 3);
+  if (!focus.length) return null;
+  return (
+    <div className="mt-5">
+      <p className="text-xs font-medium text-slate-500">Focus next</p>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-3">
+        {focus.map((f) => {
+          const st = store.topics[f.id];
+          const acc = st?.attempted ? Math.round((st.correct / st.attempted) * 100) : null;
+          return (
+            <li key={f.id}>
+              <Link href={`/practice?topics=${f.id}`} className="group block rounded-xl border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-slate-900">{topics.TOPIC_BY_ID.get(f.id)?.name ?? f.id}</span>
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <span
+                    className={`block h-full rounded-full transition-[width] duration-700 ${acc === null ? "w-0" : acc < 60 ? "bg-red-500" : acc < 80 ? "bg-amber-500" : "bg-emerald-500"}`}
+                    style={acc === null ? undefined : { width: `${Math.max(acc, 4)}%` }}
+                  />
+                </span>
+                <span className="mt-1.5 block text-xs text-slate-500">{f.reason}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

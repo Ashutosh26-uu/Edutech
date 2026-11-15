@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { MakeMyExamButton, TopicAccuracy, RememberExam } from "@/components/ExamClient";
 import type { Exam } from "@/lib/types";
 import { isWeeklyExam } from "@/lib/weekly";
+import { subjectStyle } from "@/lib/subjectStyle";
 import { InfoTip } from "@/components/InfoTip";
 import { canUnlimited, UNLIMITED_HINT, unlimitedHref } from "@/lib/unlimited";
 
@@ -207,7 +208,10 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
         {exam.subjects.map((s) => (
           <section key={s.name} className="card">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="font-semibold">{s.name}</h2>
+              <h2 className="flex min-w-0 items-center gap-2.5 font-semibold">
+                <SubjectIcon name={s.name} />
+                {s.name}
+              </h2>
               {s.topicIds.length > 0 && (
                 <Link href={`/practice?exam=${exam.id}&topics=${s.topicIds.join(",")}`} className="text-sm font-medium text-brand-700 hover:underline">
                   Practise subject
@@ -250,5 +254,14 @@ export default async function ExamPage({ params }: { params: Promise<{ id: strin
         ))}
       </div>
     </div>
+  );
+}
+
+function SubjectIcon({ name }: { name: string }) {
+  const st = subjectStyle(name);
+  return (
+    <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${st.tile}`}>
+      <st.icon className="h-3.5 w-3.5" aria-hidden />
+    </span>
   );
 }

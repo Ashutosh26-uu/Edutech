@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, BookmarkPlus, ChevronDown, Languages, Play, Star, Timer } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookmarkPlus, Check, ChevronDown, Flame, Languages, Play, Star, Timer, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
@@ -284,6 +284,9 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
   const q = questions[idx];
   const text = inLang(q, lang);
   const isRevealed = mode === "practice" && revealed[idx];
+  // Practice: correct answers in a row, counting back from the current question.
+  let run = 0;
+  if (mode === "practice") for (let k = idx; k >= 0 && revealed[k] && chosen[k] === questions[k].answer; k--) run++;
   const answeredCount = chosen.filter((c) => c !== null).length;
   const sectionAnswered = cur ? chosen.slice(first, last + 1).filter((c) => c !== null).length : 0;
   const sectionOf = (i: number) => sections?.find((s) => i >= s.from && i < s.from + s.count);
@@ -358,6 +361,11 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
           Question {idx + 1} of {questions.length}
           {q.topicId && TOPIC_BY_ID.get(q.topicId) && <span className="ml-2 chip bg-slate-100 text-slate-600">{TOPIC_BY_ID.get(q.topicId)!.name}</span>}
           <span className="ml-2 inline-flex gap-1"><DifficultyChip difficulty={q.difficulty} /><SourceChip source={q.source} pyq={q.pyq} /></span>
+          {run >= 3 && (
+            <span key={run} className="anim-pop ml-2 chip bg-orange-50 text-orange-600" aria-live="polite">
+              <Flame className="h-3 w-3" /> {run} in a row
+            </span>
+          )}
         </span>
         {bilingual && <LangToggle lang={lang} setLang={setLang} />}
         {timed && (
@@ -373,7 +381,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
       </div>
       {sections && !cur && sectionOf(idx) && <p className="text-xs font-medium text-slate-500">{sectionOf(idx)!.name}</p>}
       <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full bg-brand-500 transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
+        <div className="h-full rounded-full bg-brand-500 transition-[width] duration-500 ease-out" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
       {/* First question of a practice set, nothing answered yet: say how it works in one line. */}
@@ -388,13 +396,18 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
       <div className="grid gap-2">
         {text.options.map((opt, i) => {
           const picked = chosen[idx] === i;
-          let cls = "border-slate-200 hover:border-brand-300 hover:bg-brand-50";
-          if (isRevealed && i === q.answer) cls = "border-emerald-400 bg-emerald-50";
-          else if (isRevealed && picked) cls = "border-red-300 bg-red-50";
+          const right = isRevealed && i === q.answer;
+          const wrong = isRevealed && picked && !right;
+          let cls = "border-slate-200 hover:border-brand-300 hover:bg-brand-50 active:scale-[0.99]";
+          if (right) cls = `border-emerald-400 bg-emerald-50 ${picked ? "anim-pop" : ""}`;
+          else if (wrong) cls = "anim-shake border-red-300 bg-red-50";
           else if (picked) cls = "border-brand-500 bg-brand-50";
+          else if (isRevealed) cls = "border-slate-200 opacity-70";
           return (
-            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex min-h-12 touch-manipulation items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition ${cls}`}>
-              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600">{LETTERS[i]}</span>
+            <button key={i} data-quiz-option onClick={() => choose(i)} className={`flex min-h-12 touch-manipulation items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm transition-[border-color,background-color,opacity,transform] duration-200 ${cls}`}>
+              <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md text-xs font-semibold transition-colors ${right ? "bg-emerald-500 text-white" : wrong ? "bg-red-500 text-white" : "bg-slate-100 text-slate-600"}`}>
+                {right ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-label="Correct answer" /> : wrong ? <X className="h-3.5 w-3.5" strokeWidth={3} aria-label="Your answer" /> : LETTERS[i]}
+              </span>
               <span className="min-w-0 whitespace-pre-wrap break-words">{opt}</span>
             </button>
           );
@@ -405,7 +418,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
       {mode === "practice" && <NoteBox question={q} />}
 
       {isRevealed && (
-        <div className={`rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
+        <div className={`anim-rise rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
             <span className="flex shrink-0 gap-1">
