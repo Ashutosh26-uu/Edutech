@@ -76,14 +76,16 @@ export const revisionPasses = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.examId] })],
 );
 
-/** Unique order and payment ids make granting access idempotent across verify calls and webhooks. */
+/**
+ * Unique order and payment ids make granting access idempotent across verify calls and webhooks.
+ * Deleting an account keeps its payments (needed for refunds, reconciliation and tax) with the
+ * user cleared.
+ */
 export const payments = pgTable(
   "payments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     orderId: text("order_id").notNull().unique(),
     paymentId: text("payment_id").unique(),
     productId: text("product_id").notNull(),

@@ -6,7 +6,7 @@ import { db, schema } from "@/db";
 import { EXAM_BY_ID } from "@/data/exams";
 import type { MCQ } from "@/lib/types";
 import { isAdmin } from "./admin";
-import { requireUser, type SessionUser } from "./auth";
+import { requireUser, roleEmail, type SessionUser } from "./auth";
 import { HttpError } from "./http";
 
 /**
@@ -28,7 +28,9 @@ export type Role = "admin" | "editor" | null;
 export async function roleOf(user: SessionUser | null): Promise<{ role: Role; organisation: string | null }> {
   if (!user) return { role: null, organisation: null };
   if (isAdmin(user)) return { role: "admin", organisation: null };
-  const [row] = await db.select().from(ce).where(eq(ce.email, user.email.toLowerCase())).limit(1);
+  const email = roleEmail(user);
+  if (!email) return { role: null, organisation: null };
+  const [row] = await db.select().from(ce).where(eq(ce.email, email)).limit(1);
   return row ? { role: "editor", organisation: row.organisation } : { role: null, organisation: null };
 }
 

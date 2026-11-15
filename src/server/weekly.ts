@@ -159,7 +159,8 @@ export async function weeklyOverview(user: SessionUser | null) {
       const [current, mine, board, mineLast] = await Promise.all([
         status === "live" ? leaderboard(exam.id, next, false).then((b) => ({ takers: b.takers })) : Promise.resolve({ takers: 0 }),
         user && status === "live" ? myResult(user, exam.id, next) : Promise.resolve(null),
-        leaderboard(exam.id, last, true),
+        // Cache the closed week's board only after late submissions (deadline + 2 min) are in.
+        leaderboard(exam.id, last, now > last.closesAt + 2 * 60_000),
         user ? myResult(user, exam.id, last) : Promise.resolve(null),
       ]);
       return {

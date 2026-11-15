@@ -37,7 +37,9 @@ async function redisHit(key: string, windowMs: number): Promise<number> {
     ]),
     cache: "no-store",
   });
-  const out = (await res.json()) as { result: number }[];
+  const out = (await res.json()) as { result?: unknown; error?: string }[];
+  // An error reply ([{ error }]) must not count as "0 hits": throw so the in-memory limiter takes over.
+  if (typeof out[0]?.result !== "number") throw new Error(`Upstash: ${out[0]?.error ?? "bad reply"}`);
   return out[0].result;
 }
 

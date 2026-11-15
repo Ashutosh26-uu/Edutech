@@ -49,15 +49,23 @@ export async function fulfilOrder(orderId: string, paymentId: string, amountPais
       .returning();
     if (!pay) return false; // already fulfilled, unknown order, or amount mismatch
     const p = PRODUCTS[pay.productId as ProductId];
+    // A product removed from the catalogue after the order: keep the payment marked paid and log it
+    // for a manual fix, instead of throwing and rolling back a real payment.
+    if (!p || !pay.userId) {
+      // Unknown product, or the account was deleted before the payment arrived: keep it paid, log it.
+      console.error("[billing] paid order needs a manual fix", pay.productId, pay.orderId);
+      return true;
+    }
+    const userId = pay.userId;
     if (p.credits) {
-      await tx.update(schema.users).set({ credits: sql`${schema.users.credits} + ${p.credits}` }).where(eq(schema.users.id, pay.userId));
+      await tx.update(schema.users).set({ credits: sql`${schema.users.credits} + ${p.credits}` }).where(eq(schema.users.id, userId));
     }
     if (p.revisionDays && pay.examId) {
       // New passes start now; buying again extends from the current expiry.
       const interval = sql.raw(`interval '${p.revisionDays} days'`);
       await tx
         .insert(schema.revisionPasses)
-        .values({ userId: pay.userId, examId: pay.examId, expiresAt: sql`now() + ${interval}` })
+        .values({ userId, examId: pay.examId, expiresAt: sql`now() + ${interval}` })
         .onConflictDoUpdate({
           target: [schema.revisionPasses.userId, schema.revisionPasses.examId],
           set: { expiresAt: sql`greatest(${schema.revisionPasses.expiresAt}, now()) + ${interval}` },

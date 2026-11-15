@@ -123,7 +123,15 @@ const blank = blankQuestion;
 function QuizTab() {
   const [list, setList] = useState<SavedQuiz[] | null>(null);
   const [editing, setEditing] = useState<{ day: string; title: string; published: boolean; questions: DraftQuestion[] } | null>(null);
-  const load = useCallback(() => call<{ quizzes: SavedQuiz[] }>("/api/content/quizzes").then((r) => setList(r.data?.quizzes ?? [])), []);
+  const [listError, setListError] = useState("");
+  const load = useCallback(
+    () =>
+      call<{ quizzes: SavedQuiz[] }>("/api/content/quizzes").then((r) => {
+        setListError(r.ok ? "" : (r.error ?? "Could not load quizzes."));
+        setList(r.data?.quizzes ?? []);
+      }),
+    [],
+  );
   useEffect(() => {
     load();
   }, [load]);
@@ -145,7 +153,7 @@ function QuizTab() {
       {!list ? (
         <div className="skeleton h-24" />
       ) : list.length === 0 ? (
-        <p className="card text-sm text-slate-600">No quizzes yet. Create the first one: 5 to 10 questions on recent news works well.</p>
+        <p className={`card text-sm ${listError ? "text-red-700" : "text-slate-600"}`}>{listError || "No quizzes yet. Create the first one: 5 to 10 questions on recent news works well."}</p>
       ) : (
         <ul className="card divide-y divide-slate-100 p-0 sm:p-0">
           {list.map((q) => (
@@ -165,7 +173,8 @@ function QuizTab() {
                   aria-label={`Delete ${q.title}`}
                   onClick={async () => {
                     if (!confirm(`Delete the quiz for ${fmtDay(q.day)}? This cannot be undone.`)) return;
-                    await call(`/api/content/quizzes?day=${q.day}`, "DELETE");
+                    const r = await call(`/api/content/quizzes?day=${q.day}`, "DELETE");
+                    if (!r.ok) alert(r.error);
                     load();
                   }}
                 >
@@ -241,7 +250,15 @@ function CalendarTab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
-  const load = useCallback(() => call<{ events: ExamEvent[] }>("/api/content/events").then((r) => setList(r.data?.events ?? [])), []);
+  const [listError, setListError] = useState("");
+  const load = useCallback(
+    () =>
+      call<{ events: ExamEvent[] }>("/api/content/events").then((r) => {
+        setListError(r.ok ? "" : (r.error ?? "Could not load dates."));
+        setList(r.data?.events ?? []);
+      }),
+    [],
+  );
   useEffect(() => {
     load();
   }, [load]);
@@ -330,7 +347,7 @@ function CalendarTab() {
       {!list ? (
         <div className="skeleton h-24" />
       ) : shown.length === 0 ? (
-        <p className="card text-sm text-slate-600">No dates yet. Add application windows, admit cards, exam days and results, each with its official link.</p>
+        <p className={`card text-sm ${listError ? "text-red-700" : "text-slate-600"}`}>{listError || "No dates yet. Add application windows, admit cards, exam days and results, each with its official link."}</p>
       ) : (
         <ul className="card divide-y divide-slate-100 p-0 sm:p-0">
           {shown.map((e) => (
@@ -356,7 +373,8 @@ function CalendarTab() {
                   aria-label={`Delete ${e.title}`}
                   onClick={async () => {
                     if (!confirm(`Delete “${e.title}”?`)) return;
-                    await call(`/api/content/events?id=${e.id}`, "DELETE");
+                    const r = await call(`/api/content/events?id=${e.id}`, "DELETE");
+                    if (!r.ok) alert(r.error);
                     load();
                   }}
                 >

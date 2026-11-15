@@ -7,7 +7,7 @@ import { TOPIC_BY_ID } from "@/data/topics";
 import { BANK_SIZES } from "@/data/bank";
 import { getProvider } from "@/lib/ai";
 import { shuffleOptions } from "@/lib/ai/local";
-import type { SessionUser } from "./auth";
+import { roleEmail, type SessionUser } from "./auth";
 import { HttpError } from "./http";
 import { markingFor, type PublicQuestion } from "./tests";
 
@@ -35,7 +35,8 @@ async function trainerAccess(user: SessionUser, batchId: string) {
   const [batch] = await db.select().from(b).where(eq(b.id, batchId)).limit(1);
   if (!batch) throw new HttpError(404, "Batch not found.");
   if (batch.trainerId === user.id) return { batch, owner: true };
-  const [co] = await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, batchId), eq(tr.email, user.email.toLowerCase()))).limit(1);
+  const email = roleEmail(user);
+  const [co] = email ? await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, batchId), eq(tr.email, email))).limit(1) : [];
   if (co) return { batch, owner: false };
   throw new HttpError(404, "Batch not found.");
 }
@@ -57,7 +58,8 @@ async function ownerBatch(user: SessionUser, batchId: string) {
 const BATCH_ID = sql.raw(`"batches"."id"`);
 const BATCH_TEST_ID = sql.raw(`"batch_tests"."id"`);
 
-const coTrained = (user: SessionUser) => sql`${b.id} in (select ${tr.batchId} from ${tr} where ${tr.email} = ${user.email.toLowerCase()})`;
+// Unverified accounts match no co-trainer row (an email can't be claimed before it is verified).
+const coTrained = (user: SessionUser) => sql`${BATCH_ID} in (select ${tr.batchId} from ${tr} where ${tr.email} = ${roleEmail(user) ?? ""})`;
 
 export async function listTrainers(user: SessionUser, batchId: string) {
   await ownBatch(user, batchId);
@@ -280,7 +282,8 @@ export async function batchTestInfo(user: SessionUser, testId: string) {
     .limit(1);
   if (!t) throw new HttpError(404, "Test not found.");
   const [member] = await db.select({ u: m.userId }).from(m).where(and(eq(m.batchId, t.batchId), eq(m.userId, user.id))).limit(1);
-  const isTrainer = t.trainerId === user.id || (await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, t.batchId), eq(tr.email, user.email.toLowerCase()))).limit(1)).length > 0;
+  const email = roleEmail(user);
+  const isTrainer = t.trainerId === user.id || (!!email && (await db.select({ e: tr.email }).from(tr).where(and(eq(tr.batchId, t.batchId), eq(tr.email, email))).limit(1)).length > 0);
   if (!member && !isTrainer) throw new HttpError(404, "Test not found.");
   const [attempt] = await db.select({ id: ta.id, submittedAt: ta.submittedAt, deadlineAt: ta.deadlineAt }).from(ta).where(and(eq(ta.batchTestId, testId), eq(ta.userId, user.id))).limit(1);
   const { marks, negative } = markingFor(t.examId);
@@ -346,7 +349,9 @@ export async function batchTestResults(user: SessionUser, testId: string) {
   const topicTotals = new Map<string, { attempted: number; correct: number; asked: number }>();
   const rows = members.map((mem) => {
     const a = attempts.find((x) => x.userId === mem.userId);
-    const done = !!a?.submittedAt;
+    // Submitted after the time limit (plus the usual 2-minute grace): shown, but not ranked or averaged.
+    const late = !!a?.submittedAt && a.submittedAt.getTime() > a.deadlineAt.getTime() + 2 * 60_000;
+    const done = !!a?.submittedAt && !late;
     if (done && a) {
       a.questions.forEach((q, i) => {
         const topic = q.topicId ?? "other";
@@ -365,7 +370,7 @@ export async function batchTestResults(user: SessionUser, testId: string) {
       userId: mem.userId,
       name: mem.name ?? mem.email.split("@")[0],
       email: mem.email,
-      status: done ? ("submitted" as const) : a ? ("in-progress" as const) : ("not-started" as const),
+      status: done ? ("submitted" as const) : late ? ("late" as const) : a ? ("in-progress" as const) : ("not-started" as const),
       score: done ? (a!.score ?? 0) * marks : null,
       correct: done ? a!.correct : null,
       wrong: done ? a!.wrong : null,

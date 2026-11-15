@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { MCQ } from "@/lib/types";
-import type { SessionUser } from "./auth";
+import { roleEmail, type SessionUser } from "./auth";
 import { newCode, normaliseCode } from "./batches";
 import { cleanMcqs, type QuizInput } from "./content";
 import { HttpError } from "./http";
@@ -32,8 +32,9 @@ const slugify = (name: string) =>
     .slice(0, 48) || "institute";
 
 async function access(user: SessionUser | null, institutionId: string): Promise<"owner" | "staff" | null> {
-  if (!user) return null;
-  const [row] = await db.select({ role: st.role }).from(st).where(and(eq(st.institutionId, institutionId), eq(st.email, user.email.toLowerCase()))).limit(1);
+  const email = roleEmail(user);
+  if (!email) return null;
+  const [row] = await db.select({ role: st.role }).from(st).where(and(eq(st.institutionId, institutionId), eq(st.email, email))).limit(1);
   return row?.role ?? null;
 }
 
@@ -51,6 +52,7 @@ async function staffOnly(user: SessionUser, slug: string) {
 }
 
 export async function createInstitution(user: SessionUser, input: { name: string; city?: string; about?: string; website?: string }) {
+  if (!roleEmail(user)) throw new HttpError(403, "Verify your email first, then create the page.");
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(st).where(and(eq(st.email, user.email.toLowerCase()), eq(st.role, "owner")));
   if (n >= LIMITS.perOwner) throw new HttpError(409, `You can create up to ${LIMITS.perOwner} institute pages.`);
   if (input.website && !/^https:\/\/[^\s]+$/i.test(input.website)) throw new HttpError(400, "The website must start with https://");
@@ -221,7 +223,7 @@ export async function myInstitutions(user: SessionUser) {
     .select({ slug: it.slug, name: it.name, verified: it.verified, role: st.role })
     .from(st)
     .innerJoin(it, eq(it.id, st.institutionId))
-    .where(eq(st.email, user.email.toLowerCase()))
+    .where(eq(st.email, roleEmail(user) ?? ""))
     .orderBy(asc(it.name));
   const joined = await db
     .select({ slug: it.slug, name: it.name, verified: it.verified })

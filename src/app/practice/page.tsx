@@ -30,9 +30,20 @@ import { isWeeklyExam } from "@/lib/weekly";
 export default function PracticePage() {
   return (
     <Suspense>
-      <PracticeView />
+      <KeyedPracticeView />
     </Suspense>
   );
+}
+
+/**
+ * A new practice URL (another exam, topic, mock or level) is a new session: remount the view so no
+ * state from the previous one (phase, questions, a started server test) carries over. Without
+ * this, going from practice to a mock on the same route could hang on "Preparing questions…" or
+ * start a paid test from the wrong screen.
+ */
+function KeyedPracticeView() {
+  const params = useSearchParams();
+  return <PracticeView key={params.toString()} />;
 }
 
 const MOCK_SIZE = 25;

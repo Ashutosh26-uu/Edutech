@@ -123,12 +123,16 @@ export function dayKey(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// A fresh copy of the empty store. JSON round-trip, not structuredClone: older browsers (iOS
+// Safari before 15.4) lack structuredClone, and the fallback must not throw.
+const empty = (): Store => JSON.parse(JSON.stringify(EMPTY));
+
 export function load(): Store {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...structuredClone(EMPTY), ...JSON.parse(raw) } : structuredClone(EMPTY);
+    return raw ? { ...empty(), ...JSON.parse(raw) } : empty();
   } catch {
-    return structuredClone(EMPTY);
+    return empty();
   }
 }
 
@@ -150,11 +154,20 @@ export function notifyStoreChange() {
 }
 
 function save(s: Store) {
+  const data = JSON.stringify(s);
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(KEY, data);
     notifyStoreChange();
   } catch {
-    /* storage unavailable (private mode); progress just isn't kept */
+    // Storage full: pasted lecture transcripts are the big, rebuildable data sharing this site's
+    // quota. Drop them and try once more, so streaks and progress keep saving.
+    try {
+      localStorage.removeItem(TRANSCRIPTS_KEY);
+      localStorage.setItem(KEY, data);
+      notifyStoreChange();
+    } catch {
+      /* storage unavailable (private mode); progress just isn't kept */
+    }
   }
 }
 
@@ -173,12 +186,13 @@ function addXp(s: Store, amount: number, what: keyof DayCounts) {
  * a typing test. Rounded; adds to the total and today's activity (daily goal and streak), not to
  * the question counts.
  */
-export function awardXp(amount: number) {
+/** Adds XP to the total and to a day's activity: today, or the day the work happened (`on`). */
+export function awardXp(amount: number, on?: Date) {
   const xp = Math.round(amount);
   if (!(xp > 0)) return;
   const s = load();
   s.xp += xp;
-  const k = dayKey();
+  const k = dayKey(on);
   s.activity[k] = (s.activity[k] ?? 0) + xp;
   s.frozenDays = streakInfo(s).frozen;
   save(s);

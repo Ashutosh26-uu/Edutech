@@ -219,18 +219,25 @@ function useRevision(examId: string, unlocked: boolean): Sheet | null {
     };
   }, [examId, unlocked, cards]);
   const [remote, setRemote] = useState<Sheet | null>(null);
+  const [remoteFailed, setRemoteFailed] = useState(false);
   useEffect(() => {
     if (mode !== "server") return;
     let live = true;
+    setRemoteFailed(false);
+    // An error reply (unknown exam, busy, offline) is not a sheet: fall back to the one built here.
     fetch(`/api/revision/${examId}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => live && setRemote(d))
-      .catch(() => {});
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: Sheet) => {
+        if (!live) return;
+        if (Array.isArray(d?.subjects) && d.totals) setRemote(d);
+        else setRemoteFailed(true);
+      })
+      .catch(() => live && setRemoteFailed(true));
     return () => {
       live = false;
     };
   }, [mode, examId, unlocked, user?.id]);
-  return mode === "server" ? remote : local;
+  return mode === "server" ? (remote ?? (remoteFailed ? local : null)) : local;
 }
 
 function RevisionSheet({ examId, unlocked }: { examId: string; unlocked: boolean }) {

@@ -78,6 +78,13 @@
       "when": 1794722392301,
       "tag": "0010_institutions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794729437378,
+      "tag": "0011_keep_payments_on_user_delete",
+      "breakpoints": true
     }
   ]
 }

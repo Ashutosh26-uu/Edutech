@@ -103,7 +103,9 @@ export function HelpBot() {
   // The FAQ and exam data load only when the chat is first opened.
   useEffect(() => {
     if (!open || engine) return;
-    import("@/lib/helpbot").then(setEngine);
+    // A failed chunk load (offline, or a new deploy) must not leave the chat disabled for good:
+    // the next time the chat opens it tries again.
+    import("@/lib/helpbot").then(setEngine, () => setOpen(false));
   }, [open, engine]);
 
   useEffect(() => {

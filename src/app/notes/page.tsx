@@ -138,6 +138,17 @@ function Editor({ note, onClose }: { note: MyNote; onClose: () => void }) {
     return () => clearTimeout(t);
   }, [title, body, topicId, note]);
 
+  // Closing the editor or opening another note within the 400 ms window must not drop the last edits.
+  const latest = useRef({ title, body, topicId, dirty: false });
+  latest.current = { title, body, topicId, dirty: title !== note.title || body !== note.body || topicId !== (note.topicId ?? "") };
+  useEffect(
+    () => () => {
+      const l = latest.current;
+      if (l.dirty) updateNote(note.id, { title: l.title.trim() || "Untitled note", body: l.body, topicId: l.topicId || undefined });
+    },
+    [note.id],
+  );
+
   const current = (): MyNote => ({ ...note, title: title.trim() || "Untitled note", body, topicId: topicId || undefined, updatedAt: Date.now() });
 
   async function fillFromTopic() {

@@ -58,6 +58,22 @@ jobs:
       - name: Mock analysis, exam palette and error coach
         run: npm run test:analysis
 
+      - name: Store notifications
+        run: npm run test:store
+
+      - name: Pasted quiz text format
+        run: npm run test:quiz-text
+
+      # The real (server) build with API routes, using placeholder settings: it must compile without
+      # touching a database, so build errors in src/server or the API never reach production first.
+      - name: Build (server)
+        run: npx next build
+        env:
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:1/ci
+          NEON_AUTH_BASE_URL: https://auth.example.invalid/neondb/auth
+          NEON_AUTH_COOKIE_SECRET: ci-only-not-a-secret-0123456789abcdef
+          NEXT_TELEMETRY_DISABLED: "1"
+
       # The static build needs no database or secrets, so it can run on every PR.
       - name: Build (static)
         run: |

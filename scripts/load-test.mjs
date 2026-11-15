@@ -13,6 +13,12 @@
 //   3. Integrity: no credit lost, double-spent or negative; at most one free test per user per exam.
 import autocannon from "autocannon";
 import postgres from "postgres";
+// Refuses non-local databases unless ALLOW_REMOTE_DB=1 is set on purpose: this script creates and
+// deletes accounts and changes credits, which must never happen on production by accident.
+if (!/127\.0\.0\.1|localhost/.test(process.env.DATABASE_URL ?? "") && process.env.ALLOW_REMOTE_DB !== "1") {
+  console.error("Refusing to run against a non-local DATABASE_URL. Set ALLOW_REMOTE_DB=1 for a dev branch you own.");
+  process.exit(1);
+}
 
 const N = +(process.argv[2] ?? 1000);
 const SECONDS = +(process.argv[3] ?? 30);

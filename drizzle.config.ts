@@ -1,8 +1,10 @@
 import { defineConfig } from "drizzle-kit";
+import { migrationUrl } from "./scripts/migration-url.mjs";
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL_UNPOOLED || process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL || "" },
+  // Same rule as db:migrate: the direct url only when it is the same database as DATABASE_URL.
+  dbCredentials: { url: migrationUrl() ?? "" },
 });

@@ -142,7 +142,8 @@ export function useFocus(): { state: FocusState; now: number } | null {
       const { state: next, focused, ended } = advance(cur, t);
       if (ended) {
         saveFocus(next); // fires FOCUS_EVENT: other views re-read and find nothing left to finish
-        if (focused) awardXp(focusXp(focused));
+        // Credit the day the block ended, not the day the tab was opened again.
+        if (focused) awardXp(focusXp(focused), cur.endsAt ? new Date(cur.endsAt) : undefined);
         // Only chime when the block ended just now, not when coming back hours later.
         if (t - (cur.endsAt ?? 0) < 5_000) chime(next.muted);
         return;

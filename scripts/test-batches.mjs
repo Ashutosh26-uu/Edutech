@@ -14,6 +14,7 @@ if (!/127\.0\.0\.1|localhost/.test(url)) {
 const { db, schema, sql } = await import("../src/db/index.ts");
 const B = await import("../src/server/batches.ts");
 const { submitTest } = await import("../src/server/tests.ts");
+const { getStanding } = await import("../src/server/quality.ts");
 const { eq } = await import("drizzle-orm");
 
 const mkUser = async (name) => {
@@ -88,6 +89,11 @@ try {
   assert.equal(det.tests.find((t) => t.id === custom.id).submitted, 0);
   assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).tests, 2);
   assert.equal((await B.myBatches(trainer)).teaching.find((t) => t.id === batch.id).members, 2);
+
+  // Standing ranks within this assignment only (this used to crash: the topic list was bound as a SQL list)
+  const st1 = await getStanding(s1, a1.attemptId);
+  assert.equal(st1.rank, 1);
+  assert.equal(st1.takers, 2);
 
   // Results: both rows, s1 first, topic breakdown, CSV
   const res = await B.batchTestResults(trainer, test.id);

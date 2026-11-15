@@ -1,6 +1,12 @@
 // End-to-end check of the running app (BASE) on Neon: Neon Auth login through the app's
 // /api/auth proxy, then credits, tests and payments in Neon Postgres. Cleans up its own rows.
 import postgres from "postgres";
+// Refuses non-local databases unless ALLOW_REMOTE_DB=1 is set on purpose: this script creates and
+// deletes accounts and changes credits, which must never happen on production by accident.
+if (!/127\.0\.0\.1|localhost/.test(process.env.DATABASE_URL ?? "") && process.env.ALLOW_REMOTE_DB !== "1") {
+  console.error("Refusing to run against a non-local DATABASE_URL. Set ALLOW_REMOTE_DB=1 for a dev branch you own.");
+  process.exit(1);
+}
 const BASE = process.env.BASE ?? "http://localhost:3100"; // localhost: Neon Auth trusts it by default
 let pass = 0, fail = 0;
 const check = (name, ok, extra = "") => { ok ? pass++ : fail++; console.log(`${ok ? "PASS" : "FAIL"}  ${name}${extra ? `  (${extra})` : ""}`); };
