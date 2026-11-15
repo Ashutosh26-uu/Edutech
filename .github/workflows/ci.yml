@@ -64,6 +64,8 @@ jobs:
       - name: Pasted quiz text format
         run: npm run test:quiz-text
 
+      - name: Coding-round problems
+        run: npm run test:coding
       - name: Headline feed reader
         run: npm run test:headlines
 
