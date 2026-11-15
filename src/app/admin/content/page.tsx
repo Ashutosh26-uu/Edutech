@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, Building2, CalendarDays, KeyRound, Loader2, Newspaper, Pencil, Plus, Trash2 } from "lucide-react";
+import { BadgeCheck, Building2, CalendarDays, ExternalLink, KeyRound, Loader2, Newspaper, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -150,6 +150,7 @@ function QuizTab() {
       <button className="btn-primary" onClick={startNew}>
         <Plus className="h-4 w-4" /> New quiz
       </button>
+      <Headlines />
       {!list ? (
         <div className="skeleton h-24" />
       ) : list.length === 0 ? (
@@ -223,9 +224,11 @@ function QuizEditor({ initial, onDone }: { initial: { day: string; title: string
         </label>
       </div>
 
+      <Headlines />
+
       <QuestionsEditor value={qs} onChange={setQs} />
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error &&<p className="text-sm text-red-700">{error}</p>}
       <div className="sticky bottom-[var(--float-bottom,1rem)] flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-surface/95 p-3 backdrop-blur">
         <button className="btn-primary" onClick={save} disabled={busy || filled.length < 3}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : published ? "Save and publish" : "Save draft"}
@@ -236,6 +239,73 @@ function QuizEditor({ initial, onDone }: { initial: { day: string; title: string
         <span className="text-xs text-slate-500">{filled.length} question{filled.length === 1 ? "" : "s"} · 3 to 25 · a quiz dated in the future goes live on that day</span>
       </div>
     </section>
+  );
+}
+
+interface HeadlineList {
+  items: { title: string; link: string; date: number | null; source: string }[];
+  fetchedAt: number;
+  error: string | null;
+}
+
+const fmtTime = (t: number) => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
+/** Source list for writing the quiz: today's government press headlines, links only. Loads when opened. */
+function Headlines() {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<HeadlineList | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const load = useCallback(async (fresh = false) => {
+    setBusy(true);
+    const r = await call<HeadlineList>(`/api/content/headlines${fresh ? "?fresh=1" : ""}`);
+    setBusy(false);
+    setError(r.ok ? "" : (r.error ?? "Could not load headlines."));
+    if (r.data) setData(r.data);
+  }, []);
+  useEffect(() => {
+    if (open && !data) load();
+  }, [open, data, load]);
+
+  return (
+    <details className="card p-0 sm:p-0" open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-slate-900">
+        <Newspaper className="h-4 w-4 text-slate-500" /> Today’s headlines (PIB)
+        {data && <span className="text-xs font-normal text-slate-500">· {data.items.length}</span>}
+      </summary>
+      <div className="space-y-2 border-t border-slate-100 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-slate-500">Links only — write and check questions yourself; nothing is published automatically.</p>
+          <button type="button" className="btn-quiet" onClick={() => load(true)} disabled={busy}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh
+          </button>
+        </div>
+        {(error || data?.error) && <p className="text-sm text-red-700">{error || data?.error}</p>}
+        {!data && busy ? (
+          <div className="skeleton h-24" />
+        ) : data && data.items.length === 0 ? (
+          <p className="text-sm text-slate-600">No headlines right now. Try Refresh in a few minutes.</p>
+        ) : data ? (
+          <>
+            <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+              {data.items.map((h) => (
+                <li key={h.link} className="py-2">
+                  <a href={h.link} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-sm text-slate-800 hover:text-ink hover:underline">
+                    <span className="min-w-0 flex-1">{h.title}</span>
+                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  </a>
+                  <span className="text-xs text-slate-500">
+                    {h.source}
+                    {h.date ? ` · ${fmtTime(h.date)}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-slate-400">Press Information Bureau, Government of India · updated {fmtTime(data.fetchedAt)}</p>
+          </>
+        ) : null}
+      </div>
+    </details>
   );
 }
 
