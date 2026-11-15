@@ -335,3 +335,68 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_hour_idx").on(t.hourIst, t.lastSentOn)],
 );
+
+/**
+ * Co-trainers: the batch owner gives other people (by email) the same access to a batch, so a
+ * university can let its whole placement team assign tests and read results. The email may not
+ * have an account yet; access applies once someone logs in with it.
+ */
+export const batchTrainers = pgTable(
+  "batch_trainers",
+  {
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    email: text("email").notNull(), // lower-cased
+    addedBy: uuid("added_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.batchId, t.email] }), index("batch_trainers_email_idx").on(t.email)],
+);
+
+/**
+ * People who may publish site content (the daily current-affairs quiz and the exam calendar),
+ * granted by an admin (ADMIN_EMAILS) by email, so access can be given before the account exists.
+ */
+export const contentEditors = pgTable("content_editors", {
+  email: text("email").primaryKey(), // lower-cased
+  /** Shown next to what they publish, e.g. a university or coaching name. */
+  organisation: text("organisation"),
+  grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One current-affairs quiz per day (India date). Drafts stay hidden until published. */
+export const dailyQuizzes = pgTable(
+  "daily_quizzes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    day: date("day").notNull().unique(),
+    title: text("title").notNull(),
+    questions: jsonb("questions").$type<MCQ[]>().notNull(),
+    published: boolean("published").notNull().default(false),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("daily_quizzes_published_idx").on(t.published, t.day)],
+);
+
+/** Exam calendar: application windows, admit cards, exam days and results, with the official link. */
+export const examEvents = pgTable(
+  "exam_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** An exam from data/exams.ts, or null for an event that belongs to no listed exam. */
+    examId: text("exam_id"),
+    kind: text("kind", { enum: ["notification", "apply-start", "apply-end", "admit-card", "exam", "result", "other"] }).notNull(),
+    title: text("title").notNull(),
+    day: date("day").notNull(),
+    /** Optional last day of a range (an exam held over several days). */
+    endDay: date("end_day"),
+    link: text("link"),
+    note: text("note"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("exam_events_day_idx").on(t.day), index("exam_events_exam_idx").on(t.examId, t.day)],
+);
