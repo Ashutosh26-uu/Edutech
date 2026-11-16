@@ -18,7 +18,8 @@ export const MAX_BODY = 1000;
 const HIDE_AFTER_REPORTS = 3;
 const MAX_POSTS_PER_QUESTION = 300;
 
-const nameOf = (u: { name: string | null; email: string }) => u.name?.trim() || u.email.split("@")[0];
+// Never derived from the email: these names are shown to anyone, logged in or not.
+const nameOf = (u: { name: string | null }) => u.name?.trim() || "Student";
 
 export async function listDoubts(user: SessionUser | null, questionId: string) {
   const mod = isAdmin(user);

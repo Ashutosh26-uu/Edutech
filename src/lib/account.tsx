@@ -115,7 +115,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         credits: s.credits,
         revisionPasses: Object.fromEntries(Object.entries(s.revisionPasses).filter(([, t]) => t > Date.now())),
         freeTestsUsed: Object.keys(s.freeMockUsed).filter((k) => s.freeMockUsed[k]),
-        payments: "demo",
+        payments: "off",
         razorpayKeyId: null,
         refresh,
         login,

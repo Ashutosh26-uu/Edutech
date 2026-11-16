@@ -13,3 +13,6 @@ npm-debug.log*
 .pgdata/
 .neon
 .netlify
+
+# Tool logs (e.g. the Tailwind CLI)
+*.log

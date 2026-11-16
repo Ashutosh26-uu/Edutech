@@ -497,6 +497,21 @@ export const challenges = pgTable(
   (t) => [index("challenges_creator_idx").on(t.creatorId, t.createdAt)],
 );
 
+/** When a player was first shown a challenge's questions: the server times the play from here. */
+export const challengeStarts = pgTable(
+  "challenge_starts",
+  {
+    challengeId: text("challenge_id")
+      .notNull()
+      .references(() => challenges.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.challengeId, t.userId] }), index("challenge_starts_user_idx").on(t.userId)],
+);
+
 /** One player's go at a challenge: one per user. */
 export const challengePlays = pgTable(
   "challenge_plays",

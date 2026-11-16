@@ -13,6 +13,8 @@ export const GET = route(async () => json({ enabled: doubtEnabled() }));
 export const POST = route(async (req) => {
   const user = await requireUser(req);
   await rateLimit(`doubt:${user.id}`, 5, 60_000);
+  // A hard ceiling on calls a day, refunds included (the daily quota is the normal limit).
+  await rateLimit(`doubt-day:${user.id}`, 60, 24 * 60 * 60_000);
   const { question } = await parseBody(req, Body);
   return json(await solveDoubt(user, question));
 });

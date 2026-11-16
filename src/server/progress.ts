@@ -5,6 +5,7 @@ import { findQuestions } from "@/lib/bank";
 import { shuffleOptions } from "@/lib/ai/local";
 import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
+import { lockedQuestionIds } from "./locks";
 
 /**
  * Account progress: per-topic accuracy and the mistake notebook. Timed tests write here from
@@ -51,7 +52,11 @@ export async function recordMistakes(tx: Tx, userId: string, outcomes: Outcome[]
 }
 
 /** Untimed practice: updates topic accuracy and the mistake notebook. */
-export async function recordPractice(user: SessionUser, outcomes: Outcome[]) {
+export async function recordPractice(user: SessionUser, all: Outcome[]) {
+  // Questions from a paper the user is still taking (or whose answers are still hidden) are not
+  // recorded: otherwise "wrong" posts here would put them in the notebook, which shows the key.
+  const locked = await lockedQuestionIds(user.id);
+  const outcomes = locked.size ? all.filter((o) => !locked.has(o.questionId)) : all;
   const perTopic = new Map<string, { attempted: number; correct: number }>();
   for (const o of outcomes) {
     const s = perTopic.get(o.topicId) ?? { attempted: 0, correct: 0 };
@@ -100,7 +105,8 @@ export async function mistakesSet(user: SessionUser, topicId?: string, limit = 2
     .where(and(eq(schema.mistakes.userId, user.id), isNull(schema.mistakes.resolvedAt), lte(schema.mistakes.lastWrongAt, sql`now()`), ...(topicId ? [eq(schema.mistakes.topicId, topicId)] : [])))
     .orderBy(desc(schema.mistakes.lastWrongAt))
     .limit(limit);
-  const bank = await findQuestions(rows.map((r) => r.questionId));
+  const locked = await lockedQuestionIds(user.id);
+  const bank = await findQuestions(rows.map((r) => r.questionId).filter((id) => !locked.has(id)));
   return rows.flatMap((r) => {
     const q = bank.get(r.questionId);
     return q ? [shuffleOptions(q)] : [];

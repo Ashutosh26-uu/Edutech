@@ -44,14 +44,25 @@ try {
   // Asha plays all right; Ravi gets some wrong and is slower
   const [row] = await db.select().from(schema.challenges).where(eq(schema.challenges.id, id));
   const key = row.questions.map((q) => q.answer);
-  const a = await C.playChallenge(asha, id, key, 120);
+  // Plays are timed by the server from the first view, and need one
+  await expectHttp(C.playChallenge(asha, id, key), 409);
+  await C.getChallenge(asha, id);
+  const a = await C.playChallenge(asha, id, key);
+  assert.ok(a.players[0].seconds >= 1 && a.players[0].seconds < 60);
   assert.equal(a.players[0].correct, 10);
   assert.ok(a.questions.every((q) => q.answer >= 0 && typeof q.explanation === "string"));
-  await expectHttp(C.playChallenge(ravi, id, [0, 1], 10), 400);
-  const r = await C.playChallenge(ravi, id, key.map((k, i) => (i < 6 ? k : (k + 1) % 4)), 200);
+  await expectHttp(C.playChallenge(ravi, id, [0, 1]), 400);
+  // While Ravi has the challenge open, its questions are locked for him (no key through practice)
+  const { lockedQuestionIds } = await import("../src/server/locks.ts");
+  assert.ok((await lockedQuestionIds(ravi.id)).has(row.questions[0].id));
+  const r = await C.playChallenge(ravi, id, key.map((k, i) => (i < 6 ? k : (k + 1) % 4)));
+  assert.equal((await lockedQuestionIds(ravi.id)).has(row.questions[0].id), false);
   assert.deepEqual(r.players.map((p) => [p.name, p.correct, p.me]), [["Asha", 10, false], ["Ravi", 6, true]]);
+  // Names never come from the email
+  await db.update(schema.users).set({ name: null }).where(eq(schema.users.id, ravi.id));
+  assert.ok((await C.getChallenge(null, id)).players.some((p) => p.name === "Student"));
   // A second go keeps the first result
-  const again = await C.playChallenge(ravi, id, key, 30);
+  const again = await C.playChallenge(ravi, id, key);
   assert.equal(again.players.find((p) => p.me).correct, 6);
 
   // Lists and expiry

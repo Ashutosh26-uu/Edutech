@@ -9,6 +9,11 @@ import { HttpError } from "./http";
 
 const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// On serverless hosts each instance has its own memory, so without Redis the limits (logins, join
+// codes, contact form) are far weaker than they read. Say so loudly in the logs.
+if (process.env.NODE_ENV === "production" && !(UPSTASH_URL && UPSTASH_TOKEN) && process.env.NEXT_PHASE !== "phase-production-build") {
+  console.error("[rate-limit] UPSTASH_REDIS_REST_URL / _TOKEN are not set: rate limits are per instance only. Set them on the host.");
+}
 
 const memory = new Map<string, { count: number; resetAt: number }>();
 let lastSweep = Date.now();

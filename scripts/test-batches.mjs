@@ -89,11 +89,20 @@ try {
   // wrong answers, no explanations, and the mistakes wait out of the notebook.
   assert.equal(r2.answersLocked, true);
   assert.ok(r2.answersOpenAt > Date.now());
-  assert.ok(r2.questions.every((q, i) => q.explanation === "" && (q.answer === -1 || q.answer === r2.answers[i])));
-  assert.equal(r2.questions.filter((q) => q.answer >= 0).length, r2.correct);
+  // Not even which picks were right: several accounts could otherwise piece the key together.
+  assert.ok(r2.questions.every((q) => q.explanation === "" && q.answer === -1));
+  assert.equal(r2.correct + r2.wrong + r2.skipped, 12);
   assert.equal(r1.answersLocked, true);
   const hidden = await getProgress(s2);
   assert.equal(hidden.mistakes.length, 0);
+  // The key can't be pulled out through practice: "wrong" answers posted for this paper's questions
+  // are dropped, and the notebook won't serve them while the paper is locked.
+  const { recordPractice, mistakesSet } = await import("../src/server/progress.ts");
+  const { lockedQuestionIds } = await import("../src/server/locks.ts");
+  const paperQs = r2.questions.slice(0, 5).map((q) => ({ questionId: q.id, topicId: q.topicId ?? "x", correct: false }));
+  assert.ok((await lockedQuestionIds(s2.id)).has(r2.questions[0].id));
+  await recordPractice(s2, paperQs);
+  assert.equal((await mistakesSet(s2, undefined, 50)).filter((q) => r2.questions.some((x) => x.id === q.id)).length, 0);
   await expectHttp(B.releaseBatchAnswers(s1, test.id), 404);
   await B.releaseBatchAnswers(trainer, test.id);
   const open = await submitTest(s2, a2.attemptId, a2.questions.map(() => 0)); // already submitted: returns the stored review

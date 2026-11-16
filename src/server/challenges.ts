@@ -61,7 +61,7 @@ async function board(challengeId: string) {
     .orderBy(asc(p.playedAt));
   // Higher score first; a tie goes to the faster player.
   return rows
-    .map((r) => ({ userId: r.userId, name: r.name?.trim() || r.email.split("@")[0], correct: r.correct, wrong: r.wrong, seconds: r.seconds, playedAt: r.playedAt.getTime() }))
+    .map((r) => ({ userId: r.userId, name: r.name?.trim() || "Student", correct: r.correct, wrong: r.wrong, seconds: r.seconds, playedAt: r.playedAt.getTime() }))
     .sort((a, b) => b.correct - a.correct || a.seconds - b.seconds);
 }
 
@@ -72,11 +72,13 @@ export async function getChallenge(user: SessionUser | null, id: string) {
   const [creator] = await db.select({ name: schema.users.name, email: schema.users.email }).from(schema.users).where(eq(schema.users.id, ch.creatorId)).limit(1);
   const mine = user ? await db.select().from(p).where(and(eq(p.challengeId, ch.id), eq(p.userId, user.id))).limit(1) : [];
   const played = mine[0] ?? null;
+  // The play is timed from when the questions are first shown, on the server.
+  if (user && !played) await db.insert(schema.challengeStarts).values({ challengeId: ch.id, userId: user.id }).onConflictDoNothing();
   return {
     id: ch.id,
     examId: ch.examId,
     examName: EXAM_BY_ID.get(ch.examId)?.name ?? ch.examId,
-    creator: creator?.name?.trim() || creator?.email.split("@")[0] || "A friend",
+    creator: creator?.name?.trim() || "A friend",
     isCreator: user?.id === ch.creatorId,
     total: ch.questions.length,
     expiresAt: ch.expiresAt.getTime(),
@@ -88,13 +90,19 @@ export async function getChallenge(user: SessionUser | null, id: string) {
   };
 }
 
-export async function playChallenge(user: SessionUser, id: string, answers: (number | null)[], seconds: number) {
+export async function playChallenge(user: SessionUser, id: string, answers: (number | null)[]) {
   const ch = await load(id);
   if (answers.length !== ch.questions.length) throw new HttpError(400, "Answer count doesn’t match the challenge.");
   const clean = answers.map((a, i) => (a === null || !Number.isInteger(a) || a < 0 || a >= ch.questions[i].options.length ? null : a));
   const correct = clean.filter((a, i) => a !== null && a === ch.questions[i].answer).length;
   const wrong = clean.filter((a) => a !== null).length - correct;
-  const secs = Number.isFinite(seconds) ? Math.max(1, Math.min(Math.round(seconds), 3600)) : 3600;
+  const [start] = await db
+    .select({ at: schema.challengeStarts.startedAt })
+    .from(schema.challengeStarts)
+    .where(and(eq(schema.challengeStarts.challengeId, ch.id), eq(schema.challengeStarts.userId, user.id)))
+    .limit(1);
+  if (!start) throw new HttpError(409, "Open the challenge first.");
+  const secs = Math.max(1, Math.min(Math.round((Date.now() - start.at.getTime()) / 1000), 3600));
   const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(p).where(eq(p.challengeId, ch.id));
   if (n >= MAX_PLAYERS) throw new HttpError(409, "This challenge is full. Start your own and share it.", "challenge_full");
   // One go each: a second submit keeps the first result.

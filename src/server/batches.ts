@@ -430,7 +430,8 @@ export async function batchTestResults(user: SessionUser, testId: string) {
 const csvCell = (v: unknown) => {
   const s = v === null || v === undefined ? "" : String(v);
   // Quote everything that could break a row, and defuse spreadsheet formulas.
-  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
+  // A leading tab or carriage return also starts a formula in some spreadsheets (OWASP list).
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 };
 

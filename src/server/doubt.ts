@@ -52,16 +52,20 @@ async function useQuota(user: SessionUser, key: string): Promise<number> {
 
 export async function solveDoubt(user: SessionUser, question: string): Promise<{ result: DoubtAnswer; left: number }> {
   if (!doubtEnabled()) throw new HttpError(503, "The AI doubt solver is not switched on yet.", "doubt_off");
+  // Each call costs money, so throwaway accounts that never verified an email get none.
+  if (!user.emailVerified) throw new HttpError(403, "Verify your email to use the AI doubt solver.", "email_unverified");
   const key = quotaKey();
   const left = await useQuota(user, key);
-  // A failed call gives the question back.
+  // A call that failed on our side (busy, network, server error) gives the question back. A refused
+  // or unreadable answer does not: the model was still paid for, and refunding it would let one
+  // account loop on refusals far past the daily limit.
   const refund = () =>
     db.execute(sql`update user_data set value = jsonb_build_object('n', greatest(0, (value->>'n')::int - 1)) where user_id = ${user.id} and key = ${key}`).catch(() => {});
   client ??= new Anthropic({ timeout: 60_000, maxRetries: 1 });
   try {
     const response = await client.beta.messages.parse({
       model: model(),
-      max_tokens: 4000,
+      max_tokens: 2000,
       system: SYSTEM,
       // A request a safety classifier declines is retried on the fallback model inside the same call.
       betas: ["server-side-fallback-2026-07-01"],
@@ -74,8 +78,9 @@ export async function solveDoubt(user: SessionUser, question: string): Promise<{
     }
     return { result: response.parsed_output, left };
   } catch (e) {
-    await refund();
     if (e instanceof HttpError) throw e;
+    const ours = e instanceof Anthropic.RateLimitError || e instanceof Anthropic.APIConnectionError || (e instanceof Anthropic.APIError && (e.status ?? 500) >= 500);
+    if (ours) await refund();
     if (e instanceof Anthropic.RateLimitError) throw new HttpError(503, "The doubt solver is busy. Please try again in a minute.", "doubt_busy");
     if (e instanceof Anthropic.APIError) {
       console.error("[doubt] Claude API error", e.status, e.message);

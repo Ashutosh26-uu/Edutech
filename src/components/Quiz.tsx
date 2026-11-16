@@ -28,10 +28,17 @@ export interface ScoredPaper {
   questions: MCQ[];
   answersLocked?: boolean;
   answersOpenAt?: number | null;
+  correct?: number;
+  wrong?: number;
+  skipped?: number;
+  score?: number;
 }
 
-/** Hidden answers on the result screen: when they open (null = when the trainer releases them). */
-export type AnswersLock = { openAt: number | null } | null;
+/**
+ * Hidden answers on the result screen: when they open (null = when the trainer releases them) and
+ * the totals the server worked out (which questions were right stays hidden too).
+ */
+export type AnswersLock = { openAt: number | null; correct: number; wrong: number; skipped: number; score: number } | null;
 
 export interface AnswerResult {
   question: MCQ;
@@ -39,6 +46,8 @@ export interface AnswerResult {
   correct: boolean;
   /** Seconds spent on the question, when timed. */
   seconds?: number;
+  /** The paper's key is still hidden, so `correct` is unknown (false) and must not be counted. */
+  hidden?: boolean;
 }
 
 /** A section of a mock on an exam pattern: questions [from, from + count) with their own minutes. */
@@ -208,9 +217,10 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         const got = await submit(chosen, secs);
         const full = Array.isArray(got) ? got : got.questions;
         setScored(full);
-        if (!Array.isArray(got) && got.answersLocked) setLock({ openAt: got.answersOpenAt ?? null });
+        const locked = !Array.isArray(got) && !!got.answersLocked;
+        if (locked) setLock({ openAt: got.answersOpenAt ?? null, correct: got.correct ?? 0, wrong: got.wrong ?? 0, skipped: got.skipped ?? 0, score: got.score ?? 0 });
         setDone(true);
-        onFinish?.(full.map((q, i) => ({ question: q, chosen: chosen[i], correct: chosen[i] === q.answer, seconds: secs[i] })));
+        onFinish?.(full.map((q, i) => ({ question: q, chosen: chosen[i], correct: !locked && chosen[i] === q.answer, seconds: secs[i], hidden: locked || undefined })));
       } catch (e) {
         setSubmitError((e as Error).message || "Could not submit. Check your connection and try again.");
       } finally {
@@ -601,7 +611,63 @@ function GoalDone({ answered }: { answered: number }) {
   );
 }
 
-export function Results({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share, answersLock = null }: ResultsProps) {
+/** Score, time analysis, section and topic breakdown, and the answer review; a short score card while the key is hidden. */
+export function Results(props: ResultsProps) {
+  return props.answersLock ? <LockedResults results={props.results} marks={props.marks ?? 1} lock={props.answersLock} /> : <FullResults {...props} />;
+}
+
+/** A shared paper that is still open: the score from the server and the taker's own picks, nothing that hints at the key. */
+function LockedResults({ results, marks, lock }: { results: AnswerResult[]; marks: number; lock: NonNullable<AnswersLock> }) {
+  const when = lock.openAt ? new Date(lock.openAt).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit", day: "numeric", month: "short" }) : null;
+  return (
+    <div className="space-y-5">
+      <section aria-labelledby="result-heading" className="space-y-3">
+        <p className="eyebrow">Your result</p>
+        <h3 id="result-heading" className="text-xl font-semibold text-slate-900">
+          {Math.round(lock.score * marks * 100) / 100} / {results.length * marks}
+        </h3>
+        <dl className="grid grid-cols-3 gap-3 text-center text-sm">
+          {(
+            [
+              ["Right", lock.correct],
+              ["Wrong", lock.wrong],
+              ["Skipped", lock.skipped],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k} className="rounded-xl border border-slate-200 p-3">
+              <dt className="text-slate-500">{k}</dt>
+              <dd className="text-lg font-semibold text-slate-900 tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm" role="status">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+        <span className="text-slate-700">
+          <b className="text-slate-900">Answers and explanations open after the paper closes</b>
+          {when ? ` (${when}).` : " (when your trainer releases them)."} Everyone takes the same paper, so the key stays hidden until then. Come back to this page for the full review.
+        </span>
+      </div>
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold text-slate-900">Your answers</h4>
+        <ol className="space-y-2 text-sm">
+          {results.map((r, i) => (
+            <li key={r.question.id} className="rounded-xl border border-slate-200 p-3">
+              <div className="font-medium whitespace-pre-line text-slate-900">
+                {i + 1}. <RichText text={r.question.question} />
+              </div>
+              <p className="mt-1 text-slate-600">
+                Your answer: <b className="text-slate-900">{r.chosen === null ? "Skipped" : r.question.options[r.chosen]}</b>
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </div>
+  );
+}
+
+function FullResults({ results, negativeMarking, marks = 1, sections, previous, onTimestamp, onRestart, restartLabel = "Practise new questions", restartFirst = false, attemptId, share }: ResultsProps) {
   const [saved, setSaved] = useState<number | null>(null);
   const [standing, setStanding] = useState<Standing | null>(null);
   // Answer review filter: long mocks are easier to review one kind of answer at a time.
@@ -717,15 +783,6 @@ export function Results({ results, negativeMarking, marks = 1, sections, previou
   return (
     <div className="space-y-5">
       <GoalDone answered={attempted} />
-      {answersLock && (
-        <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm" role="status">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-          <span className="text-slate-700">
-            <b className="text-slate-900">Answers and explanations open after the paper closes</b>
-            {answersLock.openAt ? ` (${new Date(answersLock.openAt).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })}).` : " (when your trainer releases them)."} Everyone takes the same paper, so they stay hidden until then. You can see your score and which questions you got right; come back here later for the full review.
-          </span>
-        </div>
-      )}
       <section aria-labelledby="result-heading" className="space-y-4">
         <div>
           <p className="eyebrow">Your result</p>

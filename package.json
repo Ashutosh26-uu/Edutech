@@ -26,6 +26,8 @@
     "test:batches": "tsx --conditions react-server scripts/test-batches.mjs",
     "test:challenges": "tsx --conditions react-server scripts/test-challenges.mjs",
     "test:doubts": "tsx --conditions react-server scripts/test-doubts.mjs",
+    "test:account": "tsx --conditions react-server scripts/test-account.mjs",
+    "test:security": "tsx --conditions react-server scripts/test-security.mjs",
     "test:content": "tsx --conditions react-server scripts/test-content.mjs",
     "test:institutes": "tsx --conditions react-server scripts/test-institutes.mjs",
     "test:quiz-text": "node --experimental-strip-types --no-warnings --import ./scripts/ts-loader.mjs scripts/test-quiz-text.mjs",
@@ -58,6 +60,7 @@
     "drizzle-kit": "^0.31.11",
     "embedded-postgres": "^18.6.0-beta.19",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }

@@ -240,7 +240,18 @@ function VerifyEmail({ email, onVerified, onBack }: { email: string; onVerified:
   );
 }
 
-/** Only same-site paths: "/x" is fine, but "//host" or anything with a backslash ("/\host") could leave the site. */
+/**
+ * Only same-site paths. The value is resolved the way the browser will resolve it, so tricks such
+ * as "//host", "/\host" or a tab or newline inside the path ("/\t/host") can't leave the site.
+ */
 function safeNext(raw: string | null): string {
-  return raw && /^\/(?!\/)/.test(raw) && !raw.includes("\\") ? raw : "/today";
+  if (!raw || !raw.startsWith("/") || /[\u0000-\u001f\\]/.test(raw)) return "/today";
+  try {
+    // Any fixed origin works: only "did it stay on the same origin?" matters (and it runs during prerender too).
+    const base = "https://studyclip.invalid";
+    const u = new URL(raw, base);
+    return u.origin === base ? u.pathname + u.search + u.hash : "/today";
+  } catch {
+    return "/today";
+  }
 }

@@ -11,8 +11,20 @@ const KEY_ID = process.env.RAZORPAY_KEY_ID;
 const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-/** "live" with Razorpay keys; "demo" only when explicitly enabled (grants access without payment); otherwise "off". */
-export const PAYMENTS_MODE: "live" | "demo" | "off" = KEY_ID && KEY_SECRET ? "live" : process.env.PAYMENTS_DEMO === "1" ? "demo" : "off";
+/**
+ * Razorpay test keys accept the published test cards, so on the real site they would hand out
+ * credits for free. In a production build they count as "off" unless PAYMENTS_ALLOW_TEST_KEYS=1
+ * (a staging site that should take test payments).
+ */
+const TEST_KEYS_BLOCKED = !!KEY_ID?.startsWith("rzp_test_") && process.env.NODE_ENV === "production" && process.env.PAYMENTS_ALLOW_TEST_KEYS !== "1";
+if (TEST_KEYS_BLOCKED) console.error("[billing] Razorpay test keys in a production build: payments are off. Use live keys, or set PAYMENTS_ALLOW_TEST_KEYS=1 on a staging site.");
+
+/**
+ * "live" with Razorpay keys; "demo" only when explicitly enabled (grants access without payment,
+ * and only to requests from this computer, see demoPurchase); otherwise "off".
+ */
+export const PAYMENTS_MODE: "live" | "demo" | "off" =
+  KEY_ID && KEY_SECRET ? (TEST_KEYS_BLOCKED ? "off" : "live") : process.env.PAYMENTS_DEMO === "1" ? "demo" : "off";
 
 function product(productId: string, examId?: string) {
   const p = PRODUCTS[productId as ProductId];
@@ -103,8 +115,13 @@ export async function handleWebhook(rawBody: string, signature: string | null) {
 }
 
 /** Demo purchases: only when PAYMENTS_DEMO=1 and no live keys. Recorded as mode "demo". */
-export async function demoPurchase(user: SessionUser, productId: string, examId?: string) {
+export async function demoPurchase(user: SessionUser, productId: string, examId?: string, host = "") {
   if (PAYMENTS_MODE !== "demo") throw new HttpError(403, "Demo purchases are disabled.");
+  // Demo mode is for local development: even if PAYMENTS_DEMO leaked into a deployed site, free
+  // purchases only work when the site itself is being opened on this computer.
+  const name = host.replace(/:\d+$/, "").toLowerCase();
+  if (process.env.NODE_ENV === "production") throw new HttpError(403, "Demo purchases only work on a local development site.");
+  if (!(name === "localhost" || name === "127.0.0.1" || name === "[::1]" || name.endsWith(".localhost"))) throw new HttpError(403, "Demo purchases only work on a local development site.");
   const p = product(productId, examId);
   const orderId = `demo_${randomUUID()}`;
   await db.insert(schema.payments).values({ userId: user.id, orderId, productId: p.id, examId: examId ?? null, amountPaise: p.price * 100, mode: "demo" });
