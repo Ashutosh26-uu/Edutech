@@ -86,7 +86,7 @@ function BatchTest() {
           attemptId={run.attemptId}
           share={{ title: info.title }}
           candidate={account.user?.name ?? undefined}
-          onFinish={(results: AnswerResult[]) => recordAnswers(results.filter((r) => r.chosen !== null).map((r) => ({ topicId: r.question.topicId, correct: r.correct })))}
+          onFinish={(results: AnswerResult[]) => recordAnswers(results.filter((r) => r.chosen !== null && !r.hidden).map((r) => ({ topicId: r.question.topicId, correct: r.correct })))}
         />
       </div>
     );

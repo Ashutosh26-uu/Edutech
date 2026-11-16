@@ -319,13 +319,15 @@ function PracticeView() {
       const t = tallyRef.current;
       saveSession(level, { sets: t.sets + 1, correct: t.correct + results.filter((r) => r.correct).length, attempted: t.attempted + answered.length });
     }
-    recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
+    // A shared paper that is still open keeps right/wrong hidden, so it adds nothing to local stats.
+    const hidden = results.some((r) => r.hidden);
+    if (!hidden) recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
     // progress and the mistake notebook follow the account.
     if (!isTimed && server && account.user) {
       postJson("/api/progress", { answers: answered.filter((r) => r.question.topicId).map((r) => ({ questionId: r.question.id, topicId: r.question.topicId!, correct: r.correct, chosenText: r.chosen === null ? null : (r.question.options[r.chosen] ?? null) })) }).catch(() => {});
     }
-    if (isFullMock && exam) {
+    if (isFullMock && exam && !hidden) {
       const correct = results.filter((r) => r.correct).length;
       const wrong = results.filter((r) => r.chosen !== null && !r.correct).length;
       const marks = serverTest?.marks ?? plan?.pattern.marks ?? 1;

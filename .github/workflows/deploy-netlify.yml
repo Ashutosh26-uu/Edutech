@@ -27,15 +27,17 @@ jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
+    # Secrets are given only to the steps that need them, never to the whole job: `npm ci` runs
+    # dependencies' install scripts, and none of them should ever see the database or Netlify token.
     env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Check secrets
         id: gate
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ] || [ -z "$DATABASE_URL" ]; then
             echo "Netlify or database secrets are not set; skipping deploy."
@@ -62,11 +64,17 @@ jobs:
       # Migrations only add tables and columns, so running them before the new code goes live is safe.
       - if: steps.gate.outputs.ready == 'true'
         name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
         run: npm run db:migrate
 
       # Blob uploads to Netlify sometimes fail with "fetch failed"; try up to three times.
       - if: steps.gate.outputs.ready == 'true'
         name: Build and deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           for i in 1 2 3; do
             # Pinned: a new CLI release must not change how production deploys without review.
@@ -78,4 +86,6 @@ jobs:
       # A deploy can report success yet serve pages whose CSS/JS files 404; fail the run if so.
       - if: steps.gate.outputs.ready == 'true'
         name: Check the live site
-        run: npm run check:live -- "${{ vars.SITE_URL || 'https://studyclip.netlify.app' }}"
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://studyclip.netlify.app' }}
+        run: npm run check:live -- "$SITE_URL"

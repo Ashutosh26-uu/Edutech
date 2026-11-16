@@ -3,7 +3,7 @@
 import type { AccountState } from "./account";
 import { postJson } from "./api";
 import { PRODUCTS, type ProductId } from "./products";
-import { recordPurchase } from "./storage";
+import { SITE_URL } from "@/data/site";
 import { track } from "./track";
 
 /**
@@ -44,13 +44,9 @@ export async function buy(account: AccountState, productId: ProductId, examId?: 
   if (product.needsExam && !examId) return { ok: false, error: "Choose your exam first." };
   track("purchase_click");
 
-  if (account.mode === "local") {
-    recordPurchase(
-      { id: Math.random().toString(36).slice(2), productId, examId, amount: product.price, at: Date.now(), mode: "demo" },
-      { credits: product.credits, revisionExamId: product.revisionDays ? examId : undefined, revisionDays: product.revisionDays },
-    );
-    return { ok: true, mode: "demo" };
-  }
+  // The static copy of the site (GitHub Pages) has no server to take payments, so nothing can be
+  // bought there; it used to grant purchases for free in the browser.
+  if (account.mode === "local") return { ok: false, error: `Buying works on the full site: ${SITE_URL}/pricing` };
 
   if (!account.user) return { ok: false, error: "Log in to buy.", needsLogin: true };
   if (account.payments === "off") return { ok: false, error: "Payments are not switched on yet." };

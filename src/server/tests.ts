@@ -1,4 +1,5 @@
 import "server-only";
+export { answersOpenAt } from "./locks";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, schema, type AttemptSection } from "@/db";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
@@ -7,14 +8,12 @@ import { getProvider } from "@/lib/ai";
 import type { MCQ } from "@/lib/types";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
-import { istWeek, windowOf } from "@/lib/weekly";
+import { GRACE_MS, answersOpenAt } from "./locks";
 import { recordMistakes } from "./progress";
 import { picksFromTest, recordPicks } from "./quality";
 
 const FULL_SIZE = 25;
 const TOPIC_SIZE = 15;
-/** Late submissions within this window still count (slow networks, auto-submit at 0:00). */
-const GRACE_MS = 2 * 60_000;
 /** Mistakes from a paper whose answers the trainer holds wait until this date (or the release). */
 const HELD_UNTIL = Date.parse("9999-12-31T00:00:00Z");
 
@@ -131,28 +130,12 @@ export async function startTest(user: SessionUser, examId: string, opts: StartOp
 
 type Attempt = typeof schema.testAttempts.$inferSelect;
 
-/**
- * Shared papers (the Sunday mock, batch tests) are the same for every taker, so their answers and
- * explanations stay hidden until the paper closes: the Sunday window's close (plus the grace for
- * late submissions), or the batch test's answer time (its due time, or when the trainer releases
- * them). Returns when the answers open (Infinity = held by the trainer), or null if they are open.
- */
-export async function answersOpenAt(attempt: Pick<Attempt, "kind" | "startedAt" | "batchTestId">, now = Date.now()): Promise<number | null> {
-  let at = 0;
-  if (attempt.kind === "weekly") at = windowOf(istWeek(attempt.startedAt.getTime())).closesAt + GRACE_MS;
-  else if (attempt.kind === "batch" && attempt.batchTestId) {
-    const [t] = await db.select({ answersAt: schema.batchTests.answersAt }).from(schema.batchTests).where(eq(schema.batchTests.id, attempt.batchTestId)).limit(1);
-    if (t) at = t.answersAt?.getTime() ?? Infinity;
-  }
-  return at > now ? at : null;
-}
-
 /** Everything the review and analysis screens need for a submitted attempt. */
 function review(attempt: Attempt, answers: (number | null)[], times: number[] | null, late = false, openAt: number | null = null) {
   const { marks, negative } = markingFor(attempt.examId);
-  // While answers are hidden, a question keeps its key only where the taker picked it (they know
-  // that one was right); every other key and all explanations are left out.
-  const questions = openAt === null ? attempt.questions : attempt.questions.map((q, i) => ({ ...q, answer: answers[i] === q.answer ? q.answer : -1, explanation: "" }));
+  // While answers are hidden, no key or explanation leaves the server, not even which picks were
+  // right (several accounts could otherwise piece the key together); the totals are enough.
+  const questions = openAt === null ? attempt.questions : attempt.questions.map((q) => ({ ...q, answer: -1, explanation: "" }));
   return {
     attemptId: attempt.id,
     examId: attempt.examId,

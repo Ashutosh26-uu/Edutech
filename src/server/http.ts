@@ -15,8 +15,14 @@ export class HttpError extends Error {
 
 export const json = (data: unknown, init?: number | ResponseInit) => NextResponse.json(data, typeof init === "number" ? { status: init } : init);
 
-/** Best-effort client IP behind Vercel / proxies. */
+/**
+ * Best-effort client IP for rate limits. Set IP_HEADER to the one header your host sets and a
+ * client can't (Netlify: x-nf-client-connection-ip, Cloudflare: cf-connecting-ip, most proxies:
+ * x-real-ip); only that header is then read. Without it, the platform headers come first.
+ */
 export function clientIp(req: NextRequest): string {
+  const only = process.env.IP_HEADER?.trim().toLowerCase();
+  if (only) return req.headers.get(only)?.split(",")[0].trim() || "local";
   // Headers the platform sets itself come first: a client can put anything in X-Forwarded-For.
   return req.headers.get("x-nf-client-connection-ip") || req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
 }
@@ -27,15 +33,40 @@ export function clientIp(req: NextRequest): string {
  */
 function assertSameOrigin(req: NextRequest) {
   const origin = req.headers.get("origin");
-  if (!origin) return; // same-origin fetches from older browsers, server-to-server calls
+  if (!origin) {
+    // No Origin: older browsers' same-origin requests and server-to-server calls. A browser that
+    // says the request came from another site is still blocked.
+    const site = req.headers.get("sec-fetch-site");
+    if (site && site !== "same-origin" && site !== "none") throw new HttpError(403, "Cross-site request blocked.");
+    return;
+  }
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  if (new URL(origin).host !== host) throw new HttpError(403, "Cross-site request blocked.");
+  let from: string;
+  try {
+    from = new URL(origin).host;
+  } catch {
+    throw new HttpError(403, "Cross-site request blocked."); // "Origin: null" (sandboxed frames, file://)
+  }
+  if (from !== host) throw new HttpError(403, "Cross-site request blocked.");
 }
 
-export async function parseBody<T extends z.ZodType>(req: NextRequest, schema: T): Promise<z.infer<T>> {
-  const raw = await req.json().catch(() => {
+/** Default cap on a JSON body; the biggest legitimate ones (institute question sets) are well under it. */
+const MAX_JSON_BYTES = 1_000_000;
+
+/** Reads a JSON body without trusting Content-Length: anything over `maxBytes` is refused before parsing. */
+export async function readJson(req: NextRequest, maxBytes = MAX_JSON_BYTES): Promise<unknown> {
+  if (Number(req.headers.get("content-length") ?? 0) > maxBytes) throw new HttpError(413, "Request too large.");
+  const text = await req.text();
+  if (text.length > maxBytes) throw new HttpError(413, "Request too large.");
+  try {
+    return JSON.parse(text);
+  } catch {
     throw new HttpError(400, "Request body must be JSON.");
-  });
+  }
+}
+
+export async function parseBody<T extends z.ZodType>(req: NextRequest, schema: T, maxBytes = MAX_JSON_BYTES): Promise<z.infer<T>> {
+  const raw = await readJson(req, maxBytes);
   const parsed = schema.safeParse(raw);
   if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message ?? "Invalid request.");
   return parsed.data;

@@ -206,8 +206,7 @@ function Play({ id }: { id: string }) {
           mode="mock"
           timeLimitSec={ch.total * SECONDS_PER_QUESTION}
           submit={async (chosen) => {
-            const seconds = Math.round((Date.now() - started.current) / 1000);
-            const { status, data } = await postJson<Challenge>("/api/challenge/play", { id: ch.id, answers: chosen, seconds });
+            const { status, data } = await postJson<Challenge>("/api/challenge/play", { id: ch.id, answers: chosen });
             if (status !== 200) throw new Error(data.error ?? "Could not submit. Try again.");
             track("challenge_play");
             setCh(data);

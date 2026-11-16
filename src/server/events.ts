@@ -9,6 +9,12 @@ export function istDay(back = 0, now = Date.now()) {
   return new Date(now + IST_MS - back * 24 * 60 * 60_000).toISOString().slice(0, 10);
 }
 
+/**
+ * Top-level pages that are counted (one per folder in src/app). Anything else is dropped, so the
+ * counter table can't be filled with made-up paths. Add new top-level pages here.
+ */
+const PAGES = new Set("about account admin batches calendar challenge coding contact current-affairs drills exams focus formulas guide institute institutes interview invite last-minute leaderboard learn listen login mistakes mock-sunday notes placement practice pricing privacy progress refund resume review saved start terms tests today topics tracker typing video".split(" "));
+
 const UUIDISH = /^[0-9a-f]{8}-[0-9a-f-]{20,}$/i;
 
 /**
@@ -20,6 +26,7 @@ export function cleanPath(raw: string): string | null {
   if (!p.startsWith("/") || p.length > 200) return null;
   const segs = p.split("/").filter(Boolean);
   if (segs.length > 4 || segs.some((s) => !/^[a-z0-9._-]{1,60}$/.test(s))) return null;
+  if (segs.length && !PAGES.has(segs[0])) return null;
   const out = "/" + segs.map((s) => (UUIDISH.test(s) || /^\d{4,}$/.test(s) ? ":id" : s)).join("/");
   return out;
 }

@@ -53,13 +53,16 @@ function cap<T>(m: Record<string, T>, max: number, version: (x: T) => number): R
 
 export function mergeSync(a: SyncDoc, b: SyncDoc, now = Date.now()): SyncDoc {
   const deleted: Record<string, number> = {};
-  for (const [k, t] of [...Object.entries(a.deleted ?? {}), ...Object.entries(b.deleted ?? {})]) {
+  for (const [k, raw] of [...Object.entries(a.deleted ?? {}), ...Object.entries(b.deleted ?? {})]) {
+    // A deletion can't be dated in the future (it would never expire).
+    const t = Math.min(Number(raw) || 0, now);
     if (now - t < TOMBSTONE_TTL) deleted[k] = Math.max(deleted[k] ?? 0, t);
   }
   return {
     cards: cap(mergeMap(a.cards ?? {}, b.cards ?? {}, cardVersion, deleted, "card:"), MAX_CARDS, cardVersion),
     bookmarks: cap(mergeMap(a.bookmarks ?? {}, b.bookmarks ?? {}, bookmarkVersion, deleted, "bm:"), MAX_BOOKMARKS, bookmarkVersion),
-    deleted,
+    // Only as many deletions as there can be items, newest first, so the document stays bounded.
+    deleted: cap(deleted, MAX_CARDS + MAX_BOOKMARKS, (t) => t),
   };
 }
 

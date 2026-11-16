@@ -66,6 +66,8 @@ jobs:
 
       - name: Coding-round problems
         run: npm run test:coding
+      - name: Security checks (CSRF, body limits, redirects)
+        run: npm run test:security
       - name: Headline feed reader
         run: npm run test:headlines
 

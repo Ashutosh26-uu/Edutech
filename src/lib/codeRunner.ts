@@ -8,6 +8,11 @@ import { normalise } from "./codeRunnerCompare";
  * Worker (built from an inline script, so it works on the static site too): Python through
  * Pyodide from the jsDelivr CDN, JavaScript as a plain function. A test that runs longer than
  * TIME_LIMIT_MS is stopped by terminating the worker, and the next test gets a fresh one.
+ *
+ * The worker lives inside a sandboxed iframe with an opaque origin and its own Content Security
+ * Policy, never on the site's own origin: pasted code (a "solution" from a forum, say) can't call
+ * our API with the student's session, read or poison the site's caches, or send data anywhere
+ * except the Pyodide CDN.
  */
 
 export const TIME_LIMIT_MS = 5000;
@@ -86,16 +91,71 @@ self.onmessage = (e) => {
 
 const sources: Record<CodingLang, string> = { python: PY_WORKER, javascript: JS_WORKER };
 
-function makeWorker(lang: CodingLang): Worker {
-  const url = URL.createObjectURL(new Blob([sources[lang]], { type: "text/javascript" }));
-  const w = new Worker(url);
-  URL.revokeObjectURL(url);
-  return w;
+/** The sandbox page: builds the worker from the source the parent sends, then relays messages both ways. */
+const SANDBOX_HTML = `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net; worker-src blob:; connect-src https://cdn.jsdelivr.net"><script>
+let w = null;
+addEventListener("message", (e) => {
+  if (e.source !== parent) return;
+  const d = e.data;
+  if (d && d.__init) {
+    w = new Worker(URL.createObjectURL(new Blob([d.__init], { type: "text/javascript" })));
+    w.onmessage = (m) => parent.postMessage(m.data, "*");
+    w.onerror = (err) => { err.preventDefault(); parent.postMessage({ type: "__error", message: err.message || "The code runner stopped." }, "*"); };
+  } else if (w) w.postMessage(d);
+});
+parent.postMessage({ type: "__sandbox" }, "*");
+</script>`;
+
+/**
+ * A Worker-shaped handle on a worker that runs inside a sandboxed iframe (see the note at the
+ * top). Only messages from that iframe are accepted; terminating removes the iframe, which also
+ * stops its worker mid-loop.
+ */
+class SandboxedWorker {
+  onmessage: ((e: { data: any }) => void) | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+  onerror: ((e: { message: string }) => void) | null = null;
+  private frame: HTMLIFrameElement;
+  private queue: unknown[] = [];
+  private ready = false;
+  private listener = (e: MessageEvent) => {
+    if (e.source !== this.frame.contentWindow || !e.data) return;
+    if (e.data.type === "__sandbox") {
+      this.frame.contentWindow!.postMessage({ __init: this.src }, "*");
+      this.ready = true;
+      this.queue.splice(0).forEach((m) => this.frame.contentWindow!.postMessage(m, "*"));
+    } else if (e.data.type === "__error") this.onerror?.({ message: String(e.data.message) });
+    else this.onmessage?.({ data: e.data });
+  };
+
+  constructor(private src: string) {
+    this.frame = document.createElement("iframe");
+    this.frame.setAttribute("sandbox", "allow-scripts");
+    this.frame.setAttribute("aria-hidden", "true");
+    this.frame.tabIndex = -1;
+    this.frame.style.cssText = "position:absolute;width:0;height:0;border:0;visibility:hidden";
+    this.frame.srcdoc = SANDBOX_HTML;
+    window.addEventListener("message", this.listener);
+    document.body.appendChild(this.frame);
+  }
+
+  postMessage(m: unknown) {
+    if (this.ready) this.frame.contentWindow?.postMessage(m, "*");
+    else this.queue.push(m);
+  }
+
+  terminate() {
+    window.removeEventListener("message", this.listener);
+    this.frame.remove();
+  }
+}
+
+function makeWorker(lang: CodingLang): SandboxedWorker {
+  return new SandboxedWorker(sources[lang]);
 }
 
 /** One runner per page: keeps a warm worker between tests and replaces it after a timeout. */
 export class CodeRunner {
-  private worker: Worker | null = null;
+  private worker: SandboxedWorker | null = null;
   private loaded: Promise<void> | null = null;
 
   constructor(private lang: CodingLang) {}

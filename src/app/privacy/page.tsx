@@ -72,7 +72,7 @@ export default function PrivacyPage() {
 
       <h2>Your choices</h2>
       <ul>
-        <li>You can ask to see, correct or delete your personal data.</li>
+        <li>You can ask to see, correct or delete your personal data. You can delete your account yourself from the account menu (Account and privacy).</li>
         <li>You can clear the data saved on your device at any time from your browser settings.</li>
         <li>You can withdraw consent by deleting your account; this does not affect processing done before.</li>
       </ul>
