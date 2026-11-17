@@ -83,6 +83,7 @@ export const SECTIONS: NavSection[] = [
     items: [
       { href: "/placement", label: "Placement hub", description: "Company tests, aptitude and coding rounds" },
       { href: "/interview", label: "Interview prep", description: "HR and technical questions with answers" },
+      { href: "/interview/mock", label: "Mock interview", description: "Answer out loud against the clock and get feedback" },
       { href: "/resume", label: "Resume builder", description: "Templates with PDF and Word download" },
       { href: "/institutes", label: "Institutes", description: "Practice sets from colleges and coaching institutes" },
       { href: "/batches", label: "Batches", description: "Join your trainer’s batch, or run one as a trainer", needsAccount: true, private: true },

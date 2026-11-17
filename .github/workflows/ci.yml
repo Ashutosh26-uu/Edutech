@@ -68,6 +68,8 @@ jobs:
         run: npm run test:coding
       - name: Security checks (CSRF, body limits, redirects)
         run: npm run test:security
+      - name: Mock interview coach
+        run: npm run test:interview
       - name: Headline feed reader
         run: npm run test:headlines
 

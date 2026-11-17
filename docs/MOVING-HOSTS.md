@@ -22,7 +22,7 @@ Copy every value from the old host's settings to the new one. The full list, wit
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET` | Daily reminders. See step 5. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Strongly recommended: shared rate limiting (logins, join codes). Without them each server instance counts on its own. |
 | `IP_HEADER` | **Set this on the new host:** the one header it fills with the visitor's IP (Cloudflare: `cf-connecting-ip`, nginx: `x-real-ip`). Otherwise a client can send a fake IP header and dodge rate limits. |
-| `ANTHROPIC_API_KEY`, `DB_POOL_MAX`, `MAX_INFLIGHT`, … | Optional; copy if set today. |
+| `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY` (and their `*_MODEL`), `DB_POOL_MAX`, `MAX_INFLIGHT`, … | Optional; copy if set today. |
 
 ## 2. Build, migrate and start
 

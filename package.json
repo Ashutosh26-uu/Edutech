@@ -27,6 +27,7 @@
     "test:challenges": "tsx --conditions react-server scripts/test-challenges.mjs",
     "test:doubts": "tsx --conditions react-server scripts/test-doubts.mjs",
     "test:account": "tsx --conditions react-server scripts/test-account.mjs",
+    "test:interview": "tsx --conditions react-server scripts/test-interview.mjs",
     "test:security": "tsx --conditions react-server scripts/test-security.mjs",
     "test:content": "tsx --conditions react-server scripts/test-content.mjs",
     "test:institutes": "tsx --conditions react-server scripts/test-institutes.mjs",
