@@ -61,6 +61,12 @@ export default function PrivacyPage() {
         <li>
           <strong>YouTube (Google)</strong>, whose official player loads when you watch a lecture on {SITE_NAME}.
         </li>
+        <li>
+          <strong>AI providers for mock-interview feedback</strong> (Groq, Google Gemini, OpenRouter): when you are logged in and ask for AI feedback, the text of
+          your answer and the question are sent to them to be checked. Some free AI services may use what they receive to improve their models, so don&rsquo;t
+          include personal details you wouldn&rsquo;t share in an interview. Speaking an answer uses your browser&rsquo;s speech recognition (in Chrome, Google
+          processes the audio).
+        </li>
       </ul>
       <p>We may also disclose data when required by law or to protect our users and the service.</p>
 

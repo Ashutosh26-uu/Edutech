@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Lightbulb, Search } from "lucide-react";
+import { ArrowRight, ChevronDown, Lightbulb, Mic, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { INTERVIEW } from "@/data/interview";
@@ -57,6 +57,16 @@ export default function InterviewPage() {
           .
         </p>
       </PageHeader>
+
+      <Link href="/interview/mock" className="card flex items-center justify-between gap-3 p-4 hover:border-slate-300">
+        <span>
+          <span className="flex items-center gap-2 font-medium text-slate-900">
+            <Mic className="h-4 w-4" /> Practise a mock interview
+          </span>
+          <span className="block text-sm text-slate-600">Answer out loud against the clock, then see your key points, filler words, pace and a scorecard.</span>
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+      </Link>
 
       <label className="relative block">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
