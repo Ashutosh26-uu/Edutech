@@ -46,7 +46,8 @@ process.on("exit", () => {
 });
 
 const DIFF = ["easy", "moderate", "hard", "very-hard"];
-const norm = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+// Keep combining marks (\p{M}): in Devanagari the matras and halant are marks, and गो/गौ differ only there.
+const norm = (s) => s.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, " ").trim();
 const isQuestionLine = (l) => /^\s*\{\s*"id"\s*:/.test(l);
 
 // Every question already in the bank, all topics, so a new one can't repeat any of them.
@@ -90,7 +91,8 @@ raw.forEach((line, n) => {
   const { question, options, answer, explanation, difficulty, source } = q;
   if (typeof question !== "string" || question.trim().length < 15) return why("question missing or too short");
   if (!Array.isArray(options) || options.length !== 4 || options.some((o) => typeof o !== "string" || !o.trim())) return why("needs exactly 4 non-empty options");
-  if (new Set(options.map((o) => norm(o))).size !== 4) return why("two options are the same");
+  // Options compare on case and spacing only: "−7" and "7", or "(2, 3]" and "[2, 3)", are different answers.
+  if (new Set(options.map((o) => o.trim().toLowerCase().replace(/\s+/g, " "))).size !== 4) return why("two options are the same");
   if (!Number.isInteger(answer) || answer < 0 || answer > 3) return why("answer must be 0-3");
   if (typeof explanation !== "string" || explanation.trim().length < 30) return why("explanation missing or too short (30+ characters)");
   if (!DIFF.includes(difficulty)) return why(`difficulty must be one of ${DIFF.join(", ")}`);
