@@ -25,7 +25,7 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
   title: { default: "StudyClip – Exam practice for SSC, Banking, UPSC, JEE & placements", template: "%s · StudyClip" },
-  description: "Practise 44,000 questions for SSC, banking, railway, UPSC, JEE/NEET and campus placements, with mock tests, short notes and a daily plan.",
+  description: "Practise 47,000 questions for SSC, banking, railway, UPSC, JEE/NEET and campus placements, with mock tests, short notes and a daily plan.",
   appleWebApp: { capable: true, title: "StudyClip" },
   icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icon.svg` },
 };

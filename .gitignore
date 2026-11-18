@@ -16,3 +16,6 @@ npm-debug.log*
 
 # Tool logs (e.g. the Tailwind CLI)
 *.log
+
+# Helper lock files for the question bank
+src/data/bank/*.lock
