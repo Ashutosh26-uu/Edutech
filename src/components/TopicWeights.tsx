@@ -17,21 +17,24 @@ export function TopicWeights({ exam }: { exam: Exam }) {
   if (rows.length < 2) return null;
   // Bars scale to the biggest single topic; the folded "Other topics" row shows its share as text only.
   const max = Math.max(...rows.filter((r) => r.topicId).map((r) => r.share));
+  // The level is the average difficulty of the bank's questions for a topic. When every topic gets
+  // the same label it tells the student nothing, so the column is left out.
+  const showLevel = new Set(rows.filter((r) => r.level).map((r) => r.level)).size > 1;
   return (
     <section className="card" aria-labelledby="topic-weightage">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="topic-weightage" className="font-semibold">
           Topic weightage
         </h2>
-        <span className="text-xs text-slate-500">Share of the paper · typical level</span>
+        <span className="text-xs text-slate-500">Share of the paper{showLevel ? " · typical level" : ""}</span>
       </div>
       <table className="mt-3 w-full border-separate border-spacing-y-1.5 text-sm">
-        <caption className="sr-only">Estimated share of the {exam.name} paper for each topic, with its typical difficulty</caption>
+        <caption className="sr-only">Estimated share of the {exam.name} paper for each topic{showLevel ? ", with its typical difficulty" : ""}</caption>
         <thead className="sr-only">
           <tr>
             <th scope="col">Topic</th>
             <th scope="col">Share of the paper</th>
-            <th scope="col">Typical level</th>
+            {showLevel && <th scope="col">Typical level</th>}
           </tr>
         </thead>
         <tbody>
@@ -60,7 +63,7 @@ export function TopicWeights({ exam }: { exam: Exam }) {
                   <span className="w-11 shrink-0 text-right tabular-nums text-xs font-medium text-slate-700">{pct(r.share)}</span>
                 </div>
               </td>
-              <td className="w-20 text-right sm:w-24">{r.level ? <span className={`inline-block whitespace-nowrap rounded-full border border-slate-200 px-2 py-0.5 text-[11px] ${LEVEL_TONE[r.level]}`}>{r.level}</span> : <span className="text-xs text-slate-400">—</span>}</td>
+              {showLevel && <td className="w-20 text-right sm:w-24">{r.level ? <span className={`inline-block whitespace-nowrap rounded-full border border-slate-200 px-2 py-0.5 text-[11px] ${LEVEL_TONE[r.level]}`}>{r.level}</span> : <span className="text-xs text-slate-400">—</span>}</td>}
             </tr>
           ))}
         </tbody>

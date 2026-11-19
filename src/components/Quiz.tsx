@@ -20,6 +20,7 @@ import { useLeaveGuard } from "@/lib/leaveGuard";
 import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
 import { useStore } from "@/lib/useStore";
+import { useAccount } from "@/lib/account";
 import type { Difficulty, MCQ } from "@/lib/types";
 import { formatTime } from "@/lib/youtube";
 
@@ -616,6 +617,26 @@ export function Results(props: ResultsProps) {
   return props.answersLock ? <LockedResults results={props.results} marks={props.marks ?? 1} lock={props.answersLock} /> : <FullResults {...props} />;
 }
 
+/**
+ * Guests keep their progress only in this browser. Right after a result is the moment they have
+ * something worth keeping, so offer a free account here (signed-in students and the static build,
+ * which has no accounts, see nothing).
+ */
+function SaveProgressPrompt() {
+  const account = useAccount();
+  if (account.mode !== "server" || !account.ready || account.user) return null;
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-700">
+        <b className="text-slate-900">Save this result.</b> Your progress is stored only on this device. A free account keeps your streak, weak topics and mistakes on every device.
+      </p>
+      <Link href="/login?next=/progress" className="btn-ghost shrink-0">
+        Create free account
+      </Link>
+    </div>
+  );
+}
+
 /** A shared paper that is still open: the score from the server and the taker's own picks, nothing that hints at the key. */
 function LockedResults({ results, marks, lock }: { results: AnswerResult[]; marks: number; lock: NonNullable<AnswersLock> }) {
   const when = lock.openAt ? new Date(lock.openAt).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit", day: "numeric", month: "short" }) : null;
@@ -818,6 +839,7 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
           </div>
         )}
       </section>
+      <SaveProgressPrompt />
       {attemptId && <StandingCard attemptId={attemptId} onLoad={setStanding} />}
       <p className="text-sm text-slate-600">
         Accuracy <b>{pct}%</b> of attempted

@@ -17,6 +17,21 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # A throwaway PostgreSQL for the integration tests below (never a real database).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: studyclip
+          POSTGRES_PASSWORD: studyclip
+          POSTGRES_DB: studyclip
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U studyclip"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -72,6 +87,22 @@ jobs:
         run: npm run test:interview
       - name: Headline feed reader
         run: npm run test:headlines
+
+      # Server features against the throwaway database: migrations apply cleanly, then accounts,
+      # batches, challenges, doubts, content access and institutes are exercised end to end.
+      - name: Database integration tests
+        run: |
+          node scripts/migrate.mjs
+          npm run test:account
+          npm run test:batches
+          npm run test:challenges
+          npm run test:doubts
+          npm run test:content
+          npm run test:institutes
+        env:
+          DATABASE_URL: postgres://studyclip:studyclip@127.0.0.1:5434/studyclip
+          NEON_AUTH_BASE_URL: https://auth.example.invalid/neondb/auth
+          NEON_AUTH_COOKIE_SECRET: ci-only-not-a-secret-0123456789abcdef
 
       # The real (server) build with API routes, using placeholder settings: it must compile without
       # touching a database, so build errors in src/server or the API never reach production first.

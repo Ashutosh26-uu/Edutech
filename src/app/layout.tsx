@@ -59,6 +59,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`dark ${sans.variable} ${mono.variable}`}>
       <head>
+        {/* The host (Netlify) writes an HTML comment, with blank lines around it, into <head>. React
+            does not expect loose text there (the blank lines, not the comment, are what break it), so
+            hydration failed on every page (error #418) and the whole page was rendered again in the
+            browser. Remove comments and loose text from <head> before React starts. */}
+        <script dangerouslySetInnerHTML={{ __html: "for(var n=document.head.firstChild,x;n;n=x){x=n.nextSibling;if(n.nodeType===8||n.nodeType===3)n.remove()}" }} />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: homeExamFlagScript }} />
       </head>
