@@ -115,6 +115,11 @@ html.dark {
       --float-bottom: calc(3.5rem + env(safe-area-inset-bottom) + 0.75rem);
       padding-bottom: var(--bottom-nav-h);
     }
+    /* A quiz keeps its Previous / Skip bar stuck above the tab bar: lift the floating buttons
+       above that bar too, so the help button never covers Skip or Next. */
+    body:has([data-quiz-bar]) {
+      --float-bottom: calc(var(--bottom-nav-h, 0px) + 3.75rem + 0.75rem);
+    }
   }
 
   /* No grey flash on tap in mobile browsers; the active: styles show the press instead. */

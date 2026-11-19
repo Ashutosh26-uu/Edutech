@@ -24,7 +24,15 @@ if (TEST_KEYS_BLOCKED) console.error("[billing] Razorpay test keys in a producti
  * and only to requests from this computer, see demoPurchase); otherwise "off".
  */
 export const PAYMENTS_MODE: "live" | "demo" | "off" =
-  KEY_ID && KEY_SECRET ? (TEST_KEYS_BLOCKED ? "off" : "live") : process.env.PAYMENTS_DEMO === "1" ? "demo" : "off";
+  KEY_ID && KEY_SECRET
+    ? TEST_KEYS_BLOCKED
+      ? "off"
+      : "live"
+    : // Never "demo" in a production build: a local `netlify build` bundles .env.local into the
+      // server function, so PAYMENTS_DEMO=1 from a developer's machine can reach the live site.
+      process.env.PAYMENTS_DEMO === "1" && process.env.NODE_ENV !== "production"
+      ? "demo"
+      : "off";
 
 function product(productId: string, examId?: string) {
   const p = PRODUCTS[productId as ProductId];

@@ -514,7 +514,7 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
       )}
 
       {/* On phones Previous / Next stay pinned above the tab bar, so a long explanation never hides them. */}
-      <div className="sticky bottom-[var(--bottom-nav-h,0px)] z-10 -mx-4 flex items-center justify-between gap-2 border-t border-slate-200 bg-surface/95 px-4 py-2.5 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 sm:pb-0 sm:backdrop-blur-none print:static">
+      <div data-quiz-bar className="sticky bottom-[var(--bottom-nav-h,0px)] z-10 -mx-4 flex items-center justify-between gap-2 border-t border-slate-200 bg-surface/95 px-4 py-2.5 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-2 sm:pb-0 sm:backdrop-blur-none print:static">
         <button className="btn-ghost" disabled={idx === first} onClick={() => goTo(idx - 1)} aria-label="Previous question">
           ← <span className="hidden min-[400px]:inline">Previous</span>
         </button>
