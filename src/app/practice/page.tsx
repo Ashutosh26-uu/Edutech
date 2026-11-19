@@ -17,7 +17,7 @@ import { api, IS_STATIC, postJson, request } from "@/lib/api";
 import { DIFFICULTIES } from "@/lib/difficulty";
 import { clearResume, readResume, writeResume, type QuizProgress } from "@/lib/practiceResume";
 import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
-import { consumeTestAccess, load, recordAnswers, recordMock, type TopicStat } from "@/lib/storage";
+import { consumeTestAccess, load, recordAnswers, recordMock, setExam, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
 import { findQuestions } from "@/lib/bank";
@@ -322,6 +322,9 @@ function PracticeView() {
     // A shared paper that is still open keeps right/wrong hidden, so it adds nothing to local stats.
     const hidden = results.some((r) => r.hidden);
     if (!hidden) recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
+    // Finishing a set for an exam is a clear enough choice: a student who has not picked an exam
+    // yet gets this one (an exam they chose on purpose is never replaced).
+    if (exam && !load().examId) setExam(exam.id);
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
     // progress and the mistake notebook follow the account.
     if (!isTimed && server && account.user) {
