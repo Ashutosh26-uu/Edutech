@@ -39,7 +39,6 @@ export const SECTIONS: NavSection[] = [
       { href: "/mistakes", label: "Mistake notebook", description: "Practise the questions you got wrong", needsAccount: true, private: true },
       { href: "/saved", label: "Saved questions", description: "Questions you starred", private: true },
       { href: "/drills", label: "Speed drills", description: "60-second calculation drills" },
-      { href: "/typing", label: "Typing test", description: "SSC-style typing in English and Hindi" },
     ],
   },
   {
@@ -63,8 +62,7 @@ export const SECTIONS: NavSection[] = [
       { href: "/formulas", label: "Formula sheets", description: "Printable one-page formulas and tricks" },
       { href: "/notes", label: "My notes", description: "Write your own notes and download them as PDF", private: true },
       { href: "/review", label: "Flashcards", description: "Spaced repetition that schedules itself" },
-      { href: "/listen", label: "Audio revision", description: "Listen to key points of your weak topics" },
-      { href: "/video", label: "Video breakdown", description: "Lecture notes, chapters and a quiz from YouTube" },
+      { href: "/tools", label: "More tools", description: "Typing test, video breakdown, audio revision and more" },
     ],
   },
   {
@@ -73,7 +71,6 @@ export const SECTIONS: NavSection[] = [
     items: [
       { href: "/calendar", label: "Exam calendar", description: "Application, admit card, exam and result dates" },
       { href: "/tracker", label: "Syllabus tracker", description: "Mark topics done and plan revision" },
-      { href: "/focus", label: "Focus timer", description: "Pomodoro blocks that earn XP" },
       { href: "/progress", label: "My progress", description: "Accuracy, weak topics and readiness" },
     ],
   },
@@ -84,11 +81,22 @@ export const SECTIONS: NavSection[] = [
       { href: "/placement", label: "Placement hub", description: "Company tests, aptitude and coding rounds" },
       { href: "/interview", label: "Interview prep", description: "HR and technical questions with answers" },
       { href: "/interview/mock", label: "Mock interview", description: "Answer out loud against the clock and get feedback" },
-      { href: "/resume", label: "Resume builder", description: "Templates with PDF and Word download" },
       { href: "/institutes", label: "Institutes", description: "Practice sets from colleges and coaching institutes" },
       { href: "/batches", label: "Batches", description: "Join your trainer’s batch, or run one as a trainer", needsAccount: true, private: true },
     ],
   },
+];
+
+/**
+ * Side tools. They are kept out of the menus so those stay about exam practice; the "More tools"
+ * page (/tools) lists them, and quick search (Ctrl+K) and sitemap.xml still include them.
+ */
+export const TOOLS: NavItem[] = [
+  { href: "/video", label: "Video breakdown", description: "Lecture notes, chapters and a quiz from YouTube" },
+  { href: "/listen", label: "Audio revision", description: "Listen to key points of your weak topics" },
+  { href: "/typing", label: "Typing test", description: "SSC-style typing in English and Hindi" },
+  { href: "/focus", label: "Focus timer", description: "Pomodoro blocks that earn XP" },
+  { href: "/resume", label: "Resume builder", description: "Templates with PDF and Word download" },
 ];
 
 /** Pages listed only in the footer (and the phone menu's bottom row). */
@@ -112,7 +120,7 @@ export const visible = (items: NavItem[]) => (IS_STATIC ? items.filter((i) => !i
 export const NAV_SECTIONS: NavSection[] = SECTIONS.map((s) => ({ ...s, items: visible(s.items) }));
 
 /** Every menu entry (a page can appear under two names, e.g. /progress), for quick search. */
-export const ALL_PAGES: NavItem[] = [...SECTIONS.flatMap((s) => s.items), ...COMPANY_LINKS];
+export const ALL_PAGES: NavItem[] = [...SECTIONS.flatMap((s) => s.items), ...TOOLS, ...COMPANY_LINKS];
 
 /** Public pages, each once, for sitemap.xml. */
 export const PUBLIC_PATHS: string[] = [...new Set(ALL_PAGES.filter((i) => !i.private && !i.needsAccount).map((i) => i.href))];
@@ -126,6 +134,8 @@ const under = (path: string, href: string) => path === href || path.startsWith(`
 export function activeSection(path: string): string | undefined {
   const own = Object.keys(HOME_SECTION).find((h) => under(path, h));
   if (own) return HOME_SECTION[own];
+  // Side tools sit under "More tools", which is in the Learn & revise menu.
+  if (TOOLS.some((t) => under(path, t.href))) return "learn";
   return SECTIONS.find((s) => s.items.some((i) => under(path, i.href)))?.id;
 }
 
@@ -136,6 +146,8 @@ export function activeSection(path: string): string | undefined {
 export function crumbFor(path: string): { section: string; item?: NavItem } {
   const id = activeSection(path);
   const sec = SECTIONS.find((s) => s.id === id);
+  const tool = TOOLS.find((t) => under(path, t.href));
+  if (sec && tool) return { section: sec.title, item: sec.items.find((i) => i.href === "/tools") };
   if (sec) {
     const items = sec.items.filter((i) => under(path, i.href) || (i.href === "/exams" && path.startsWith("/practice")));
     // Prefer the longest (most specific) match.
@@ -146,4 +158,5 @@ export function crumbFor(path: string): { section: string; item?: NavItem } {
 }
 
 /** Whether a menu link points at the current page. */
-export const isCurrent = (path: string, href: string) => under(path, href) || (href === "/exams" && path.startsWith("/practice"));
+export const isCurrent = (path: string, href: string) =>
+  under(path, href) || (href === "/exams" && path.startsWith("/practice")) || (href === "/tools" && TOOLS.some((t) => under(path, t.href)));
