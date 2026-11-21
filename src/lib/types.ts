@@ -30,6 +30,8 @@ export interface MCQ {
   optionsHi?: string[];
   explanationHi?: string;
   topicId?: string;
+  /** A slug from the topic's list in data/subtopics.ts (e.g. "successive-change"), for sub-topic accuracy. */
+  subtopic?: string;
   /** Set on exam-practice questions; video quizzes have none. */
   difficulty?: Difficulty;
   /** Exams whose previous-year papers keep testing this point, e.g. "SSC CGL · UPSC Prelims";

@@ -12,6 +12,7 @@ import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan, totalMinutes, totalQuestions } from "@/data/patterns";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { testAccessFor, useAccount } from "@/lib/account";
+import { examPassUntil, passDate, useExamPasses } from "@/lib/pass";
 import { topicWeights } from "@/lib/adaptive";
 import { api, IS_STATIC, postJson, request } from "@/lib/api";
 import { DIFFICULTIES } from "@/lib/difficulty";
@@ -20,7 +21,8 @@ import { enterFullscreen, exitFullscreen } from "@/lib/questionNotes";
 import { consumeTestAccess, load, recordAnswers, recordMock, setExam, type TopicStat } from "@/lib/storage";
 import type { MCQ } from "@/lib/types";
 import { shuffleOptions } from "@/lib/ai/local";
-import { findQuestions } from "@/lib/bank";
+import { findQuestions, loadTopicBank } from "@/lib/bank";
+import { isSubtopic, subtopicLabel } from "@/lib/subtopics";
 import { shuffle } from "@/lib/nlp";
 import { track } from "@/lib/track";
 import { canUnlimited, isUnlimitedLevel, questionKey, readUnlimitedSession, UNLIMITED_HINT, UNLIMITED_LEVEL_LABEL, UNLIMITED_LEVELS, UNLIMITED_SET_SIZE, writeUnlimitedSession, type UnlimitedLevel } from "@/lib/unlimited";
@@ -49,6 +51,8 @@ function KeyedPracticeView() {
 const MOCK_SIZE = 25;
 const TOPIC_TEST_SIZE = 15;
 const PRACTICE_SIZE = 10;
+/** A sub-topic set needs this many tagged questions; with fewer, the link practises the whole topic. */
+const SUBTOPIC_MIN_SET = 5;
 const TIMED_SET_SIZE = 20;
 
 type Phase = "start" | "paywall" | "running";
@@ -69,8 +73,10 @@ function PracticeView() {
   const path = usePathname();
   const account = useAccount();
   const server = account.mode === "server";
+  const passes = useExamPasses();
 
   const exam = EXAM_BY_ID.get(params.get("exam") ?? "");
+  const passUntil = examPassUntil(passes, exam?.id);
   const isTimed = params.get("mock") === "1";
   const isSmart = params.get("smart") === "1";
   const isMistakes = params.get("mistakes") === "1";
@@ -81,6 +87,9 @@ function PracticeView() {
   const challenge = readChallenge(params);
   const section = params.get("section") ?? "";
   const requestedTopics = (params.get("topics") ?? "").split(",").filter((t) => TOPIC_BY_ID.has(t));
+  // One sub-topic of one topic (?topics=<id>&subtopic=<slug>), for untimed practice only.
+  const subtopicParam = params.get("subtopic") ?? "";
+  const subtopic = requestedTopics.length === 1 && isSubtopic(requestedTopics[0], subtopicParam) ? subtopicParam : undefined;
   // Unlimited practice: generated Quant questions only, ten at a time, for as long as the student likes.
   const wantsUnlimited = params.get("unlimited") === "1" && !isTimed && !isSmart && !isMistakes && !isSaved && !challenge;
   const unlimitedTopics = requestedTopics.filter(canUnlimited);
@@ -107,6 +116,8 @@ function PracticeView() {
   const [starting, setStarting] = useState(false);
   const [round, setRound] = useState(0);
   const [finished, setFinished] = useState<AnswerResult[] | null>(null);
+  // Whether this set really is one sub-topic (enough tagged questions) rather than the whole topic.
+  const [subtopicSet, setSubtopicSet] = useState(false);
   // Exam mode (CBT-style full-screen layout) for timed tests; the choice is remembered.
   const [examMode, setExamMode] = useExamModePref();
   const key = topicIds.join(",");
@@ -249,6 +260,15 @@ function PracticeView() {
       setLocalSections(built);
       return setQuestions(all);
     }
+    if (subtopic && !isTimed && !isSmart) {
+      // Only the questions tagged with this sub-topic, easy to hard. Too few tagged yet: the whole topic.
+      const tagged = (await loadTopicBank(requestedTopics[0])).filter((q) => q.subtopic === subtopic);
+      setSubtopicSet(tagged.length >= SUBTOPIC_MIN_SET);
+      if (tagged.length >= SUBTOPIC_MIN_SET) {
+        const rank = (q: MCQ) => DIFFICULTIES.indexOf(q.difficulty ?? "moderate");
+        return setQuestions(shuffle(tagged).slice(0, size).sort((a, b) => rank(a) - rank(b)).map((q) => shuffleOptions(q)));
+      }
+    }
     const { ok, json } = await api("practice", {
       topicIds: key.split(","),
       count: size,
@@ -321,10 +341,12 @@ function PracticeView() {
     }
     // A shared paper that is still open keeps right/wrong hidden, so it adds nothing to local stats.
     const hidden = results.some((r) => r.hidden);
-    if (!hidden) recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, correct: r.correct })));
+    if (!hidden) recordAnswers(answered.map((r) => ({ topicId: r.question.topicId, subtopic: r.question.subtopic, correct: r.correct })));
     // Finishing a set for an exam is a clear enough choice: a student who has not picked an exam
     // yet gets this one (an exam they chose on purpose is never replaced).
     if (exam && !load().examId) setExam(exam.id);
+    // For the founder's funnel: untimed sets finished (timed tests are counted from the server).
+    if (!isTimed) track("practice_finish");
     // Timed tests are recorded by the server on submit; untimed practice posts its answers so
     // progress and the mistake notebook follow the account.
     if (!isTimed && server && account.user) {
@@ -367,7 +389,7 @@ function PracticeView() {
           : isSmart
             ? `${exam?.name} smart practice`
             : requestedTopics.length === 1
-              ? topicName
+              ? subtopic && subtopicSet ? `${topicName}: ${subtopicLabel(requestedTopics[0], subtopic)}` : topicName
               : `Practice: ${topicName}`;
   const marks = serverTest?.marks ?? plan?.pattern.marks ?? 1;
   const negative = serverTest?.negativeMarking ?? (isTimed ? (plan?.pattern.negative ?? exam?.negativeMarking ?? 0) : 0);
@@ -462,7 +484,7 @@ function PracticeView() {
             }}
           />
         ) : phase === "start" ? (
-          !account.ready ? (
+          !account.ready || !passes.ready ? (
             <p className="text-sm text-slate-500">Loading…</p>
           ) : isWeekly && !server ? (
             <div className="mx-auto max-w-sm space-y-3 py-6 text-center">
@@ -481,10 +503,10 @@ function PracticeView() {
               </button>
             </div>
           ) : (
-            <StartScreen rules={{ questions: isFullMock && plan ? totalQuestions(plan.sections) : isSectionTest ? planSection!.questions : size, upTo: !(isFullMock && plan) && !isSectionTest, minutes: isFullMock && plan ? totalMinutes(plan.sections) : isSectionTest ? planSection!.minutes : size, marks, negative: negative * marks }} access={isWeekly ? "weekly" : testAccessFor(account, exam?.id)} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
+            <StartScreen rules={{ questions: isFullMock && plan ? totalQuestions(plan.sections) : isSectionTest ? planSection!.questions : size, upTo: !(isFullMock && plan) && !isSectionTest, minutes: isFullMock && plan ? totalMinutes(plan.sections) : isSectionTest ? planSection!.minutes : size, marks, negative: negative * marks }} access={isWeekly ? "weekly" : passUntil ? "pass" : testAccessFor(account, exam?.id)} passUntil={passUntil} credits={account.credits} sectional={isFullMock && !!plan?.pattern.sectional} examMode={examMode} setExamMode={setExamMode} onStart={start} onPaywall={() => setPhase("paywall")} busy={starting} error={error} />
           )
         ) : phase === "paywall" ? (
-          <TestPaywall used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
+          <TestPaywall examId={exam?.id} used={exam && account.freeTestsUsed.includes(exam.id) ? "free-used" : "no-credits"} onUnlocked={() => setPhase("start")} />
         ) : error ? (
           <div className="space-y-3 py-2 text-sm" role={retryable ? "alert" : "status"}>
             <p className="font-semibold text-slate-900">{retryable ? "Couldn’t load the questions" : "Nothing to show here yet"}</p>
@@ -540,7 +562,7 @@ function PracticeView() {
             submit={isTimed && serverTest ? submitToServer : undefined}
             attemptId={isTimed ? serverTest?.attemptId : undefined}
             onFinish={onFinish}
-            share={{ title: challenge ? "Challenge set" : title, examId: exam?.id }}
+            share={{ title: challenge ? "Challenge set" : title, examId: exam?.id, fullMock: isFullMock }}
             examMode={isTimed && examMode}
             candidate={account.user?.name ?? undefined}
             restartLabel={isUnlimited ? `Next ${UNLIMITED_SET_SIZE} questions` : undefined}
@@ -709,7 +731,7 @@ function HowItWorks({ rules, sectional, examMode }: { rules: TestRules; sectiona
   );
 }
 
-function StartScreen({ rules, access, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { rules: TestRules; access: "free" | "credit" | "none" | "weekly"; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
+function StartScreen({ rules, access, passUntil, credits, sectional, examMode, setExamMode, onStart, onPaywall, busy, error }: { rules: TestRules; access: "free" | "credit" | "none" | "weekly" | "pass"; passUntil: number | null; credits: number; sectional: boolean; examMode: boolean; setExamMode: (on: boolean) => void; onStart: () => void; onPaywall: () => void; busy: boolean; error: string }) {
   useEffect(() => {
     if (access === "none") onPaywall();
   }, [access, onPaywall]);
@@ -721,7 +743,7 @@ function StartScreen({ rules, access, credits, sectional, examMode, setExamMode,
       <div>
         <h2 className="text-lg font-semibold">Ready when you are</h2>
         <p className="mt-1 text-sm text-slate-600">
-          {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
+          {access === "weekly" ? "This mock is free and you get one attempt this week, so finish it in one sitting. It closes at 10 pm India time." : access === "pass" && passUntil ? `Exam Pass active until ${passDate(passUntil)}. This test uses no credits.` : access === "free" ?"This uses your free test for this exam." : `This uses 1 of your ${credits} test credit${credits === 1 ? "" : "s"}.`}
         </p>
       </div>
       <HowItWorks rules={rules} sectional={sectional} examMode={examMode} />

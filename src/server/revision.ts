@@ -7,18 +7,30 @@ import { loadBank } from "@/lib/bank";
 import type { SessionUser } from "./auth";
 import { HttpError } from "./http";
 
-/** Revision sheet for an exam. Without an active pass only the first topic's notes are sent. */
+/**
+ * Revision sheet for an exam. Without an active revision pack or Exam Pass for that exam only the
+ * first topic's notes are sent.
+ */
 export async function getRevision(user: SessionUser | null, examId: string) {
   const exam = EXAM_BY_ID.get(examId);
   if (!exam) throw new HttpError(404, "Unknown exam.");
   let expiresAt: number | null = null;
   if (user) {
-    const [pass] = await db
-      .select({ expiresAt: schema.revisionPasses.expiresAt })
-      .from(schema.revisionPasses)
-      .where(and(eq(schema.revisionPasses.userId, user.id), eq(schema.revisionPasses.examId, examId), gt(schema.revisionPasses.expiresAt, new Date())))
-      .limit(1);
-    expiresAt = pass?.expiresAt.getTime() ?? null;
+    const now = new Date();
+    const [[pack], [pass]] = await Promise.all([
+      db
+        .select({ expiresAt: schema.revisionPasses.expiresAt })
+        .from(schema.revisionPasses)
+        .where(and(eq(schema.revisionPasses.userId, user.id), eq(schema.revisionPasses.examId, examId), gt(schema.revisionPasses.expiresAt, now)))
+        .limit(1),
+      db
+        .select({ expiresAt: schema.examPasses.expiresAt })
+        .from(schema.examPasses)
+        .where(and(eq(schema.examPasses.userId, user.id), eq(schema.examPasses.examId, examId), gt(schema.examPasses.expiresAt, now)))
+        .limit(1),
+    ]);
+    const until = Math.max(pack?.expiresAt.getTime() ?? 0, pass?.expiresAt.getTime() ?? 0);
+    expiresAt = until || null;
   }
   const unlocked = expiresAt !== null;
   const topicIds = examTopicIds(exam);

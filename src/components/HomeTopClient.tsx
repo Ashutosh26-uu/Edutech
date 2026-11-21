@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, ArrowRightLeft, CalendarCheck, CalendarDays, Fla
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { VideoLinkForm } from "@/components/VideoLinkForm";
 import { focusTopics } from "@/lib/adaptive";
 import { IS_STATIC, request } from "@/lib/api";
 import { KIND, fmtDay, whenLabel, type ExamEvent } from "@/lib/calendar";
@@ -84,19 +83,16 @@ export function HomeTopClient({ children, featured, examCount, questionCount }: 
               }}
             />
           </div>
-          {exam ? <CompactLecture /> : children}
+          {!exam && children}
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="space-y-4 pt-10">
-        <Dashboard store={store} exam={exam} onChangeExam={() => setEditing(true)} />
-        {justPlanned && <YourPlan store={store} exam={exam} onClose={() => setJustPlanned(false)} />}
-      </div>
-      <CompactLecture />
+    <div className="space-y-4 pt-10">
+      <Dashboard store={store} exam={exam} onChangeExam={() => setEditing(true)} />
+      {justPlanned && <YourPlan store={store} exam={exam} onClose={() => setJustPlanned(false)} />}
     </div>
   );
 }
@@ -138,6 +134,11 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
     if (!picked) return;
     finish(!!date);
     router.push(`/practice?exam=${picked.id}&smart=1`);
+  }
+  /** One tap from the hero: save the exam and open its first 10 questions. The date can wait. */
+  function startWith(e: ExamLite) {
+    setExam(e.id);
+    router.push(`/practice?exam=${e.id}&smart=1`);
   }
 
   const todayIso = dayKey();
@@ -181,7 +182,7 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
           </Heading>
           <p className={hero ? "mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg" : "mt-1.5 text-sm text-slate-600"}>
             {hero
-              ? "Pick your exam to get its topics, mock tests and a daily plan. No sign-up needed."
+              ? "Pick your exam and start with 10 questions. You see the answer and a short explanation after each one. Free, no sign-up needed."
               : "We’ll set up practice questions, mock tests and a daily plan for it. Saved in this browser only."}
           </p>
 
@@ -233,16 +234,24 @@ function Onboarding({ featured, examCount, questionCount, initialDate, currentEx
               )
             ) : (
               <>
-                <p className="text-xs text-slate-500">Popular</p>
+                {hero ? (
+                  <p className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                    <Sparkles className="h-4 w-4 text-brand-600" /> Tap your exam to start 10 free questions
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500">Popular</p>
+                )}
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {featured.slice(0, 8).map((e) => (
                     <li key={e.id}>
                       <button
                         type="button"
-                        onClick={() => choose(e)}
-                        className={`pill ${e.id === currentExamId ? "border-ink bg-ink text-on-ink hover:border-ink hover:text-on-ink" : ""}`}
+                        onClick={() => (hero ? startWith(e) : choose(e))}
+                        aria-label={hero ? `${e.name}: start 10 free questions` : undefined}
+                        className={`pill ${hero ? "gap-1.5 px-4 py-2 font-medium text-slate-900" : ""} ${e.id === currentExamId ? "border-ink bg-ink text-on-ink hover:border-ink hover:text-on-ink" : ""}`}
                       >
                         {e.name}
+                        {hero && <ArrowRight className="h-3.5 w-3.5 text-slate-400" />}
                       </button>
                     </li>
                   ))}
@@ -618,21 +627,6 @@ function YourPlan({ store, exam, onClose }: { store: StoreData; exam: ExamLite; 
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-/** The lecture breakdown, kept within reach once the hero has given way to the dashboard. */
-function CompactLecture() {
-  return (
-    <section className="mt-8 flex flex-col gap-4 rounded-xl border border-slate-200 bg-surface p-5 lg:flex-row lg:items-center lg:justify-between">
-      <div className="lg:max-w-sm">
-        <h2 className="font-semibold">Break down a YouTube lecture</h2>
-        <p className="mt-1 text-sm text-slate-600">Chapters marked by importance, notes, a quiz and flashcards.</p>
-      </div>
-      <div className="w-full lg:max-w-lg">
-        <VideoLinkForm />
-      </div>
     </section>
   );
 }

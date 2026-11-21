@@ -13,12 +13,23 @@ export interface Product {
   credits?: number;
   /** Days of full-syllabus revision access for one exam */
   revisionDays?: number;
+  /** Days of an Exam Pass for one exam: unlimited timed tests and the revision pack, no credits used */
+  examPassDays?: number;
   needsExam?: boolean;
 }
 
-export type ProductId = "tests-3" | "revision-7d";
+export type ProductId = "exam-pass-90d" | "tests-3" | "revision-7d";
 
 export const PRODUCTS: Record<ProductId, Product> = {
+  "exam-pass-90d": {
+    id: "exam-pass-90d",
+    name: "Exam Pass",
+    price: 299,
+    tagline: "Unlimited timed tests and the full revision pack for one exam.",
+    perks: ["Unlimited full mocks, section tests and topic tests", "No credits used while the pass is active", "Full-syllabus revision pack and rapid flashcards", "90 days for one exam", "No auto-renewal: it simply ends"],
+    examPassDays: 90,
+    needsExam: true,
+  },
   "tests-3": {
     id: "tests-3",
     name: "3 last-minute tests",
@@ -37,5 +48,8 @@ export const PRODUCTS: Record<ProductId, Product> = {
     needsExam: true,
   },
 };
+
+/** The order the paid products are shown in. */
+export const PRODUCT_ORDER: ProductId[] = ["exam-pass-90d", "tests-3", "revision-7d"];
 
 export const FREE_PERKS = ["Topic practice with explanations", "One free mock test per exam", "Video breakdown, notes and quizzes", "Flashcards, daily plan and progress"];

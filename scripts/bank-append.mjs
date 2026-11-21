@@ -104,7 +104,7 @@ raw.forEach((line, n) => {
   const id = `${topic}-${next}`;
   seen.set(key, id);
   const clean = { id, question: question.trim(), options: options.map((o) => o.trim()), answer, explanation: explanation.trim(), difficulty };
-  for (const k of ["questionHi", "optionsHi", "explanationHi"]) if (q[k] !== undefined) clean[k] = q[k];
+  for (const k of ["questionHi", "optionsHi", "explanationHi", "subtopic"]) if (q[k] !== undefined) clean[k] = q[k];
   if (source) clean.source = source.trim();
   out.push(`  ${JSON.stringify(clean)},`);
 });

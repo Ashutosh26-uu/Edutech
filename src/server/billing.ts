@@ -91,6 +91,17 @@ export async function fulfilOrder(orderId: string, paymentId: string, amountPais
           set: { expiresAt: sql`greatest(${schema.revisionPasses.expiresAt}, now()) + ${interval}` },
         });
     }
+    if (p.examPassDays && pay.examId) {
+      // Same rule as revision packs: a new pass starts now, buying again adds to the current expiry.
+      const interval = sql.raw(`interval '${Math.trunc(p.examPassDays)} days'`);
+      await tx
+        .insert(schema.examPasses)
+        .values({ userId, examId: pay.examId, expiresAt: sql`now() + ${interval}` })
+        .onConflictDoUpdate({
+          target: [schema.examPasses.userId, schema.examPasses.examId],
+          set: { expiresAt: sql`greatest(${schema.examPasses.expiresAt}, now()) + ${interval}` },
+        });
+    }
     return true;
   });
 }

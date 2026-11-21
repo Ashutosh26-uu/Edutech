@@ -37,16 +37,19 @@ function List({ items, dot = "bg-slate-400" }: { items: string[]; dot?: string }
  * Short revision notes for a topic. Pure markup with no hooks, so it renders on the server
  * (topic pages) as well as inside the client-side TopicNotesView (Learn).
  */
-export function TopicNotesContent({ notes, headingLevel = 3 }: { notes: TopicNotes; headingLevel?: 2 | 3 }) {
+export function TopicNotesContent({ notes: all, headingLevel = 3, lang = "en", toggle }: { notes: TopicNotes; headingLevel?: 2 | 3; lang?: "en" | "hi"; toggle?: React.ReactNode }) {
+  const hi = lang === "hi" && !!all.hi;
+  const notes = hi ? all.hi! : all;
   const H = headingLevel === 2 ? "h2" : "h3";
   const Sub = headingLevel === 2 ? "h3" : "h4";
   return (
     <div className="card space-y-5">
       <H className="flex items-center gap-2 font-semibold text-slate-900">
-        <BookOpenText className="h-4 w-4 text-brand-600" /> Short notes
+        <BookOpenText className="h-4 w-4 text-brand-600" /> {hi ? "संक्षिप्त नोट्स" : "Short notes"}
+        {toggle && <span className="ml-auto font-normal">{toggle}</span>}
       </H>
       {notes.sections.map((s) => (
-        <section key={s.heading}>
+        <section key={s.heading} lang={hi ? "hi" : undefined}>
           <Sub className="text-sm font-semibold text-slate-900">{s.heading}</Sub>
           <List items={s.points} />
         </section>
@@ -54,7 +57,7 @@ export function TopicNotesContent({ notes, headingLevel = 3 }: { notes: TopicNot
       {!!notes.formulas?.length && (
         <section className="rounded-lg bg-sky-50 p-3">
           <Sub className="flex items-center gap-1.5 text-sm font-semibold text-sky-900">
-            <Sigma className="h-4 w-4" /> Formulas and facts to remember
+            <Sigma className="h-4 w-4" /> {hi ? "याद रखने योग्य सूत्र और तथ्य" : "Formulas and facts to remember"}
           </Sub>
           <List items={notes.formulas} dot="bg-sky-500" />
         </section>
@@ -62,7 +65,7 @@ export function TopicNotesContent({ notes, headingLevel = 3 }: { notes: TopicNot
       {!!notes.traps?.length && (
         <section className="rounded-lg bg-amber-50 p-3">
           <Sub className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
-            <AlertTriangle className="h-4 w-4" /> Common traps
+            <AlertTriangle className="h-4 w-4" /> {hi ? "आम गलतियाँ" : "Common traps"}
           </Sub>
           <List items={notes.traps} dot="bg-amber-500" />
         </section>
@@ -70,7 +73,7 @@ export function TopicNotesContent({ notes, headingLevel = 3 }: { notes: TopicNot
       {!!notes.examTips?.length && (
         <section className="rounded-lg bg-emerald-50 p-3">
           <Sub className="flex items-center gap-1.5 text-sm font-semibold text-emerald-900">
-            <Lightbulb className="h-4 w-4" /> How exams ask it
+            <Lightbulb className="h-4 w-4" /> {hi ? "परीक्षा में कैसे पूछा जाता है" : "How exams ask it"}
           </Sub>
           <List items={notes.examTips} dot="bg-emerald-500" />
         </section>

@@ -77,6 +77,23 @@ export const revisionPasses = pgTable(
 );
 
 /**
+ * Exam Pass: unlimited timed tests and the revision pack for one exam until `expiresAt`. One row
+ * per user per exam; buying again moves the expiry forward (see fulfilOrder).
+ */
+export const examPasses = pgTable(
+  "exam_passes",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    examId: text("exam_id").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.examId] })],
+);
+
+/**
  * Unique order and payment ids make granting access idempotent across verify calls and webhooks.
  * Deleting an account keeps its payments (needed for refunds, reconciliation and tax) with the
  * user cleared.
@@ -117,7 +134,7 @@ export const testAttempts = pgTable(
     sections: jsonb("sections").$type<AttemptSection[]>(),
     /** Whether each section is locked to its own timer. */
     sectional: boolean("sectional").notNull().default(false),
-    paidWith: text("paid_with", { enum: ["free", "credit", "weekly", "batch"] }).notNull(),
+    paidWith: text("paid_with", { enum: ["free", "credit", "pass", "weekly", "batch"] }).notNull(),
     /** The trainer's assignment this attempt answers, for kind "batch". */
     batchTestId: uuid("batch_test_id").references(() => batchTests.id, { onDelete: "set null" }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),

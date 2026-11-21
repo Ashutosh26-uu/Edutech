@@ -10,4 +10,6 @@ export interface TopicNotes {
   traps?: string[];
   /** How exams ask this topic. */
   examTips?: string[];
+  /** The same notes in Hindi (Devanagari), shown when the student picks Hindi. Same sections, same order. */
+  hi?: Omit<TopicNotes, "hi">;
 }

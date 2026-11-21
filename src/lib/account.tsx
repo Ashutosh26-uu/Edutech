@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { IS_STATIC, request } from "./api";
-import { authAttempt, authClient, sendVerificationCode, verifyEmailCode, type AuthError } from "./auth-client";
+import { authAttempt, authClient, sendSignInCode, sendVerificationCode, signInWithCode, verifyEmailCode, type AuthError } from "./auth-client";
 import { load } from "./storage";
 import { useStore } from "./useStore";
 
@@ -30,6 +30,10 @@ export interface AccountState {
   verifyEmail: (email: string, otp: string) => Promise<AuthError | null>;
   /** Emails a new code to an account that has not verified yet. */
   resendCode: (email: string) => Promise<AuthError | null>;
+  /** Emails a 6-digit sign-in code (no password). */
+  sendLoginCode: (email: string) => Promise<AuthError | null>;
+  /** Signs in with the emailed sign-in code; a new email becomes a new account. */
+  loginWithCode: (email: string, otp: string) => Promise<AuthError | null>;
   logout: () => Promise<void>;
 }
 
@@ -100,6 +104,17 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const resendCode = useCallback((email: string) => sendVerificationCode(email.trim().toLowerCase()), []);
 
+  const sendLoginCode = useCallback((email: string) => sendSignInCode(email.trim().toLowerCase()), []);
+
+  const loginWithCode = useCallback(
+    async (email: string, otp: string) => {
+      const err = await signInWithCode(email.trim().toLowerCase(), otp.trim());
+      if (!err) await refresh();
+      return err;
+    },
+    [refresh],
+  );
+
   const logout = useCallback(async () => {
     await authClient.signOut().catch(() => {});
     setServer(null);
@@ -122,6 +137,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         signup,
         verifyEmail,
         resendCode,
+        sendLoginCode,
+        loginWithCode,
         logout,
       };
     }
@@ -138,9 +155,11 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       signup,
       verifyEmail,
       resendCode,
+      sendLoginCode,
+      loginWithCode,
       logout,
     };
-  }, [store, server, config, ready, refresh, login, signup, verifyEmail, resendCode, logout]);
+  }, [store, server, config, ready, refresh, login, signup, verifyEmail, resendCode, sendLoginCode, loginWithCode, logout]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

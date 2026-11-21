@@ -16,7 +16,7 @@ import { HttpError } from "./http";
  * page gives the in-browser feedback only.
  */
 
-interface Provider {
+export interface Provider {
   name: string;
   url: string;
   key: string | undefined;
@@ -26,7 +26,8 @@ interface Provider {
   headers?: Record<string, string>;
 }
 
-const providers = (): Provider[] =>
+/** The providers that have a key set, in the order they are tried (also used by the "Explain more" helper). */
+export const providers = (): Provider[] =>
   [
     { name: "groq", url: "https://api.groq.com/openai/v1/chat/completions", key: process.env.GROQ_API_KEY, model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile", json: true },
     {

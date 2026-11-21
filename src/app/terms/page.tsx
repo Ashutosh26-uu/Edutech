@@ -47,6 +47,7 @@ export default function TermsPage() {
           Prices are shown in Indian rupees on the <Link href="/pricing">pricing page</Link> and include applicable taxes. Payments are handled by Razorpay.
         </li>
         <li>Test credits do not expire. A revision pack gives access for the stated number of days for the exam you choose.</li>
+        <li>An Exam Pass gives unlimited timed tests and the revision pack for one exam for 90 days from purchase (buying again adds 90 days); it does not renew automatically and cannot be moved to another exam.</li>
         <li>
           Refunds follow our <Link href="/refund">refund policy</Link>.
         </li>

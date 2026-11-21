@@ -1,0 +1,226 @@
+/**
+ * Sub-topics of the Quant and Reasoning topics, the way SSC / IBPS syllabi and the usual coaching
+ * books split them. A bank question may carry `subtopic: "<slug>"` from its topic's list, so
+ * progress can say "Percentage → successive change: 30%" instead of only "Percentage: 40%".
+ *
+ * Slugs are stable ids (stored in students' progress and in the bank files): never rename one;
+ * add a new slug instead. Labels are short, shown after the topic name.
+ *
+ * This file has no imports, so plain Node can load it too (.claude/qgen/patch-q.mjs does).
+ */
+
+export interface Subtopic {
+  slug: string;
+  label: string;
+}
+
+export const SUBTOPICS: Record<string, readonly Subtopic[]> = {
+  // ---------- Quantitative Aptitude ----------
+  "quant-percentage": [
+    { slug: "basics-conversion", label: "Basics and fraction conversion" },
+    { slug: "successive-change", label: "Successive change and comparison" },
+    { slug: "population-depreciation", label: "Population growth and depreciation" },
+    { slug: "income-expenditure", label: "Income, expenditure and savings" },
+    { slug: "price-consumption", label: "Price and consumption" },
+    { slug: "election-votes", label: "Elections and votes" },
+    { slug: "marks-exams", label: "Marks and pass/fail" },
+    { slug: "mixtures-concentration", label: "Mixtures, water content and concentration" },
+  ],
+  "quant-profit-loss": [
+    { slug: "cp-sp-basics", label: "Cost price, selling price and profit %" },
+    { slug: "articles-ratio", label: "Articles bought and sold (CP of x = SP of y)" },
+    { slug: "marked-price-discount", label: "Marked price and discount" },
+    { slug: "successive-discounts", label: "Successive discounts and offers" },
+    { slug: "dishonest-dealer", label: "Dishonest dealer and false weights" },
+    { slug: "successive-selling", label: "Chain selling (A sells to B to C)" },
+    { slug: "combined-transactions", label: "Two articles, overall profit or loss" },
+  ],
+  "quant-simple-interest": [
+    { slug: "basic-formula", label: "Basic SI, rate and time" },
+    { slug: "amount-and-doubling", label: "Amount and times-the-sum" },
+    { slug: "divided-sums", label: "Sum divided into parts at different rates" },
+    { slug: "changing-rates", label: "Change in rate, time or principal" },
+    { slug: "instalments", label: "Instalments and recurring deposits" },
+    { slug: "lending-borrowing", label: "Borrowing and lending (gain)" },
+    { slug: "present-worth-discount", label: "Present worth and true discount" },
+  ],
+  "quant-ci": [
+    { slug: "annual-compounding", label: "CI compounded annually" },
+    { slug: "half-yearly-quarterly", label: "Half-yearly and quarterly compounding" },
+    { slug: "ci-si-difference", label: "Difference between CI and SI" },
+    { slug: "times-the-sum", label: "Sum doubling or growing n times" },
+    { slug: "rate-from-amounts", label: "Rate and principal from amounts" },
+    { slug: "year-wise-interest", label: "Interest of a particular year" },
+    { slug: "population-depreciation", label: "Population growth and depreciation" },
+    { slug: "varying-rates", label: "Different rates in different years" },
+  ],
+  "quant-time-work": [
+    { slug: "combined-work", label: "Working together" },
+    { slug: "leaving-joining", label: "Someone leaves or joins midway" },
+    { slug: "efficiency", label: "Efficiency comparison" },
+    { slug: "men-women-children", label: "Men, women and children (MDH)" },
+    { slug: "pipes-cisterns", label: "Pipes and cisterns" },
+    { slug: "work-wages", label: "Work and wages" },
+    { slug: "alternate-days", label: "Alternate days and growing work force" },
+  ],
+  "quant-average": [
+    { slug: "basic-average", label: "Basic average and missing number" },
+    { slug: "replacement", label: "Replacement and joining or leaving" },
+    { slug: "cricket-innings", label: "Cricket and innings" },
+    { slug: "ages", label: "Average age" },
+    { slug: "consecutive-numbers", label: "Consecutive and natural numbers" },
+    { slug: "weighted-average", label: "Weighted and combined groups" },
+    { slug: "overlapping-groups", label: "First part, last part and overlapping groups" },
+  ],
+  "quant-ratio": [
+    { slug: "ratio-basics", label: "Ratio basics and comparison" },
+    { slug: "dividing-amounts", label: "Dividing an amount" },
+    { slug: "coins", label: "Coins" },
+    { slug: "income-expenses", label: "Incomes, salaries and expenses" },
+    { slug: "ages", label: "Ages" },
+    { slug: "proportion-variation", label: "Proportion and variation" },
+    { slug: "mixtures-alligation", label: "Mixtures, alloys and alligation" },
+    { slug: "partnership", label: "Partnership" },
+  ],
+  "quant-tsd": [
+    { slug: "basic-speed", label: "Speed, distance, time and units" },
+    { slug: "average-speed", label: "Average speed" },
+    { slug: "late-early", label: "Late and early (changed speed)" },
+    { slug: "relative-speed", label: "Relative speed, meeting and chasing" },
+    { slug: "trains", label: "Trains" },
+    { slug: "boats-streams", label: "Boats and streams" },
+    { slug: "circular-track", label: "Circular track and races" },
+  ],
+  "quant-number-system": [
+    { slug: "hcf-lcm", label: "HCF and LCM" },
+    { slug: "divisibility", label: "Divisibility rules" },
+    { slug: "remainders", label: "Remainders" },
+    { slug: "unit-last-digits", label: "Unit and last digits" },
+    { slug: "factors-primes", label: "Factors and primes" },
+    { slug: "factorials-zeros", label: "Factorials and trailing zeros" },
+    { slug: "fractions-decimals-surds", label: "Fractions, decimals and surds" },
+    { slug: "digits-series-sums", label: "Digits, numbers and series sums" },
+  ],
+  "quant-mensuration": [
+    { slug: "triangles-quadrilaterals", label: "Triangles and quadrilaterals" },
+    { slug: "circles-sectors", label: "Circles, sectors and arcs" },
+    { slug: "paths-fields", label: "Paths, fields and walls" },
+    { slug: "cube-cuboid", label: "Cube and cuboid" },
+    { slug: "cylinder-cone-sphere", label: "Cylinder, cone and sphere" },
+    { slug: "melting-recasting", label: "Melting, recasting and filling" },
+    { slug: "frustum-composite", label: "Frustum, pyramid and combined solids" },
+    { slug: "percent-change-dimensions", label: "Change in dimensions" },
+  ],
+  "quant-data-interpretation": [
+    { slug: "tables", label: "Tables" },
+    { slug: "bar-graphs", label: "Bar graphs" },
+    { slug: "line-graphs", label: "Line graphs and growth" },
+    { slug: "pie-charts", label: "Pie charts" },
+    { slug: "mixed-graphs", label: "Mixed and multi-part data" },
+    { slug: "caselets", label: "Caselets (data in a paragraph)" },
+  ],
+  "quant-algebra-geometry": [
+    { slug: "algebraic-identities", label: "Algebraic identities" },
+    { slug: "equations-roots", label: "Linear and quadratic equations" },
+    { slug: "surds-indices", label: "Surds and indices" },
+    { slug: "trigonometry", label: "Trigonometric ratios and identities" },
+    { slug: "heights-distances", label: "Heights and distances" },
+    { slug: "triangles-lines", label: "Lines, angles and triangles" },
+    { slug: "circles", label: "Circles and cyclic quadrilaterals" },
+    { slug: "coordinate-geometry", label: "Coordinate geometry" },
+  ],
+
+  // ---------- Reasoning ----------
+  "reason-series": [
+    { slug: "number-series", label: "Number series (next term)" },
+    { slug: "wrong-term", label: "Wrong term in a series" },
+    { slug: "missing-term", label: "Missing term in a series" },
+    { slug: "letter-series", label: "Letter series" },
+    { slug: "alphanumeric-series", label: "Alphanumeric series" },
+    { slug: "mixed-pattern", label: "Alternating and two-step patterns" },
+  ],
+  "reason-coding": [
+    { slug: "letter-shift", label: "Letter shifting codes" },
+    { slug: "reverse-opposite", label: "Reversed and opposite-letter codes" },
+    { slug: "number-coding", label: "Letters coded as numbers" },
+    { slug: "symbol-substitution", label: "Symbol and digit substitution" },
+    { slug: "conditional-coding", label: "Coding with conditions" },
+    { slug: "word-language", label: "Word and sentence code language" },
+    { slug: "substitution-naming", label: "Substitution (A is called B)" },
+  ],
+  "reason-blood-relations": [
+    { slug: "direct-statements", label: "Direct statements" },
+    { slug: "pointing-photograph", label: "Pointing and photograph" },
+    { slug: "coded-relations", label: "Coded relations (symbols)" },
+    { slug: "family-tree-puzzles", label: "Family tree puzzles" },
+    { slug: "mixed-direction-relation", label: "Relations mixed with directions" },
+  ],
+  "reason-syllogism": [
+    { slug: "two-statements", label: "Two statements" },
+    { slug: "three-plus-statements", label: "Three or more statements" },
+    { slug: "possibility", label: "Possibility cases" },
+    { slug: "only-a-few", label: "Only a few and only" },
+    { slug: "negative-statements", label: "Negative statements (some … not)" },
+    { slug: "reverse-syllogism", label: "Pick the statements for a conclusion" },
+  ],
+  "reason-direction": [
+    { slug: "distance-direction", label: "Distance and final direction" },
+    { slug: "turns-facing", label: "Turns and facing direction" },
+    { slug: "shadow", label: "Shadow (sunrise and sunset)" },
+    { slug: "relative-position", label: "Relative position of points" },
+    { slug: "coded-directions", label: "Coded directions (symbols)" },
+    { slug: "clock-directions", label: "Clock hands and directions" },
+  ],
+  "reason-analogy": [
+    { slug: "number-analogy", label: "Number analogy" },
+    { slug: "letter-analogy", label: "Letter analogy" },
+    { slug: "word-analogy", label: "Word and meaning analogy" },
+    { slug: "gk-analogy", label: "General-knowledge analogy" },
+    { slug: "number-odd-one", label: "Odd one out (numbers)" },
+    { slug: "letter-odd-one", label: "Odd one out (letters)" },
+    { slug: "word-odd-one", label: "Odd one out (words and GK)" },
+  ],
+  "reason-seating-puzzles": [
+    { slug: "linear-row", label: "Linear row" },
+    { slug: "double-row", label: "Two parallel rows" },
+    { slug: "circular", label: "Circular table" },
+    { slug: "square-rectangular", label: "Square and rectangular table" },
+    { slug: "floor-puzzles", label: "Floors and boxes (stacked)" },
+    { slug: "scheduling-attributes", label: "Days, schedules and attributes" },
+  ],
+  "reason-inequality-order": [
+    { slug: "direct-inequality", label: "Direct inequality" },
+    { slug: "coded-inequality", label: "Coded inequality (symbols)" },
+    { slug: "inequality-expressions", label: "Fill the symbols / true expression" },
+    { slug: "ranking-comparison", label: "Comparison and ranking (taller, heavier)" },
+    { slug: "row-position", label: "Position in a row and rank" },
+    { slug: "dictionary-order", label: "Dictionary and digit order" },
+  ],
+  "reason-clock-calendar": [
+    { slug: "clock-angles", label: "Angle between the hands" },
+    { slug: "clock-hands-positions", label: "Hands coinciding, opposite or at right angles" },
+    { slug: "faulty-clocks-mirror", label: "Faulty clocks, mirror image and striking" },
+    { slug: "day-of-week", label: "Day of the week and odd days" },
+    { slug: "calendar-repeat-leap", label: "Repeating calendars and leap years" },
+    { slug: "month-date-puzzles", label: "Dates within a month" },
+    { slug: "cubes-dice", label: "Cubes and dice" },
+  ],
+  "reason-critical-reasoning": [
+    { slug: "statement-arguments", label: "Statement and arguments" },
+    { slug: "statement-assumptions", label: "Statement and assumptions" },
+    { slug: "statement-conclusions", label: "Statement and conclusions" },
+    { slug: "course-of-action", label: "Course of action" },
+    { slug: "cause-effect", label: "Cause and effect" },
+    { slug: "inferences", label: "Inferences from a passage" },
+    { slug: "strengthen-weaken", label: "Strengthen, weaken and flaws" },
+    { slug: "fact-opinion", label: "Fact and opinion" },
+  ],
+  "reason-data-sufficiency": [
+    { slug: "ds-relations-directions", label: "Data sufficiency: relations and directions" },
+    { slug: "ds-ranking-ordering", label: "Data sufficiency: ranking and order" },
+    { slug: "ds-arrangement-coding", label: "Data sufficiency: arrangement and coding" },
+    { slug: "ds-numbers-dates", label: "Data sufficiency: numbers, dates and clocks" },
+    { slug: "input-output-words", label: "Input–output: words" },
+    { slug: "input-output-mixed", label: "Input–output: words and numbers" },
+  ],
+};

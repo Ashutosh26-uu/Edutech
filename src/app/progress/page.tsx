@@ -12,6 +12,7 @@ import { EXAM_BY_ID } from "@/data/exams";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { useAccount } from "@/lib/account";
 import { clearAll, load, type TopicStat } from "@/lib/storage";
+import { MIN_SUBTOPIC_ATTEMPTS, subtopicPracticeHref, weakestSubtopics } from "@/lib/subtopics";
 import { InfoTip } from "@/components/InfoTip";
 
 type Data = ReturnType<typeof load>;
@@ -141,6 +142,8 @@ export default function ProgressPage() {
   const attempted = topics.reduce((n, t) => n + t.attempted, 0);
   const correct = topics.reduce((n, t) => n + t.correct, 0);
   const weak = topics.filter((t) => t.pct < 60).sort((a, b) => a.pct - b.pct);
+  // Sub-topic accuracy is kept in this browser only (the account stores per-topic stats).
+  const weakSubs = weakestSubtopics(data.subtopics, { n: 5, below: 80 });
   const exam = data.examId ? EXAM_BY_ID.get(data.examId) : undefined;
   const tests = synced ? remote.attempts.length : data.mocks.length;
   const mockHref = exam ? `/exams/${exam.id}` : "/exams";
@@ -236,6 +239,34 @@ export default function ProgressPage() {
                 </Link>
               )}
             </div>
+          )}
+        </section>
+
+        <section className="card">
+          <h2 className="font-semibold text-slate-900">Weak sub-topics</h2>
+          <p className="mt-0.5 text-xs text-slate-500">The part of each topic you miss most (at least {MIN_SUBTOPIC_ATTEMPTS} answers each). Saved in this browser.</p>
+          {weakSubs.length ? (
+            <ul className="mt-3 divide-y divide-slate-100">
+              {weakSubs.map((s) => (
+                <li key={s.key} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <div className="min-w-0">
+                    <div className="font-medium text-slate-800">
+                      {TOPIC_BY_ID.get(s.topicId)?.name ?? s.topicId} → {s.label}
+                    </div>
+                    <div className={`text-xs ${s.pct < 60 ? "text-red-600" : "text-amber-700"}`}>
+                      {s.pct}% accuracy · {s.correct} of {s.attempted} right
+                    </div>
+                  </div>
+                  <Link href={subtopicPracticeHref(s.topicId, s.slug, exam?.id)} className="btn-primary shrink-0 px-3 py-1.5 text-xs">
+                    Practise this
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">
+              {Object.keys(data.subtopics ?? {}).length ? "No weak sub-topics right now. Keep practising." : "Practise Quant and Reasoning topics and the exact kinds of questions you miss will show up here."}
+            </p>
           )}
         </section>
 
