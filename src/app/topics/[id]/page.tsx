@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { PrintPracticeSheet } from "@/components/PrintPracticeSheet";
 import { RichText } from "@/components/RichText";
-import { TopicNotesContent } from "@/components/TopicNotesContent";
+import { TopicNotesLang } from "@/components/TopicNotesLang";
 import { BANK_LOADERS, BANK_SIZES } from "@/data/bank";
 import { EXAMS } from "@/data/exams";
 import { NOTES_LOADERS } from "@/data/notes";
@@ -137,7 +137,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             </ul>
           </section>
 
-          {notes && <TopicNotesContent notes={notes} headingLevel={2} />}
+          {notes && <TopicNotesLang notes={notes} headingLevel={2} />}
 
           {samples.length > 0 && (
             <section className="space-y-3">

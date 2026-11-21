@@ -5,8 +5,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TOPIC_BY_ID } from "@/data/topics";
 import { Discuss } from "@/components/Discuss";
+import { ExplainAnswer, ExplainButton } from "@/components/ExplainButton";
 import { RichText } from "@/components/RichText";
 import { ReportButton, StandingCard, type Standing } from "@/components/QualityWidgets";
+import { PredictorCard } from "@/components/PredictorCard";
+import { PATTERNS } from "@/data/patterns";
 import { ScoreCardButton } from "@/components/ScoreCard";
 import { ExamView } from "@/components/ExamMode";
 import { MistakePatternCard, MistakeTagPicker, NoteBox, NoteButton } from "@/components/StudyNotes";
@@ -16,6 +19,7 @@ import { exitFullscreen } from "@/lib/questionNotes";
 import { DIFFICULTIES, DIFFICULTY_LABEL } from "@/lib/difficulty";
 import { hasHindi, inLang, useLang, type Lang } from "@/lib/lang";
 import { addCards, DAILY_QUESTION_GOAL, streak, toggleBookmark, today } from "@/lib/storage";
+import { addSubtopicAnswers, subtopicPracticeHref, weakestSubtopics } from "@/lib/subtopics";
 import { useLeaveGuard } from "@/lib/leaveGuard";
 import type { QuizProgress } from "@/lib/practiceResume";
 import { useMarkTimedTest } from "@/lib/timedTest";
@@ -101,6 +105,8 @@ interface Props {
 export interface ShareInfo {
   title: string;
   examId?: string;
+  /** Set by the practice page: this paper is a full mock (shows the cut-off predictor). */
+  fullMock?: boolean;
 }
 
 const LETTERS = ["A", "B", "C", "D", "E"];
@@ -446,13 +452,15 @@ export function Quiz({ questions, mode, negativeMarking = 0, marks = 1, timeLimi
         <div className={`anim-rise rounded-xl p-4 text-sm ${chosen[idx] === q.answer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
           <div className="flex items-start justify-between gap-2">
             <p className="font-semibold">{chosen[idx] === q.answer ? "Correct!" : `Not quite. The answer is ${LETTERS[q.answer]}: ${text.options[q.answer]}.`}</p>
-            <span className="flex shrink-0 gap-1">
+            <span className="flex max-w-[60%] shrink-0 flex-wrap justify-end gap-1">
+              <ExplainButton question={q} chosen={chosen[idx]} lang={lang} />
               <ReportButton question={q} />
               <NoteButton question={q} />
               <BookmarkButton question={q} />
             </span>
           </div>
           <div className="mt-1 whitespace-pre-line"><RichText text={text.explanation} /></div>
+          <ExplainAnswer question={q} chosen={chosen[idx]} lang={lang} className="mt-2" />
           {q.timestamp !== undefined && onTimestamp && (
             <button className="mt-2 font-medium text-brand-700 underline" onClick={() => onTimestamp(q.timestamp!)}>
               <Play className="mr-1 inline h-3 w-3" />Watch this part ({formatTime(q.timestamp)})
@@ -753,6 +761,10 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
     .sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n || b[1].n - a[1].n)
     .slice(0, 5)
     .map(([id]) => TOPIC_BY_ID.get(id)?.name ?? id);
+  // Sub-topics of each topic in this set with 3+ answers, weakest first (shown under the topic).
+  const subStats = addSubtopicAnswers({}, results.filter((r) => r.chosen !== null && !r.hidden).map((r) => ({ topicId: r.question.topicId, subtopic: r.question.subtopic, correct: r.correct })));
+  const weakSubs = (topicId: string) => weakestSubtopics(subStats, { topicId, n: 3, below: 70 });
+  const hasWeakSubs = [...byTopic.keys()].some((id) => weakSubs(id).length > 0);
   // Topics below 50% in this set, for a one-tap practice set on them.
   const weakIds = [...byTopic].filter(([id, t]) => TOPIC_BY_ID.has(id) && pctOf(t.c, t.n) < 50).map(([id]) => id).slice(0, 8);
 
@@ -800,6 +812,9 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
         ? { label: restartLabel, onClick: onRestart, why: overall >= 70 ? "You’re doing well. Keep the streak going with a new set." : "A new set of questions to keep improving." }
         : { label: "See my progress", href: "/progress", why: "Your scores and weak topics over time." };
   const toReview = () => document.getElementById("review-answers")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // A server-scored full mock (not a section or topic test): pattern papers have several sections;
+  // exams without a pattern get the generic mock, longer than a 15-question topic test.
+  const fullMock = !!attemptId && !!share?.examId && (share.fullMock ?? (sections ? sections.length > 1 : !PATTERNS[share.examId] && results.length > 15));
 
   return (
     <div className="space-y-5">
@@ -841,6 +856,7 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
       </section>
       <SaveProgressPrompt />
       {attemptId && <StandingCard attemptId={attemptId} onLoad={setStanding} />}
+      {fullMock && <PredictorCard examId={share?.examId} score={+score.toFixed(2)} maxScore={total} />}
       <p className="text-sm text-slate-600">
         Accuracy <b>{pct}%</b> of attempted
         {negativeMarking > 0 && <> · Negative marking: −{+(negativeMarking * marks).toFixed(2)} mark{negativeMarking * marks === 1 ? "" : "s"} per wrong answer</>}
@@ -969,15 +985,17 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
         </Fold>
       )}
 
-      {byTopic.size > 1 && (
+      {(byTopic.size > 1 || hasWeakSubs) && (
         <Fold title="Topic-wise performance" hint={weak.length ? `${weak.length} weak` : undefined}>
           {weak.length > 0 && <p className="mb-3 text-sm text-red-700">Focus next on: {weak.join(", ")}.</p>}
           <div className="space-y-2">
             {[...byTopic].sort((a, b) => a[1].c / a[1].n - b[1].c / b[1].n).map(([id, t]) => {
               const p = pctOf(t.c, t.n);
               const l = label(p);
+              const subs = weakSubs(id);
               return (
-                <div key={id} className="flex items-center gap-3 text-sm">
+                <div key={id}>
+                <div className="flex items-center gap-3 text-sm">
                   <span className="w-44 shrink-0 truncate sm:w-56">{TOPIC_BY_ID.get(id)?.name ?? id}</span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                     <div className={`h-full ${p >= 70 ? "bg-emerald-500" : p >= 40 ? "bg-amber-400" : "bg-red-400"}`} style={{ width: `${p}%` }} />
@@ -987,6 +1005,21 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
                   </span>
                   <span className={`chip hidden sm:inline-flex ${l.cls}`}>{l.text}</span>
                   {timed && t.s > 0 && <span className="hidden w-12 text-right text-xs text-slate-500 sm:inline">{Math.round(t.s / t.n)}s/q</span>}
+                </div>
+                {subs.length > 0 && (
+                  <ul className="mt-1 space-y-0.5 pl-3 text-xs text-slate-600">
+                    {subs.map((s) => (
+                      <li key={s.key} className="flex flex-wrap items-baseline gap-x-2">
+                        <span>
+                          → {s.label}: <span className="font-medium text-red-700">{s.pct}%</span> ({s.correct}/{s.attempted})
+                        </span>
+                        <Link href={subtopicPracticeHref(s.topicId, s.slug)} className="font-medium text-brand-700 hover:underline">
+                          Practise this
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 </div>
               );
             })}
@@ -1027,7 +1060,7 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
           return (
           <div key={r.question.id} id={`review-${i}`} className={`scroll-mt-20 rounded-xl border p-4 text-sm ${r.correct ? "border-emerald-200 bg-emerald-50/40" : r.chosen === null ? "border-slate-200 bg-surface" : "border-red-200 bg-red-50/40"}`}>
             <div className="font-medium whitespace-pre-line text-slate-900">
-              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} /> <NoteButton question={r.question} /> <ReportButton question={r.question} />
+              {i + 1}. <RichText text={t.question} /> <DifficultyChip difficulty={r.question.difficulty} /> <SourceChip source={r.question.source} pyq={r.question.pyq} /> <BookmarkButton question={r.question} /> <NoteButton question={r.question} /> <ReportButton question={r.question} /> {!r.hidden && <ExplainButton question={r.question} chosen={r.chosen} lang={lang} />}
             </div>
             <p className="mt-1">
               Your answer: <b>{r.chosen === null ? "Skipped" : t.options[r.chosen]}</b>
@@ -1039,6 +1072,7 @@ function FullResults({ results, negativeMarking, marks = 1, sections, previous, 
               {r.seconds !== undefined && <span className="text-slate-500"> · {r.seconds}s</span>}
             </p>
             {t.explanation && <div className="mt-1 whitespace-pre-line text-slate-600"><RichText text={t.explanation} /></div>}
+            {!r.hidden && <ExplainAnswer question={r.question} chosen={r.chosen} lang={lang} className="mt-2" />}
             {r.question.timestamp !== undefined && onTimestamp && (
               <button className="mt-1 font-medium text-brand-700 underline" onClick={() => onTimestamp(r.question.timestamp!)}>
                 <Play className="mr-1 inline h-3 w-3" />{formatTime(r.question.timestamp)}

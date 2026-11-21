@@ -3,6 +3,7 @@
 // a practice set breaks its rules, or a generated answer does not match its question.
 import { readFileSync } from "node:fs";
 import { TOPICS } from "@/data/topics";
+import { SUBTOPICS } from "@/data/subtopics";
 import { BANK_TOPIC_IDS, bankSize, loadAllBank } from "@/lib/bank";
 import { buildIndex, buildNotesIndex, NOTES_OUT } from "./bank-index.mjs";
 import { NOTES_LOADERS } from "@/data/notes";
@@ -48,6 +49,19 @@ for (const q of QUESTION_BANK) {
   if (!DIFFICULTIES.includes(q.difficulty)) fail(`difficulty ${q.id}`);
   if (!(q.answer >= 0 && q.answer < q.options.length) || new Set(q.options).size !== q.options.length || q.options.length < 4) fail(`options ${q.id}`, q.question.slice(0, 60));
   if (q.pyq && !q.source) fail(`pyq without source ${q.id}`);
+}
+// Sub-topics: each list belongs to a topic and has 4-8 unique slugs and labels; a tagged question's
+// `subtopic` must be in its own topic's list (untagged questions are fine).
+for (const [topicId, list] of Object.entries(SUBTOPICS)) {
+  if (!TOPICS.some((t) => t.id === topicId)) fail(`subtopics ${topicId}: no such topic in topics.ts`);
+  if (list.length < 4 || list.length > 8) fail(`subtopics ${topicId}: needs 4-8 sub-topics`, `has ${list.length}`);
+  if (new Set(list.map((s) => s.slug)).size !== list.length) fail(`subtopics ${topicId}: duplicate slug`);
+  if (new Set(list.map((s) => s.label.toLowerCase())).size !== list.length) fail(`subtopics ${topicId}: duplicate label`);
+  for (const s of list) if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s.slug) || !s.label.trim()) fail(`subtopics ${topicId}: bad slug or label`, JSON.stringify(s));
+}
+for (const q of QUESTION_BANK) {
+  if (q.subtopic === undefined) continue;
+  if (!(SUBTOPICS[q.topicId] ?? []).some((s) => s.slug === q.subtopic)) fail(`subtopic ${q.id}`, `"${q.subtopic}" is not in the ${q.topicId} list (src/data/subtopics.ts)`);
 }
 const dupes = QUESTION_BANK.map((q) => q.question).filter((q, i, a) => a.indexOf(q) !== i);
 if (dupes.length) fail("duplicate questions", dupes.join(" | "));

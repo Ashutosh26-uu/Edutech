@@ -76,6 +76,9 @@ jobs:
       - name: Store notifications
         run: npm run test:store
 
+      - name: Sub-topic stats and lists
+        run: npm run test:subtopics
+
       - name: Pasted quiz text format
         run: npm run test:quiz-text
 
@@ -83,8 +86,12 @@ jobs:
         run: npm run test:coding
       - name: Security checks (CSRF, body limits, redirects)
         run: npm run test:security
+      - name: Cut-off predictor
+        run: npm run test:predictor
       - name: Mock interview coach
         run: npm run test:interview
+      - name: Explain-more AI helper
+        run: npm run test:explain
       - name: Headline feed reader
         run: npm run test:headlines
 
@@ -94,11 +101,13 @@ jobs:
         run: |
           node scripts/migrate.mjs
           npm run test:account
+          npm run test:pass
           npm run test:batches
           npm run test:challenges
           npm run test:doubts
           npm run test:content
           npm run test:institutes
+          npm run test:stats
         env:
           DATABASE_URL: postgres://studyclip:studyclip@127.0.0.1:5434/studyclip
           NEON_AUTH_BASE_URL: https://auth.example.invalid/neondb/auth

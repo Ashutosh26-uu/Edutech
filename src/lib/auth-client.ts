@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   INVALID_OTP: "That code is not right. Check the email and try again.",
   OTP_EXPIRED: "That code has expired. Request a new one.",
   TOO_MANY_ATTEMPTS: "Too many wrong codes. Request a new one.",
+  PROVIDER_NOT_FOUND: "Google sign-in isn’t available right now. Use an email code instead.",
   invalid_credentials: "That email and password don’t match. Check both, or tap Sign up if you’re new.",
   user_already_exists: "An account with this email already exists. Log in instead.",
   email_exists: "An account with this email already exists. Log in instead.",
@@ -68,3 +69,19 @@ export const sendVerificationCode = (email: string) =>
 
 /** Checks the code; the branch is set to sign the user in as soon as the email is verified. */
 export const verifyEmailCode = (email: string, otp: string) => authAttempt(() => authClient.emailOtp.verifyEmail({ email, otp }), "Could not verify the code.");
+
+/** Emails a 6-digit sign-in code. No password needed; a new email becomes a new account when the code is used. */
+export const sendSignInCode = (email: string) => authAttempt(() => authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" }), "Could not send the code. Try again in a moment.");
+
+/** Signs in (or creates the account) with the emailed sign-in code. */
+export const signInWithCode = (email: string, otp: string) => authAttempt(() => authClient.signIn.emailOtp({ email, otp }), "Could not log in with that code.");
+
+/** Google sign-in is shown only once it is switched on for the Neon Auth project (see .env.example). */
+export const GOOGLE_LOGIN = process.env.NEXT_PUBLIC_GOOGLE_LOGIN === "1";
+
+/**
+ * Sends the browser to Google; it comes back signed in at `callbackURL` (or at `errorCallbackURL`
+ * with `?error=` if it fails). Both must be absolute URLs on this site. Resolves only on failure to start.
+ */
+export const signInWithGoogle = (callbackURL: string, errorCallbackURL: string) =>
+  authAttempt(() => authClient.signIn.social({ provider: "google", callbackURL, errorCallbackURL }), "Could not open Google sign-in. Try again, or use an email code.");

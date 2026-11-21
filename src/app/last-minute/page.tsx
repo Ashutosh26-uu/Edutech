@@ -168,7 +168,7 @@ function TestLauncher({ examId, topics }: { examId: string; topics: string[] }) 
           </div>
         </div>
       </div>
-      <p className="mt-3 text-xs text-slate-500">Your first timed test for each exam (full, section or topic) is free; after that each one uses 1 credit. Untimed practice is always free.</p>
+      <p className="mt-3 text-xs text-slate-500">Your first timed test for each exam (full, section or topic) is free; after that each one uses 1 credit, or none while you hold an Exam Pass for this exam. Untimed practice is always free.</p>
     </section>
   );
 }

@@ -6,24 +6,37 @@ import type { SessionUser } from "./auth";
 export interface Account {
   user: { id: string; email: string; name: string | null };
   credits: number;
-  /** examId -> expiry, epoch ms (active passes only) */
+  /**
+   * examId -> expiry of revision-pack access, epoch ms (active only). An Exam Pass includes the
+   * revision pack, so this is the later of the revision pack and the Exam Pass for that exam.
+   */
   revisionPasses: Record<string, number>;
+  /** examId -> expiry of the Exam Pass, epoch ms (active only): unlimited timed tests for that exam */
+  examPasses: Record<string, number>;
   freeTestsUsed: string[];
 }
 
 export async function getAccount(user: SessionUser): Promise<Account> {
-  const [passes, free, fresh] = await Promise.all([
+  const [passes, examPassRows, free, fresh] = await Promise.all([
     db
       .select({ examId: schema.revisionPasses.examId, expiresAt: schema.revisionPasses.expiresAt })
       .from(schema.revisionPasses)
       .where(and(eq(schema.revisionPasses.userId, user.id), gt(schema.revisionPasses.expiresAt, new Date()))),
+    db
+      .select({ examId: schema.examPasses.examId, expiresAt: schema.examPasses.expiresAt })
+      .from(schema.examPasses)
+      .where(and(eq(schema.examPasses.userId, user.id), gt(schema.examPasses.expiresAt, new Date()))),
     db.select({ examId: schema.freeTests.examId }).from(schema.freeTests).where(eq(schema.freeTests.userId, user.id)),
     db.select({ credits: schema.users.credits }).from(schema.users).where(eq(schema.users.id, user.id)),
   ]);
+  const examPasses: Record<string, number> = Object.fromEntries(examPassRows.map((p) => [p.examId, p.expiresAt.getTime()]));
+  const revisionPasses: Record<string, number> = { ...examPasses };
+  for (const p of passes) revisionPasses[p.examId] = Math.max(revisionPasses[p.examId] ?? 0, p.expiresAt.getTime());
   return {
     user: { id: user.id, email: user.email, name: user.name },
     credits: fresh[0]?.credits ?? user.credits,
-    revisionPasses: Object.fromEntries(passes.map((p) => [p.examId, p.expiresAt.getTime()])),
+    revisionPasses,
+    examPasses,
     freeTestsUsed: free.map((f) => f.examId),
   };
 }

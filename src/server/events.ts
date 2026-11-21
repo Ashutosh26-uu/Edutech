@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, gte, sql } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 
 const IST_MS = 330 * 60_000;
@@ -39,19 +39,20 @@ export async function countEvent(name: string, path: string) {
 }
 
 /** Views per day, top pages and event totals over the last `days` days (today included). */
-export async function statsFor(days: number) {
-  const since = istDay(days - 1);
+export async function statsFor(days: number, now = Date.now()) {
+  const since = istDay(days - 1, now);
+  const until = istDay(0, now);
   const e = schema.eventCounts;
   const total = sql<number>`sum(${e.count})`.mapWith(Number);
   const [perDay, topPages, events] = await Promise.all([
-    db.select({ day: e.day, views: total }).from(e).where(sql`${e.day} >= ${since} and ${e.name} = 'page_view'`).groupBy(e.day).orderBy(e.day),
-    db.select({ path: e.path, views: total }).from(e).where(sql`${e.day} >= ${since} and ${e.name} = 'page_view'`).groupBy(e.path).orderBy(desc(total)).limit(25),
-    db.select({ name: e.name, count: total }).from(e).where(gte(e.day, since)).groupBy(e.name).orderBy(desc(total)),
+    db.select({ day: e.day, views: total }).from(e).where(sql`${e.day} >= ${since} and ${e.day} <= ${until} and ${e.name} = 'page_view'`).groupBy(e.day).orderBy(e.day),
+    db.select({ path: e.path, views: total }).from(e).where(sql`${e.day} >= ${since} and ${e.day} <= ${until} and ${e.name} = 'page_view'`).groupBy(e.path).orderBy(desc(total)).limit(25),
+    db.select({ name: e.name, count: total }).from(e).where(sql`${e.day} >= ${since} and ${e.day} <= ${until}`).groupBy(e.name).orderBy(desc(total)),
   ]);
   // Fill in days with no views so the chart has one bar per day.
   const byDay = new Map(perDay.map((d) => [d.day, d.views]));
   const series = Array.from({ length: days }, (_, i) => {
-    const day = istDay(days - 1 - i);
+    const day = istDay(days - 1 - i, now);
     return { day, views: byDay.get(day) ?? 0 };
   });
   return { since, days: series, topPages, events };

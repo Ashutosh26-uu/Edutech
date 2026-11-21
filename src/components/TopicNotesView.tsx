@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TopicNotesContent } from "@/components/TopicNotesContent";
+import { TopicNotesLang } from "@/components/TopicNotesLang";
 import { NOTES_LOADERS } from "@/data/notes";
 import type { TopicNotes } from "@/lib/notes";
 
@@ -17,5 +17,5 @@ export function TopicNotesView({ topicId }: { topicId: string }) {
     };
   }, [topicId]);
   if (!notes) return null;
-  return <TopicNotesContent notes={notes} />;
+  return <TopicNotesLang notes={notes} />;
 }

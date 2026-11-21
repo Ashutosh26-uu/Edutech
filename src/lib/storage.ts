@@ -3,6 +3,7 @@
 import { newMemory, review as fsrsReview, type Grade, type Memory } from "./fsrs";
 import { computeStreak, consecutiveDays, istDayKey, type StreakInfo } from "./streak";
 import { mergeSync, type Bookmark, type SyncDoc } from "./sync";
+import { addSubtopicAnswers } from "./subtopics";
 import type { MCQ } from "./types";
 
 /**
@@ -55,6 +56,8 @@ export interface VideoNote {
 export interface Store {
   videos: SavedVideo[];
   topics: Record<string, TopicStat>;
+  /** Accuracy per sub-topic, keyed "<topicId>/<slug>" (see lib/subtopics.ts). Kept in this browser only; older saves have none. */
+  subtopics: Record<string, TopicStat>;
   mocks: MockResult[];
   /** The exam the student chose. Only changed when they pick it, never by just viewing an exam page. */
   examId?: string;
@@ -114,7 +117,7 @@ export interface DayCounts {
 }
 
 const KEY = "studyclip:v1";
-const EMPTY: Store = { videos: [], topics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [], bookmarks: {}, deleted: {}, frozenDays: [], dailyQuestions: {} };
+const EMPTY: Store = { videos: [], topics: {}, subtopics: {}, mocks: [], cards: {}, xp: 0, activity: {}, dailyGoal: 50, videoNotes: {}, counts: {}, credits: 0, revisionPasses: {}, freeMockUsed: {}, purchases: [], bookmarks: {}, deleted: {}, frozenDays: [], dailyQuestions: {} };
 export const UPDATE_EVENT = "studyclip:update";
 
 export const XP = { correct: 10, wrong: 2, review: 5, video: 20, mock: 50 } as const;
@@ -249,8 +252,9 @@ export function forgetTranscript(videoId: string) {
   } catch {}
 }
 
-export function recordAnswers(results: { topicId?: string; correct: boolean }[]) {
+export function recordAnswers(results: { topicId?: string; subtopic?: string; correct: boolean }[]) {
   const s = load();
+  addSubtopicAnswers((s.subtopics ??= {}), results);
   for (const r of results) {
     addXp(s, r.correct ? XP.correct : XP.wrong, "questions");
     if (!r.topicId) continue;
@@ -429,6 +433,7 @@ export function recordDailyAnswer(date: string, question: MCQ, chosen: number): 
     t.attempted++;
     if (a.correct) t.correct++;
     t.lastPracticed = Date.now();
+    addSubtopicAnswers((s.subtopics ??= {}), [{ topicId: question.topicId, subtopic: question.subtopic, correct: a.correct }]);
   }
   save(s);
   return a;

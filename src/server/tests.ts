@@ -1,6 +1,6 @@
 import "server-only";
 export { answersOpenAt } from "./locks";
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, schema, type AttemptSection } from "@/db";
 import { EXAM_BY_ID, examTopicIds } from "@/data/exams";
 import { mockPlan } from "@/data/patterns";
@@ -88,11 +88,18 @@ export async function startTest(user: SessionUser, examId: string, opts: StartOp
   const { marks, negative } = markingFor(examId);
 
   return db.transaction(async (tx) => {
-    // Claim the exam's free test; the composite primary key makes this race-free.
-    const free = await tx.insert(schema.freeTests).values({ userId: user.id, examId }).onConflictDoNothing().returning({ examId: schema.freeTests.examId });
-    let paidWith: "free" | "credit" = "free";
+    // An active Exam Pass for this exam covers every timed test: the free test and the credits
+    // are left alone. The expiry is compared with the database clock.
+    const [pass] = await tx
+      .select({ expiresAt: schema.examPasses.expiresAt })
+      .from(schema.examPasses)
+      .where(and(eq(schema.examPasses.userId, user.id), eq(schema.examPasses.examId, examId), gt(schema.examPasses.expiresAt, sql`now()`)))
+      .limit(1);
+    // Otherwise claim the exam's free test; the composite primary key makes this race-free.
+    const free = pass ? [] : await tx.insert(schema.freeTests).values({ userId: user.id, examId }).onConflictDoNothing().returning({ examId: schema.freeTests.examId });
+    let paidWith: "free" | "credit" | "pass" = pass ? "pass" : "free";
     let credits: number;
-    if (free.length) {
+    if (pass || free.length) {
       const [u] = await tx.select({ credits: schema.users.credits }).from(schema.users).where(eq(schema.users.id, user.id));
       credits = u.credits;
     } else {
@@ -117,6 +124,7 @@ export async function startTest(user: SessionUser, examId: string, opts: StartOp
       attemptId: attempt.id,
       kind: paper.kind,
       paidWith,
+      passUntil: pass?.expiresAt.getTime() ?? null,
       credits,
       deadline: deadlineAt.getTime(),
       negativeMarking: negative,

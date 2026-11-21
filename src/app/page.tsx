@@ -1,60 +1,96 @@
-import { ArrowRight, CalendarCheck, Check, Clock, Layers, ListVideo, Mic, NotebookPen, Target } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, Clock, Target, Timer, TrendingUp } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { HomeTop } from "@/components/HomeTop";
-import { ProductPreview } from "@/components/ProductPreview";
-import { VideoLinkForm } from "@/components/VideoLinkForm";
+import { StartChecklist } from "@/components/StartChecklist";
+import { PracticePreview } from "@/components/home/PracticePreview";
+import { BANK_SIZES } from "@/data/bank";
 import { EXAMS } from "@/data/exams";
 
-const HOME_CATEGORIES = ["SSC", "Banking", "Railways", "UPSC", "State PSC", "Teaching", "Defence", "Engineering & Medical", "Law & Management", "Campus Placement"];
-import { StartChecklist } from "@/components/StartChecklist";
+export const metadata: Metadata = {
+  title: { absolute: "StudyClip – Free exam practice for SSC, Banking, Railways, UPSC, JEE & NEET" },
+  description:
+    "Choose your exam and start 10 practice questions, with an explanation after every answer. See your weak topics, take timed mock tests with negative marking and follow a daily plan. Practice is free, no sign-up needed.",
+};
 
-const FEATURES = [
-  { icon: ListVideo, title: "Chapters that show what matters", text: "Every lecture is split where the topic changes, and each chapter is marked High, Medium or Low importance. Smart play watches only the High parts." },
-  { icon: NotebookPen, title: "Notes, transcript and export", text: "Key points and facts linked to the exact second, a searchable transcript, your own notes, and export to Markdown or PDF." },
-  { icon: Layers, title: "Flashcards that schedule themselves", text: "Smart spaced repetition brings each card back just before you would forget it." },
-  { icon: Target, title: "Practice that adapts", text: "Questions come more often from the topics you get wrong, mixed together, with an explanation after every answer." },
-  { icon: CalendarCheck, title: "A plan for every day", text: "Set your exam date and get a daily checklist, mock tests on a schedule, and a clear view of your weak topics." },
-  { icon: Mic, title: "Search by voice", text: "Ask for a topic or a question out loud, in English or Hindi, and listen to notes read back to you." },
-];
+const HOME_CATEGORIES = ["SSC", "Banking", "Railways", "UPSC", "State PSC", "Teaching", "Defence", "Engineering & Medical", "Law & Management", "Campus Placement"];
+
+const QUESTION_COUNT = Object.values(BANK_SIZES).reduce((a, b) => a + b, 0);
 
 const STEPS = [
-  { title: "Paste a lecture", text: "Any YouTube lecture with captions. You can also paste a transcript." },
-  { title: "Review the breakdown", text: "Read the chapters and notes, then watch only the important parts." },
-  { title: "Make it stick", text: "Take the quiz, save flashcards and keep practising your weak topics." },
+  { title: "Choose your exam", text: "Tap your exam at the top of this page, or search for it." },
+  { title: "Answer 10 questions", text: "They go from easy to hard. You see the right answer and a short explanation after each one." },
+  { title: "See your weak topics", text: "StudyClip notes the topics you get wrong and asks you more questions from them next time." },
+];
+
+const FEATURES = [
+  {
+    icon: Target,
+    title: "Practice with an explanation every time",
+    text: "After every answer you see what was right and why. Sets are short: 10 questions, about ten minutes. Untimed practice is always free.",
+    href: "/exams",
+    cta: "Choose an exam",
+  },
+  {
+    icon: TrendingUp,
+    title: "Know your weak topics",
+    text: "Your accuracy is tracked topic by topic. Questions come more often from the topics you get wrong, so you fix them first.",
+    href: "/progress",
+    cta: "See my progress",
+  },
+  {
+    icon: Timer,
+    title: "Timed mock tests",
+    text: "Mocks follow the exam pattern, with sections, a timer and negative marking. Your first timed test for each exam is free. Every Sunday there is a free all-India mock for selected exams, with a rank.",
+    href: "/mock-sunday",
+    cta: "Sunday all-India mock",
+  },
+  {
+    icon: CalendarCheck,
+    title: "A daily plan and a streak",
+    text: "Set your exam date and get a short list of what to do today. Study every day to keep your streak going.",
+    href: "/today",
+    cta: "Open today’s plan",
+  },
 ];
 
 export default function Home() {
   return (
     <div className="-mt-10 space-y-24">
-      {/* Personal top (exam picker or dashboard), with the generic hero for new visitors */}
+      {/* Personal top (exam picker or dashboard). New visitors also see how it works, below the picker. */}
       <HomeTop>
-        <section className="pb-4 pt-20 sm:pt-28">
+        <section className="pb-4 pt-16 sm:pt-24">
           <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.05fr] lg:gap-12">
             <div>
-              <p className="eyebrow">Lecture breakdown</p>
-              <h2 className="mt-3 text-3xl font-semibold leading-[1.15] sm:text-4xl">Learn from long lectures without watching every minute.</h2>
-              <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-600 sm:text-[17px]">
-                Paste a YouTube link. StudyClip splits the lecture into chapters, marks what matters for your exam, and turns it into notes, quizzes and flashcards.
-              </p>
-              <div className="mt-8 max-w-lg">
-                <VideoLinkForm size="lg" />
-              </div>
-              <p className="mt-5 text-sm text-slate-600">
-                First time here?{" "}
-                <Link href="/start" className="font-medium text-brand-700 underline-offset-2 hover:underline">
-                  See how StudyClip works in 6 simple steps →
-                </Link>
-              </p>
-              <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-                {["Practice free", "Works with any captioned lecture", "No sign-up needed"].map((t) => (
+              <p className="eyebrow">How it works</p>
+              <h2 className="mt-3 text-3xl font-semibold leading-[1.15] sm:text-4xl">Three steps. The first one takes ten minutes.</h2>
+              <ol className="mt-6 space-y-5">
+                {STEPS.map((s, i) => (
+                  <li key={s.title} className="flex gap-4">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-slate-200 bg-surface font-mono text-sm text-slate-600">{i + 1}</span>
+                    <div>
+                      <h3 className="font-medium text-slate-900">{s.title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-slate-600">{s.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+                {[`${QUESTION_COUNT.toLocaleString("en-IN")} questions`, `${EXAMS.length} exams`, "Practice is free", "No sign-up needed"].map((t) => (
                   <li key={t} className="flex items-center gap-1.5">
                     <Check className="h-4 w-4 text-emerald-600" />
                     {t}
                   </li>
                 ))}
               </ul>
+              <p className="mt-5 text-sm text-slate-600">
+                Want more detail?{" "}
+                <Link href="/start" className="font-medium text-brand-700 underline-offset-2 hover:underline">
+                  Read the simple step-by-step guide →
+                </Link>
+              </p>
             </div>
-            <ProductPreview />
+            <PracticePreview />
           </div>
         </section>
       </HomeTop>
@@ -95,57 +131,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* The core loop: practise, find weak topics, take mocks, follow the plan */}
       <section>
         <div className="max-w-2xl">
-          <p className="eyebrow">Features</p>
-          <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">From a long lecture to exam-ready, in one place</h2>
-          <p className="mt-3 hidden text-slate-600 sm:block">Built on methods with strong evidence behind them: retrieval practice with feedback, spaced repetition and interleaved practice.</p>
+          <p className="eyebrow">What you get</p>
+          <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Practise, find your weak topics, fix them</h2>
+          <p className="mt-3 text-slate-600">Everything on StudyClip is built around this one loop, for your exam and its syllabus.</p>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:mt-10 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:mt-10 sm:grid-cols-2">
           {FEATURES.map((f) => (
-            <div key={f.title} className="group bg-surface p-4 transition-colors hover:bg-slate-50 sm:p-6">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-700 transition-colors group-hover:border-slate-300 group-hover:text-slate-900">
+            <div key={f.title} className="card flex flex-col">
+              <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-700">
                 <f.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
               </span>
-              <h3 className="mt-3 text-sm font-medium sm:mt-4 sm:text-base">{f.title}</h3>
-              <p className="mt-1.5 hidden text-sm leading-relaxed text-slate-600 sm:block">{f.text}</p>
+              <h3 className="mt-3 font-medium text-slate-900">{f.title}</h3>
+              <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-600">{f.text}</p>
+              <Link href={f.href} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">
+                {f.cta} <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="grid gap-6 sm:gap-10 lg:grid-cols-[1fr_2fr]">
-        <div>
-          <p className="eyebrow">How it works</p>
-          <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Three steps per lecture</h2>
-          <p className="mt-3 text-slate-600">Chapters come from the video’s own captions. Nothing is downloaded: videos play in YouTube’s official player.</p>
-        </div>
-        <ol className="grid gap-4 sm:grid-cols-3">
-          {STEPS.map((s, i) => (
-            <li key={s.title} className="card">
-              <span className="font-mono text-sm text-slate-400">0{i + 1}</span>
-              <h3 className="mt-3 font-medium">{s.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{s.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
       {/* Closing call to action */}
       <section className="rounded-2xl bg-ink px-6 py-14 text-center sm:px-12">
-        <h2 className="text-3xl font-semibold text-on-ink">Start with your next lecture</h2>
-        <p className="mx-auto mt-3 max-w-md text-on-ink/70">Paste any YouTube link and get chapters, notes and a quiz in under a minute.</p>
+        <h2 className="text-3xl font-semibold text-on-ink">Start with 10 questions</h2>
+        <p className="mx-auto mt-3 max-w-md text-on-ink/70">Choose your exam and answer your first set now. It is free and you do not need an account.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
-          <Link href="/video" className="btn bg-on-ink px-5 text-ink hover:opacity-90">
-            Break down a lecture <ArrowRight className="h-4 w-4" />
+          <Link href="/exams" className="btn bg-on-ink px-5 text-ink hover:opacity-90">
+            Choose your exam <ArrowRight className="h-4 w-4" />
           </Link>
           <Link href="/today" className="btn border border-on-ink/20 px-5 text-on-ink hover:bg-on-ink/10">
-            Plan my preparation
+            See today’s plan
           </Link>
         </div>
       </section>
+
+      {/* The side tools get one short line */}
+      <p className="-mt-14 text-center text-sm text-slate-500">
+        More tools: video breakdown, typing test, audio revision and more.{" "}
+        <Link href="/tools" className="font-medium text-slate-700 underline-offset-2 hover:text-slate-900 hover:underline">
+          See all tools →
+        </Link>
+      </p>
     </div>
   );
 }
